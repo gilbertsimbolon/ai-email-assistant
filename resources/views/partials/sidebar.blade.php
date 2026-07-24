@@ -1,12 +1,13 @@
 <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
     <div class="app-brand demo">
-        <a href="/" class="app-brand-link gap-1">
+        <a href="{{ route('dashboard') }}" class="app-brand-link gap-1">
             <span class="app-brand-logo demo">
-                <img src="{{ asset('img/logo.jpeg') }}" style="width:40px;height:auto;object-fit:contain;">
+                <img src="{{ asset('img/logo.jpeg') }}"
+                    style="width:40px;height:auto;object-fit:contain;">
             </span>
 
             <span class="app-brand-text demo text-heading fw-bold">
-                bolonsite
+                AI Email
             </span>
         </a>
 
@@ -21,89 +22,122 @@
 
     <ul class="menu-inner py-1">
 
+        {{-- Dashboard --}}
         <li class="menu-item">
-            <a href="#" class="menu-link">
+            <a href="{{ route('dashboard') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-home-circle"></i>
                 <div>Dashboard</div>
             </a>
         </li>
 
-        <!-- Master Data -->
+        {{-- Inbox --}}
         <li class="menu-header small text-uppercase">
-            <span class="menu-header-text">Master Data</span>
+            <span class="menu-header-text">Inbox</span>
         </li>
 
         <li class="menu-item">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
-                <i class="menu-icon tf-icons bx bx-data"></i>
-                <div>Master Data</div>
-            </a>
-
-            <ul class="menu-sub">
-                <li class="menu-item">
-                    <a href="" class="menu-link">
-                        <div>Kategori Menu</div>
-                    </a>
-                </li>
-                <li class="menu-item">
-                    <a href="#" class="menu-link">
-                        <div>Menu</div>
-                    </a>
-                </li>
-                <li class="menu-item">
-                    <a href="#" class="menu-link">
-                        <div>Metode Pembayaran</div>
-                    </a>
-                </li>
-                <li class="menu-item">
-                    <a href="#" class="menu-link">
-                        <div>Customer</div>
-                    </a>
-                </li>
-                <li class="menu-item">
-                    <a href="#" class="menu-link">
-                        <div>Pegawai</div>
-                    </a>
-                </li>
-            </ul>
-        </li>
-
-        <!-- Transaksi -->
-        <li class="menu-header small text-uppercase">
-            <span class="menu-header-text">Transaksi</span>
-        </li>
-
-        <li class="menu-item">
-            <a href="javascript:void(0);" class="menu-link menu-toggle">
-                <i class="menu-icon tf-icons bx bx-cart"></i>
-                <div>Transaksi</div>
+                <i class="menu-icon tf-icons bx bx-envelope"></i>
+                <div>Inbox</div>
             </a>
 
             <ul class="menu-sub">
                 <li class="menu-item">
                     <a href="#" class="menu-link">
-                        <div>POS / Kasir</div>
+                        <div>Pending Review</div>
                     </a>
                 </li>
 
                 <li class="menu-item">
                     <a href="#" class="menu-link">
-                        <div>Riwayat Penjualan</div>
+                        <div>Replied</div>
                     </a>
                 </li>
             </ul>
         </li>
 
-        <!-- Pengaturan -->
+        {{-- AI Center --}}
         <li class="menu-header small text-uppercase">
-            <span class="menu-header-text">Pengaturan</span>
+            <span class="menu-header-text">AI Center</span>
+        </li>
+
+        <li class="menu-item">
+            <a href="javascript:void(0);" class="menu-link menu-toggle">
+                <i class="menu-icon tf-icons bx bx-brain"></i>
+                <div>AI Center</div>
+            </a>
+
+            <ul class="menu-sub">
+                <li class="menu-item">
+                    <a href="#" class="menu-link">
+                        <div>AI Logs</div>
+                    </a>
+                </li>
+
+                <li class="menu-item">
+                    <a href="#" class="menu-link">
+                        <div>Prompt Templates</div>
+                    </a>
+                </li>
+
+                <li class="menu-item">
+                    <a href="#" class="menu-link">
+                        <div>SOP</div>
+                    </a>
+                </li>
+            </ul>
+        </li>
+
+        {{-- Reports --}}
+        <li class="menu-header small text-uppercase">
+            <span class="menu-header-text">Reports</span>
         </li>
 
         <li class="menu-item">
             <a href="#" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-cog"></i>
-                <div>Pengaturan</div>
+                <i class="menu-icon tf-icons bx bx-bar-chart-alt-2"></i>
+                <div>Reports</div>
             </a>
+        </li>
+
+        {{-- Administration --}}
+        <li class="menu-header small text-uppercase">
+            <span class="menu-header-text">Administration</span>
+        </li>
+
+        <li class="menu-item">
+            <a href="javascript:void(0);" class="menu-link menu-toggle">
+                <i class="menu-icon tf-icons bx bx-cog"></i>
+                <div>Settings</div>
+            </a>
+
+            <ul class="menu-sub">
+
+                <li class="menu-item">
+                    <a href="#" class="menu-link">
+                        <div>Company</div>
+                    </a>
+                </li>
+
+                <li class="menu-item">
+                    <a href="#" class="menu-link">
+                        <div>API Configuration</div>
+                    </a>
+                </li>
+
+                <li class="menu-item">
+                    <a href="#" class="menu-link">
+                        <div>Users</div>
+                    </a>
+                </li>
+
+                <li class="menu-item">
+                    <a href="#" class="menu-link">
+                        <div>Profile</div>
+                    </a>
+                </li>
+
+            </ul>
         </li>
 
     </ul>
