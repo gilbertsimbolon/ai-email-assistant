@@ -16,4 +16,6 @@ return [
 
     'max_tokens' => env('OPENAI_MAX_TOKENS', 1200),
 
+    'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
+
 ];
