@@ -1,3 +1,0 @@
-# SOP
-
-Review then Send.
