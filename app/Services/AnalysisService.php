@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Conversation;
 use App\Models\Analysis;
+use App\Models\Conversation;
 
 class AnalysisService
 {
@@ -45,5 +45,26 @@ class AnalysisService
                 'recommended_action' => $analysis['recommended_action'] ?? null,
             ]
         );
+    }
+
+    /**
+     * Analyze the thread and persist the result in a single call.
+     */
+    public function analyzeAndSave(Conversation $conversation, string $thread): Analysis
+    {
+        return $this->save($conversation, $this->analyze($thread));
+    }
+
+    /**
+     * Normalize AI-provided enum values (e.g. "High") to their snake_case
+     * backing values (e.g. "high") so enum casts don't throw on save.
+     */
+    protected function normalize(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        return str_replace(' ', '_', strtolower(trim($value)));
     }
 }

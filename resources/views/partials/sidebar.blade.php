@@ -50,10 +50,6 @@
                 <li class="menu-item {{ request()->get('status') === 'replied' ? 'active' : '' }}">
                     <a href="{{ route('inbox.index', ['status' => 'replied']) }}" class="menu-link">
                         <div>Replied</div>
-                    </a>
-                </li>
-            </ul>
-        </li>
 
         {{-- AI Center --}}
         <li class="menu-header small text-uppercase">
