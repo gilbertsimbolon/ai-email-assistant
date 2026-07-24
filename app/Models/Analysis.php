@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\Priority;
+use App\Enums\Sentiment;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -25,6 +27,8 @@ class Analysis extends Model
     ];
 
     protected $casts = [
+        'priority' => Priority::class,
+        'sentiment' => Sentiment::class,
         'refund_requested' => 'boolean',
         'escalation_required' => 'boolean',
         'confidence_score' => 'decimal:2',

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\DraftStatus;
+use App\Enums\MessageType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -16,6 +18,11 @@ class Draft extends Model
         'content',
         'version',
         'status',
+    ];
+
+    protected $casts = [
+        'status' => DraftStatus::class,
+        'type' => MessageType::class,
     ];
 
     public function conversation()

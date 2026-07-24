@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\ChannelType;
+use App\Enums\ConversationStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -24,6 +26,8 @@ class Conversation extends Model
     ];
 
     protected $casts = [
+        'status' => ConversationStatus::class,
+        'channel' => ChannelType::class,
         'last_message_at' => 'datetime',
         'synced_at' => 'datetime',
     ];
@@ -42,5 +46,4 @@ class Conversation extends Model
     {
         return $this->hasMany(Draft::class);
     }
-    
 }
