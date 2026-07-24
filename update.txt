@@ -1,0 +1,287 @@
+# AI-Email-Assistant Development Task
+
+## Context
+
+You are working on the Laravel project:
+AI-Email-Assistant
+
+The project is an AI-powered email/customer support assistant.
+
+The current completed components:
+
+✅ Migration
+✅ Models
+✅ Enum
+✅ OpenAIService
+✅ PromptService
+✅ ConversationService
+
+Remaining tasks:
+
+⬜ AnalysisService
+⬜ DraftService
+⬜ Webhook
+⬜ Inbox
+
+
+Your task is to continue the development from the current state.
+
+Before making any changes:
+1. Analyze the existing project structure.
+2. Review existing:
+   - Models
+   - Migrations
+   - Services
+   - Enums
+   - Controllers
+   - Routes
+   - Configuration
+3. Follow the existing coding style and architecture.
+4. Do not create duplicate functionality.
+5. Do not refactor completed features unless required.
+
+
+# Main Goal
+
+Complete the remaining AI Email Assistant workflow:
+
+Incoming Email
+        ↓
+Conversation
+        ↓
+AI Analysis
+        ↓
+AI Draft Reply
+        ↓
+Human Review
+        ↓
+Send Reply
+
+
+# Task 1 - Create AnalysisService
+
+Implement:
+
+app/Services/AnalysisService.php
+
+
+Responsibilities:
+
+- Analyze conversation content using OpenAIService.
+- Use PromptService for AI prompts.
+- Extract structured information from customer conversations.
+
+The analysis should include:
+
+- intent
+- sentiment
+- priority
+- customer status
+- required action
+- summary
+- whether human intervention is required
+
+
+AI response must use JSON format.
+
+Example:
+
+{
+    "intent": "refund_request",
+    "sentiment": "negative",
+    "priority": "high",
+    "customer_status": "existing_customer",
+    "requires_human": true,
+    "summary": "Customer requested refund",
+    "recommended_action": "Explain refund policy"
+}
+
+
+Requirements:
+
+- Create database storage if needed.
+- Create model if needed.
+- Add relationships.
+- Use proper Laravel conventions.
+- Add validation/casting.
+
+
+# Task 2 - Create DraftService
+
+Implement:
+
+app/Services/DraftService.php
+
+
+Responsibilities:
+
+Generate AI email replies based on:
+
+- Original conversation
+- Analysis result
+- Customer context
+
+
+Example:
+
+Input:
+
+Intent:
+refund_request
+
+Sentiment:
+negative
+
+
+Output:
+
+{
+    "subject": "...",
+    "body": "...",
+    "tone": "professional",
+    "confidence": 0.92
+}
+
+
+Requirements:
+
+- Use OpenAIService.
+- Use PromptService.
+- Save generated drafts.
+- Allow editing before sending.
+- Do not automatically send emails.
+
+
+# Task 3 - Webhook System
+
+Create webhook handling for incoming messages.
+
+Requirements:
+
+Create:
+
+- Webhook Controller
+- Routes
+- Request validation
+
+
+The webhook should:
+
+1. Receive incoming email data.
+2. Identify sender.
+3. Create or update conversation.
+4. Store messages.
+5. Trigger AI analysis.
+6. Generate draft reply.
+
+
+The webhook must be secure.
+
+Implement:
+
+- webhook secret verification
+- logging
+- error handling
+
+
+Example flow:
+
+POST /api/webhooks/email
+
+
+Payload:
+
+{
+    "from":"customer@example.com",
+    "subject":"Refund request",
+    "message":"I want my money back"
+}
+
+
+# Task 4 - Inbox Module
+
+Create internal dashboard for agents.
+
+
+Requirements:
+
+Agent can:
+
+- View conversations.
+- See customer messages.
+- See AI analysis.
+- See AI generated draft.
+- Edit draft.
+- Approve draft.
+- Mark conversation status.
+
+
+Create:
+
+- Controller
+- Routes
+- Blade views/API depending on existing architecture.
+
+
+UI should use the existing frontend template.
+
+Existing frontend template:
+
+public/sneat/
+
+
+Do not create a new design system.
+
+Reuse:
+
+- Bootstrap classes
+- Existing layouts
+- Components
+
+
+# Important Architecture Rules
+
+Follow these rules:
+
+1. Laravel best practices.
+2. Use Service Pattern.
+3. Keep Controllers thin.
+4. Business logic belongs inside Services.
+5. Use Dependency Injection.
+6. Avoid hardcoded values.
+7. Use existing config files.
+8. Add comments only where logic is complex.
+
+
+# Testing Requirement
+
+After implementation:
+
+Run:
+
+- composer test
+- php artisan migrate
+- php artisan route:list
+
+
+Check:
+
+- No syntax errors.
+- No missing routes.
+- No missing dependencies.
+
+
+# Output Format
+
+After completing the task, provide:
+
+1. Files created.
+2. Files modified.
+3. Database changes.
+4. API endpoints added.
+5. Remaining issues.
+6. Recommended next step.
+
+
+Do not continue to the next feature after completion.
+Stop and wait for approval.
