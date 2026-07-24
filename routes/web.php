@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\LupaPasswordController;
+use App\Http\Controllers\InboxController;
 use App\Http\Controllers\ProfilController;
 use Illuminate\Support\Facades\Route;
 
@@ -34,3 +35,7 @@ Route::prefix('profil')->group(function () {
 Route::get('/dashboard', function () {
     return view('layouts.app');
 })->name('dashboard');
+
+// Rute Inbox
+Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
+Route::get('/inbox/{conversation}', [InboxController::class, 'show'])->name('inbox.show');

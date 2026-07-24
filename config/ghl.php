@@ -13,5 +13,7 @@ return [
 
     'version' => env('GHL_API_VERSION', '2021-07-28'),
 
+    'location_id' => env('GHL_LOCATION_ID'),
+
     'timeout' => env('GHL_TIMEOUT', 30),
 ];

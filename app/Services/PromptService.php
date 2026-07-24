@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\Analysis;
+use App\Models\Conversation;
+
 class PromptService
 {
     /**
@@ -172,5 +175,35 @@ TEXT
             ],
 
         ];
+    }
+
+    /**
+     * Build prompt for generating reply draft based on conversation channel.
+     */
+    public function buildDraftPrompt(Conversation $conversation, Analysis $analysis): array
+    {
+        // Ambil string thread / riwayat pesan dari conversation
+        // Sesuaikan cara Anda mengambil thread/pesan, contoh: $conversation->messages()->pluck('body')->implode("\n")
+        $thread = $this->formatThreadString($conversation);
+
+        $analysisArray = $analysis->toArray();
+
+        // Pilih prompt berdasarkan channel (email / whatsapp)
+        if ($conversation->channel === 'whatsapp') {
+            return $this->buildWhatsAppPrompt($thread, $analysisArray);
+        }
+
+        return $this->buildEmailPrompt($thread, $analysisArray);
+    }
+
+    /**
+     * Helper to format conversation messages into a thread string.
+     */
+    protected function formatThreadString(Conversation $conversation): string
+    {
+        // Sesuaikan dengan relasi message Anda
+        return collect($conversation->messages ?? [])
+            ->map(fn($msg) => "{$msg['sender_type']}: {$msg['body']}")
+            ->implode("\n");
     }
 }

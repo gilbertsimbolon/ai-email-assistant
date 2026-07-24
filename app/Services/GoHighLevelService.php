@@ -24,13 +24,15 @@ class GoHighLevelService
             'Version' => $this->version,
             'Accept' => 'application/json',
             'Content-Type' => 'application/json',
-        ]);
+        ])->withoutVerifying();
     }
 
     public function getConversations()
     {
         return $this->client()
-            ->get($this->baseUrl . '/conversations')
+            ->get($this->baseUrl . '/conversations', [
+                'locationId' => config('ghl.location_id'),
+            ])
             ->throw()
             ->json();
     }

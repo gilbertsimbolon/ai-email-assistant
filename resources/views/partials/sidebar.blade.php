@@ -2,8 +2,7 @@
     <div class="app-brand demo">
         <a href="{{ route('dashboard') }}" class="app-brand-link gap-1">
             <span class="app-brand-logo demo">
-                <img src="{{ asset('img/logo.jpeg') }}"
-                    style="width:40px;height:auto;object-fit:contain;">
+                <img src="{{ asset('img/logo.jpeg') }}" style="width:40px;height:auto;object-fit:contain;">
             </span>
 
             <span class="app-brand-text demo text-heading fw-bold">
@@ -35,21 +34,21 @@
             <span class="menu-header-text">Inbox</span>
         </li>
 
-        <li class="menu-item">
+        <li class="menu-item {{ request()->routeIs('inbox.index') ? 'active open' : '' }}">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class="menu-icon tf-icons bx bx-envelope"></i>
                 <div>Inbox</div>
             </a>
 
             <ul class="menu-sub">
-                <li class="menu-item">
-                    <a href="#" class="menu-link">
+                <li class="menu-item {{ request()->get('status') === 'pending_review' ? 'active' : '' }}">
+                    <a href="{{ route('inbox.index', ['status' => 'pending_review']) }}" class="menu-link">
                         <div>Pending Review</div>
                     </a>
                 </li>
 
-                <li class="menu-item">
-                    <a href="#" class="menu-link">
+                <li class="menu-item {{ request()->get('status') === 'replied' ? 'active' : '' }}">
+                    <a href="{{ route('inbox.index', ['status' => 'replied']) }}" class="menu-link">
                         <div>Replied</div>
                     </a>
                 </li>
