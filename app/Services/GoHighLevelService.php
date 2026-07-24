@@ -9,12 +9,14 @@ class GoHighLevelService
     protected string $baseUrl;
     protected string $apiKey;
     protected string $version;
+    protected string $locationId;
 
     public function __construct()
     {
         $this->baseUrl = config('ghl.base_url');
         $this->apiKey = config('ghl.api_key');
         $this->version = config('ghl.version');
+        $this->locationId = config('ghl.location_id');
     }
 
     protected function client()
@@ -27,10 +29,12 @@ class GoHighLevelService
         ]);
     }
 
-    public function getConversations()
+    public function getConversations(array $filters = [])
     {
         return $this->client()
-            ->get($this->baseUrl . '/conversations')
+            ->get($this->baseUrl . '/conversations/search', array_merge([
+                'locationId' => $this->locationId,
+            ], $filters))
             ->throw()
             ->json();
     }
@@ -49,5 +53,17 @@ class GoHighLevelService
             ->post($this->baseUrl . '/conversations/messages', $payload)
             ->throw()
             ->json();
+    }
+
+    public function sendEmailMessage(string $conversationId, ?string $contactId, string $subject, string $html, string $text): array
+    {
+        return $this->sendMessage([
+            'type' => 'Email',
+            'conversationId' => $conversationId,
+            'contactId' => $contactId,
+            'subject' => $subject,
+            'html' => $html,
+            'message' => $text,
+        ]);
     }
 }

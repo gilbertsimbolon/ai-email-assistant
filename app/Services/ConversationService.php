@@ -3,14 +3,42 @@
 namespace App\Services;
 
 use App\Enums\SenderType;
+use App\Models\Conversation;
 use App\Models\Message;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class ConversationService
 {
     public function __construct(
-        protected GoHighLevelService $ghl
+        protected GoHighLevelService $ghl,
+        protected AnalysisService $analysisService,
+        protected DraftService $draftService,
     ) {
+    }
+
+    /**
+     * Analisis thread terbaru dan generate draft balasan AI.
+     *
+     * Kegagalan AI tidak boleh menggagalkan proses pemanggil (webhook/sync)
+     * karena pesan/percakapan itu sendiri sudah berhasil tersimpan.
+     */
+    public function triggerAiReply(Conversation $conversation): void
+    {
+        try {
+            $thread = $this->buildPromptFromMessages(
+                $conversation->messages()->orderBy('sent_at')->get()
+            );
+
+            $analysis = $this->analysisService->analyzeAndSave($conversation, $thread);
+            $this->draftService->generate($conversation, $thread, $analysis);
+        } catch (Throwable $e) {
+            Log::error('AI processing failed', [
+                'conversation_id' => $conversation->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

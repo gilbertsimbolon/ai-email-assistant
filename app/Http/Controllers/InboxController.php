@@ -4,14 +4,25 @@ namespace App\Http\Controllers;
 
 use App\Enums\ConversationStatus;
 use App\Enums\DraftStatus;
+use App\Enums\MessageType;
+use App\Enums\SenderType;
 use App\Models\Conversation;
 use App\Models\Draft;
+use App\Services\GoHighLevelService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Throwable;
 
 class InboxController extends Controller
 {
+    public function __construct(
+        protected GoHighLevelService $ghl,
+    ) {
+    }
+
     /**
      * Daftar percakapan untuk agent, dengan filter status opsional.
      */
@@ -72,13 +83,47 @@ class InboxController extends Controller
     }
 
     /**
-     * Approve draft agar siap dikirim.
+     * Approve draft dan langsung kirim balasan ke GoHighLevel.
      */
     public function approveDraft(Draft $draft): RedirectResponse
     {
-        $draft->update(['status' => DraftStatus::Approved]);
+        $draft->load('conversation');
+        $conversation = $draft->conversation;
 
-        return back()->with('success', 'Draft disetujui.');
+        if ($draft->status !== DraftStatus::Active) {
+            return back()->with('error', 'Draft ini sudah diproses sebelumnya.');
+        }
+
+        if (!$conversation->ghl_conversation_id) {
+            return back()->with('error', 'Percakapan ini tidak terhubung ke GoHighLevel, tidak bisa dikirim otomatis.');
+        }
+
+        try {
+            $result = $this->ghl->sendEmailMessage(
+                $conversation->ghl_conversation_id,
+                $conversation->contact_id,
+                $draft->content['subject'] ?? 'Re: Your inquiry',
+                nl2br(e($draft->content['body'] ?? '')),
+                $draft->content['body'] ?? '',
+            );
+        } catch (Throwable $e) {
+            Log::error('Failed to send GHL message', ['draft_id' => $draft->id, 'error' => $e->getMessage()]);
+
+            return back()->with('error', 'Gagal mengirim pesan ke GoHighLevel: '.$e->getMessage());
+        }
+
+        $conversation->messages()->create([
+            'ghl_message_id' => $result['messageId'] ?? $result['id'] ?? 'sent-'.Str::uuid(),
+            'sender_type' => SenderType::Agent,
+            'message_type' => MessageType::Email,
+            'body' => $draft->content['body'] ?? '',
+            'sent_at' => now(),
+        ]);
+
+        $draft->update(['status' => DraftStatus::Sent]);
+        $conversation->update(['status' => ConversationStatus::Replied, 'last_message_at' => now()]);
+
+        return back()->with('success', 'Balasan berhasil dikirim.');
     }
 
     /**

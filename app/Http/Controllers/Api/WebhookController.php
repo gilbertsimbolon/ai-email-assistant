@@ -9,20 +9,15 @@ use App\Enums\SenderType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\EmailWebhookRequest;
 use App\Models\Conversation;
-use App\Services\AnalysisService;
 use App\Services\ConversationService;
-use App\Services\DraftService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Throwable;
 
 class WebhookController extends Controller
 {
     public function __construct(
         protected ConversationService $conversationService,
-        protected AnalysisService $analysisService,
-        protected DraftService $draftService,
     ) {
     }
 
@@ -48,21 +43,7 @@ class WebhookController extends Controller
 
         $conversation->update(['last_message_at' => $message->sent_at]);
 
-        try {
-            $thread = $this->conversationService->buildPromptFromMessages(
-                $conversation->messages()->orderBy('sent_at')->get()
-            );
-
-            $analysis = $this->analysisService->analyzeAndSave($conversation, $thread);
-            $this->draftService->generate($conversation, $thread, $analysis);
-        } catch (Throwable $e) {
-            // The message is already stored — AI failures shouldn't fail
-            // the webhook response and risk the sender retrying/duplicating it.
-            Log::error('Webhook AI processing failed', [
-                'conversation_id' => $conversation->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
+        $this->conversationService->triggerAiReply($conversation);
 
         return response()->json([
             'status' => 'received',

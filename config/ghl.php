@@ -11,6 +11,8 @@ return [
 
     'api_key' => env('GHL_API_KEY'),
 
+    'location_id' => env('GHL_LOCATION_ID'),
+
     'version' => env('GHL_API_VERSION', '2021-07-28'),
 
     'timeout' => env('GHL_TIMEOUT', 30),

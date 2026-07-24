@@ -88,7 +88,7 @@
 
                         <form action="{{ route('inbox.drafts.approve', $activeDraft) }}" method="POST" class="mt-2">
                             @csrf
-                            <button type="submit" class="btn btn-success btn-sm">Approve Draft</button>
+                            <button type="submit" class="btn btn-success btn-sm">Approve &amp; Kirim</button>
                         </form>
                     @else
                         <p class="text-muted mb-0">Belum ada draft AI untuk percakapan ini.</p>
