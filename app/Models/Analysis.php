@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\CustomerStatus;
 use App\Enums\Priority;
 use App\Enums\Sentiment;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,6 +23,7 @@ class Analysis extends Model
         'summary',
         'customer_intent',
         'sentiment',
+        'customer_status',
         'priority',
         'last_customer_request',
         'recommended_action',
@@ -45,6 +47,7 @@ class Analysis extends Model
     protected $casts = [
         'priority' => Priority::class,
         'sentiment' => Sentiment::class,
+        'customer_status' => CustomerStatus::class,
 
         'refund_requested' => 'boolean',
         'escalation_required' => 'boolean',
@@ -111,6 +114,16 @@ class Analysis extends Model
         return $this->refund_requested;
     }
 
+    public function isExistingCustomer(): bool
+    {
+        return $this->customer_status === CustomerStatus::ExistingCustomer;
+    }
+
+    public function isNewCustomer(): bool
+    {
+        return $this->customer_status === CustomerStatus::NewCustomer;
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Query Scopes
@@ -155,5 +168,10 @@ class Analysis extends Model
     public function scopeNegative(Builder $query): Builder
     {
         return $query->where('sentiment', Sentiment::Negative);
+    }
+
+    public function scopeExistingCustomer(Builder $query): Builder
+    {
+        return $query->where('customer_status', CustomerStatus::ExistingCustomer);
     }
 }

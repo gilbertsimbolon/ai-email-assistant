@@ -25,9 +25,13 @@ Rules:
 - Identify the customer's intent.
 - Determine conversation priority.
 - Detect customer sentiment.
+- Determine the customer's status (new customer, existing customer, or unknown).
 - Determine whether the conversation requires escalation.
+- Determine whether the customer is requesting a refund.
 - Summarize the conversation.
+- Summarize the customer's last request.
 - Recommend the next action.
+- Give a confidence score between 0 and 1 for this analysis.
 
 Return ONLY valid JSON.
 
@@ -38,9 +42,13 @@ Example:
     "intent": "Refund Request",
     "priority": "High",
     "sentiment": "Negative",
+    "customer_status": "existing_customer",
     "needs_escalation": true,
+    "refund_requested": true,
     "summary": "Customer accidentally paid twice and is requesting a refund.",
-    "recommended_action": "Escalate to Billing Team"
+    "last_customer_request": "Please refund my duplicate payment.",
+    "recommended_action": "Escalate to Billing Team",
+    "confidence_score": 0.92
 }
 
 Do not return markdown.

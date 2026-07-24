@@ -23,6 +23,7 @@ class Draft extends Model
     protected $casts = [
         'status' => DraftStatus::class,
         'type' => MessageType::class,
+        'content' => 'array',
     ];
 
     public function conversation()

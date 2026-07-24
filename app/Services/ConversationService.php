@@ -2,6 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\SenderType;
+use App\Models\Message;
+use Illuminate\Support\Collection;
+
 class ConversationService
 {
     public function __construct(
@@ -43,6 +47,22 @@ class ConversationService
                 $body = trim($message['body'] ?? '');
 
                 return "{$sender}: {$body}";
+            })
+            ->implode("\n\n");
+    }
+
+    /**
+     * Mengubah kumpulan Message (Eloquent) menjadi format thread untuk AI.
+     *
+     * @param Collection<int, Message> $messages
+     */
+    public function buildPromptFromMessages(Collection $messages): string
+    {
+        return $messages
+            ->map(function (Message $message) {
+                $sender = $message->sender_type === SenderType::Customer ? 'Customer' : 'Agent';
+
+                return "{$sender}: {$message->body}";
             })
             ->implode("\n\n");
     }

@@ -43,13 +43,13 @@
 
             <ul class="menu-sub">
                 <li class="menu-item">
-                    <a href="#" class="menu-link">
+                    <a href="{{ route('inbox.index', ['status' => \App\Enums\ConversationStatus::PendingReview->value]) }}" class="menu-link">
                         <div>Pending Review</div>
                     </a>
                 </li>
 
                 <li class="menu-item">
-                    <a href="#" class="menu-link">
+                    <a href="{{ route('inbox.index', ['status' => \App\Enums\ConversationStatus::Replied->value]) }}" class="menu-link">
                         <div>Replied</div>
                     </a>
                 </li>

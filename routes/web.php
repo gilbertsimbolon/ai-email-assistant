@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\LupaPasswordController;
+use App\Http\Controllers\InboxController;
 use App\Http\Controllers\ProfilController;
 use Illuminate\Support\Facades\Route;
 
@@ -34,3 +35,12 @@ Route::prefix('profil')->group(function () {
 Route::get('/dashboard', function () {
     return view('layouts.app');
 })->name('dashboard');
+
+// Route Inbox
+Route::middleware('auth')->prefix('inbox')->name('inbox.')->group(function () {
+    Route::get('/', [InboxController::class, 'index'])->name('index');
+    Route::get('/{conversation}', [InboxController::class, 'show'])->name('show');
+    Route::put('/drafts/{draft}', [InboxController::class, 'updateDraft'])->name('drafts.update');
+    Route::post('/drafts/{draft}/approve', [InboxController::class, 'approveDraft'])->name('drafts.approve');
+    Route::put('/{conversation}/status', [InboxController::class, 'updateStatus'])->name('status.update');
+});
