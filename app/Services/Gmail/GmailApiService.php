@@ -23,8 +23,7 @@ class GmailApiService
 {
     public function __construct(
         protected GmailConfigurationService $config,
-    ) {
-    }
+    ) {}
 
     public function buildAuthorizationUrl(string $state): string
     {
@@ -38,7 +37,7 @@ class GmailApiService
             'state' => $state,
         ];
 
-        return config('gmail.auth_url').'?'.http_build_query($params);
+        return config('gmail.auth_url') . '?' . http_build_query($params);
     }
 
     /**
@@ -46,7 +45,7 @@ class GmailApiService
      */
     public function exchangeCodeForToken(string $code): array
     {
-        return $this->request('exchangeCodeForToken', fn () => $this->httpClient()->asForm()->post(config('gmail.token_url'), [
+        return $this->request('exchangeCodeForToken', fn() => $this->httpClient()->asForm()->post(config('gmail.token_url'), [
             'code' => $code,
             'client_id' => $this->config->getClientId(),
             'client_secret' => $this->config->getClientSecret(),
@@ -60,7 +59,7 @@ class GmailApiService
      */
     public function refreshAccessToken(string $refreshToken): array
     {
-        return $this->request('refreshAccessToken', fn () => $this->httpClient()->asForm()->post(config('gmail.token_url'), [
+        return $this->request('refreshAccessToken', fn() => $this->httpClient()->asForm()->post(config('gmail.token_url'), [
             'refresh_token' => $refreshToken,
             'client_id' => $this->config->getClientId(),
             'client_secret' => $this->config->getClientSecret(),
@@ -91,11 +90,16 @@ class GmailApiService
         } catch (ConnectionException $e) {
             return [
                 'success' => false,
-                'message' => 'Tidak dapat menghubungi server Google: '.$e->getMessage(),
+                'message' => 'Tidak dapat menghubungi server Google: ' . $e->getMessage(),
             ];
         }
 
         $error = $response->json('error');
+
+        Log::info('Google OAuth Test Response', [
+            'status' => $response->status(),
+            'body' => $response->body(),
+        ]);
 
         if ($error === 'invalid_grant') {
             return [
@@ -118,7 +122,7 @@ class GmailApiService
 
         return [
             'success' => false,
-            'message' => 'Respon tidak terduga dari Google: '.($error ?? $response->status()),
+            'message' => 'Respon tidak terduga dari Google: ' . ($error ?? $response->status()),
         ];
     }
 
@@ -138,7 +142,7 @@ class GmailApiService
     {
         return $this->request(
             'getUserInfo',
-            fn () => $this->authorizedClient($accessToken)->get(config('gmail.userinfo_url'))
+            fn() => $this->authorizedClient($accessToken)->get(config('gmail.userinfo_url'))
         );
     }
 
@@ -149,7 +153,7 @@ class GmailApiService
     {
         return $this->request(
             'getProfile',
-            fn () => $this->authorizedClient($accessToken)->get($this->endpoint('/users/me/profile'))
+            fn() => $this->authorizedClient($accessToken)->get($this->endpoint('/users/me/profile'))
         );
     }
 
@@ -160,7 +164,7 @@ class GmailApiService
     {
         return $this->request(
             'listMessages',
-            fn () => $this->authorizedClient($accessToken)->get($this->endpoint('/users/me/messages'), $params)
+            fn() => $this->authorizedClient($accessToken)->get($this->endpoint('/users/me/messages'), $params)
         );
     }
 
@@ -168,7 +172,7 @@ class GmailApiService
     {
         return $this->request(
             'getMessage',
-            fn () => $this->authorizedClient($accessToken)->get(
+            fn() => $this->authorizedClient($accessToken)->get(
                 $this->endpoint("/users/me/messages/{$messageId}"),
                 ['format' => 'full']
             ),
@@ -180,7 +184,7 @@ class GmailApiService
     {
         return $this->request(
             'getAttachment',
-            fn () => $this->authorizedClient($accessToken)->get(
+            fn() => $this->authorizedClient($accessToken)->get(
                 $this->endpoint("/users/me/messages/{$messageId}/attachments/{$attachmentId}")
             ),
             ['message_id' => $messageId, 'attachment_id' => $attachmentId]
@@ -194,7 +198,7 @@ class GmailApiService
     {
         return $this->request(
             'listHistory',
-            fn () => $this->authorizedClient($accessToken)->get($this->endpoint('/users/me/history'), $params)
+            fn() => $this->authorizedClient($accessToken)->get($this->endpoint('/users/me/history'), $params)
         );
     }
 
@@ -210,13 +214,13 @@ class GmailApiService
 
         return $this->request(
             'sendMessage',
-            fn () => $this->authorizedClient($accessToken)->post($this->endpoint('/users/me/messages/send'), $payload)
+            fn() => $this->authorizedClient($accessToken)->post($this->endpoint('/users/me/messages/send'), $payload)
         );
     }
 
     protected function endpoint(string $path): string
     {
-        return config('gmail.api_base_url').$path;
+        return config('gmail.api_base_url') . $path;
     }
 
     protected function authorizedClient(string $accessToken): PendingRequest

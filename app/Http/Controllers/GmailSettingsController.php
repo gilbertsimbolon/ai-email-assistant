@@ -8,6 +8,7 @@ use App\Services\Gmail\GmailConfigurationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 /**
@@ -20,8 +21,7 @@ class GmailSettingsController extends Controller
     public function __construct(
         protected GmailConfigurationService $gmailConfig,
         protected GmailApiService $gmailApi,
-    ) {
-    }
+    ) {}
 
     public function index(): View
     {
@@ -63,6 +63,12 @@ class GmailSettingsController extends Controller
                 'message' => 'Client Secret belum diisi.',
             ], 422);
         }
+
+        Log::info('Test Gmail Connection', [
+            'client_id' => $validated['client_id'],
+            'client_secret_length' => strlen($clientSecret),
+            'redirect_uri' => $validated['redirect_uri'],
+        ]);
 
         $result = $this->gmailApi->testCredentials(
             $validated['client_id'],
