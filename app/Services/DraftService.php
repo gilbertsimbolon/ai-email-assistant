@@ -22,7 +22,10 @@ class DraftService
         $prompt = $this->promptService
             ->buildDraftPrompt($conversation, $analysis);
 
-        return $this->openAIService->text($prompt);
+        // Ubah dari ->text($prompt) menjadi ->chat($prompt)['content']
+        $response = $this->openAIService->chat($prompt);
+
+        return $response['content'];
     }
 
     /**
@@ -32,12 +35,17 @@ class DraftService
         Conversation $conversation,
         string $content
     ): Draft {
+        // Ambil nilai string dari channel conversation dengan aman
+        $channelValue = $conversation->channel instanceof \BackedEnum 
+            ? $conversation->channel->value 
+            : (string) $conversation->channel;
+
         return Draft::updateOrCreate(
             ['conversation_id' => $conversation->id],
             [
                 'content' => $content,
-                'type' => $conversation->channel, // Menggunakan channel conversation (email/whatsapp)
-                'status' => 'active', // Sesuai default migration ('active')
+                'type' => strtolower($channelValue), // Pastikan nilai berupa string backing value
+                'status' => 'active', 
                 'provider' => 'openai',
             ]
         );

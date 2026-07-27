@@ -209,9 +209,15 @@ TEXT
      */
     protected function formatThreadString(Conversation $conversation): string
     {
-        // Sesuaikan dengan relasi message Anda
         return collect($conversation->messages ?? [])
-            ->map(fn($msg) => "{$msg['sender_type']}: {$msg['body']}")
+            ->map(function ($msg) {
+                // Ambil string value dari sender_type dengan aman apakah itu Enum atau string
+                $sender = $msg->sender_type instanceof \BackedEnum 
+                    ? $msg->sender_type->value 
+                    : (string) $msg->sender_type;
+
+                return "{$sender}: {$msg->body}";
+            })
             ->implode("\n");
     }
 }

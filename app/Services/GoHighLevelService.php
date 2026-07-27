@@ -29,11 +29,12 @@ class GoHighLevelService
         ])->withoutVerifying();
     }
 
-    public function getConversations(array $filters = [])
+    public function getConversations()
     {
         return $this->client()
-            ->get($this->baseUrl . '/conversations', [
+            ->get($this->baseUrl . '/conversations/search', [
                 'locationId' => config('ghl.location_id'),
+                'limit' => 20,
             ])
             ->throw()
             ->json();

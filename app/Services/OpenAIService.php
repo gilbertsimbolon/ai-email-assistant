@@ -37,7 +37,8 @@ class OpenAIService
             ->acceptJson()
             ->contentType('application/json')
             ->timeout(60)
-            ->retry(3, 1000);
+            ->retry(3, 1000)
+            ->withoutVerifying();
     }
 
     /**
@@ -129,9 +130,23 @@ class OpenAIService
      *
      * @param array<int, array<string, mixed>> $messages
      */
-    public function text(array $messages): string
+    public function text(string $prompt)
     {
-        return $this->chat($messages)['content'];
+        return Http::withHeaders([
+                'Authorization' => 'Bearer ' . config('openai.api_key'),
+                'Content-Type' => 'application/json',
+            ])
+            ->withoutVerifying() // <-- Tambahkan baris ini untuk melewati error SSL ke OpenAI
+            ->post(config('openai.base_url') . '/chat/completions', [
+                'model' => config('openai.model', 'gpt-4o'),
+                'messages' => [
+                    ['role' => 'user', 'content' => $prompt]
+                ],
+                'temperature' => (float) config('openai.temperature', 0.3),
+                'max_tokens' => (int) config('openai.max_tokens', 1200),
+            ])
+            ->throw()
+            ->json('choices.0.message.content');
     }
 
     /**

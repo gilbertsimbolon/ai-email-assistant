@@ -28,6 +28,9 @@ class AnalysisService
     /**
      * Save analysis result.
      */
+    /**
+     * Save analysis result.
+     */
     public function save(
         Conversation $conversation,
         array $analysis
@@ -38,8 +41,8 @@ class AnalysisService
             [
                 'language' => $analysis['language'] ?? null,
                 'intent' => $analysis['intent'] ?? null,
-                'priority' => $analysis['priority'] ?? null,
-                'sentiment' => $analysis['sentiment'] ?? null,
+                'priority' => $this->normalize($analysis['priority'] ?? null), // <-- Gunakan normalize di sini
+                'sentiment' => $this->normalize($analysis['sentiment'] ?? null), // <-- Dan di sini juga
                 'needs_escalation' => $analysis['needs_escalation'] ?? false,
                 'summary' => $analysis['summary'] ?? null,
                 'recommended_action' => $analysis['recommended_action'] ?? null,
@@ -67,4 +70,6 @@ class AnalysisService
 
         return str_replace(' ', '_', strtolower(trim($value)));
     }
+
+    
 }

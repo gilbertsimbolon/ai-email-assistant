@@ -8,6 +8,8 @@ use App\Models\Conversation;
 use App\Models\Message;
 use App\Services\AnalysisService;
 use App\Services\DraftService;
+use App\Enums\MessageType;
+use App\Enums\SenderType;
 
 class SyncConversationsCommand extends Command
 {
@@ -25,6 +27,12 @@ class SyncConversationsCommand extends Command
             $response = $ghlService->getConversations();
             $conversations = $response['conversations'] ?? [];
 
+            if (empty($conversations)) {
+                $this->warn('Tidak ada percakapan ditemukan.');
+                return;
+            }
+
+            $count = 0;
             foreach ($conversations as $convoData) {
                 $ghlConversationId = $convoData['id'] ?? null;
                 if (!$ghlConversationId) continue;
@@ -35,40 +43,54 @@ class SyncConversationsCommand extends Command
                     [
                         'ghl_location_id' => $convoData['locationId'] ?? config('ghl.location_id'),
                         'contact_id' => $convoData['contactId'] ?? null,
-                        'contact_name' => $convoData['fullName'] ?? null,
+                        'contact_name' => $convoData['fullName'] ?? $convoData['contactName'] ?? 'Unknown',
                         'contact_email' => $convoData['email'] ?? null,
                         'contact_phone' => $convoData['phone'] ?? null,
-                        'channel' => strtolower($convoData['type'] ?? 'email'),
+                        'channel' => strtolower(str_replace('TYPE_', '', $convoData['lastMessageType'] ?? 'email')),
                         'subject' => $convoData['subject'] ?? null,
                         'status' => 'pending_review',
                         'last_message_at' => isset($convoData['lastMessageDate']) ? date('Y-m-d H:i:s', $convoData['lastMessageDate'] / 1000) : now(),
                     ]
                 );
 
-                // 2. Ambil detail pesan (messages) dari percakapan ini
-                $messagesResponse = $ghlService->getConversationMessages($ghlConversationId);
-                $messages = $messagesResponse['messages']['messages'] ?? $messagesResponse['messages'] ?? [];
+                // 2. Simpan pesan terakhir dengan ghl_message_id yang unik
+                if (!empty($convoData['lastMessageBody'])) {
+                    $direction = $convoData['lastMessageDirection'] ?? 'inbound';
+                    $senderType = $direction === 'inbound' ? SenderType::Customer : SenderType::Agent;
 
-                foreach ($messages as $msgData) {
-                    $ghlMessageId = $msgData['id'] ?? null;
-                    if (!$ghlMessageId) continue;
+                    $channelValue = strtolower($conversation->channel instanceof \BackedEnum 
+                        ? $conversation->channel->value 
+                        : (string) $conversation->channel);
+
+                    // Cari berdasarkan backing value dengan aman (mencocokkan lowercase)
+                    $msgTypeEnum = collect(MessageType::cases())
+                        ->first(fn($case) => strtolower($case->value) === $channelValue) ?? MessageType::Email;
+
+                    $ghlMessageId = $convoData['lastMessageId'] ?? ('msg_' . $conversation->id . '_' . ($convoData['lastMessageDate'] ?? time()));
 
                     Message::firstOrCreate(
                         ['ghl_message_id' => $ghlMessageId],
                         [
                             'conversation_id' => $conversation->id,
-                            'sender_type' => ($msgData['direction'] ?? '') === 'inbound' ? 'customer' : 'agent',
-                            'message_type' => $conversation->channel,
-                            'body' => $msgData['body'] ?? $msgData['message'] ?? '',
-                            'sent_at' => isset($msgData['dateAdded']) ? date('Y-m-d H:i:s', strtotime($msgData['dateAdded'])) : now(),
+                            'sender_type' => $senderType,
+                            'message_type' => $msgTypeEnum,
+                            'body' => $convoData['lastMessageBody'],
+                            'sent_at' => isset($convoData['lastMessageDate']) ? date('Y-m-d H:i:s', $convoData['lastMessageDate'] / 1000) : now(),
                         ]
                     );
                 }
 
-                // 3. Jalankan AI Analysis & Draft otomatis
+                // 3. Muat pesan dan buat thread string dengan aman
                 $conversation->load('messages');
                 $threadString = $conversation->messages
-                    ->map(fn($m) => "{$m->sender_type->value}: {$m->body}")
+                    ->map(function ($m) {
+                        // Jika sender_type adalah BackedEnum, ambil nilainya via ->value
+                        $sender = $m->sender_type instanceof \BackedEnum 
+                            ? $m->sender_type->value 
+                            : (string) $m->sender_type;
+
+                        return "{$sender}: {$m->body}";
+                    })
                     ->implode("\n");
 
                 if (!empty($threadString)) {
@@ -79,10 +101,10 @@ class SyncConversationsCommand extends Command
                     $draftService->save($conversation, $draftContent);
                 }
 
-                $this->info("Berhasil sinkronisasi percakapan ID: {$ghlConversationId}");
+                $count++;
             }
 
-            $this->info('Sinkronisasi GHL selesai!');
+            $this->info("Sinkronisasi selesai! Berhasil memproses {$count} percakapan.");
         } catch (\Throwable $e) {
             $this->error('Gagal sinkronisasi: ' . $e->getMessage());
         }

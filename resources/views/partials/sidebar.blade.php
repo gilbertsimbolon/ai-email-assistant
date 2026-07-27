@@ -1,12 +1,8 @@
 <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
-    <div class="app-brand demo">
+    <div class="app-brand demo d-flex justify-content-center">
         <a href="{{ route('dashboard') }}" class="app-brand-link gap-1">
-            <span class="app-brand-logo demo">
-                <img src="{{ asset('img/logo.jpeg') }}" style="width:40px;height:auto;object-fit:contain;">
-            </span>
-
-            <span class="app-brand-text demo text-heading fw-bold">
-                AI Email
+            <span class="app-brand-text demo text-heading text-center fw-bold fs-5">
+                AI Email Assistant
             </span>
         </a>
 
@@ -22,7 +18,7 @@
     <ul class="menu-inner py-1">
 
         {{-- Dashboard --}}
-        <li class="menu-item">
+        <li class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
             <a href="{{ route('dashboard') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-home-circle"></i>
                 <div>Dashboard</div>
@@ -41,15 +37,19 @@
             </a>
 
             <ul class="menu-sub">
-                <li class="menu-item {{ request()->get('status') === 'pending_review' ? 'active' : '' }}">
+                <li class="menu-item {{ request()->input('status') === 'pending_review' ? 'active' : '' }}">
                     <a href="{{ route('inbox.index', ['status' => 'pending_review']) }}" class="menu-link">
                         <div>Pending Review</div>
                     </a>
                 </li>
 
-                <li class="menu-item {{ request()->get('status') === 'replied' ? 'active' : '' }}">
+                <li class="menu-item {{ request()->input('status') === 'replied' ? 'active' : '' }}">
                     <a href="{{ route('inbox.index', ['status' => 'replied']) }}" class="menu-link">
                         <div>Replied</div>
+                    </a>
+                </li>
+            </ul>
+        </li>
 
         {{-- AI Center --}}
         <li class="menu-header small text-uppercase">
@@ -107,7 +107,6 @@
             </a>
 
             <ul class="menu-sub">
-
                 <li class="menu-item">
                     <a href="#" class="menu-link">
                         <div>Company</div>
@@ -131,7 +130,6 @@
                         <div>Profile</div>
                     </a>
                 </li>
-
             </ul>
         </li>
 

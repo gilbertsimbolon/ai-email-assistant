@@ -8,7 +8,7 @@
 
     <!-- Icon Web -->
     <link rel="icon" href="{{ asset('img/logo.jpeg') }}" type="image/x-icon">
-    <title>@yield('title', 'WebApps Penyewaan Lapangan Futsal RR')</title>
+    <title>@yield('title', 'AI Email Assistant')</title>
 
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
