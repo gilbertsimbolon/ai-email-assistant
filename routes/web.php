@@ -37,5 +37,14 @@ Route::get('/dashboard', function () {
 })->name('dashboard');
 
 // Rute Inbox
+// Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
+// Route::get('/inbox/{conversation}', [InboxController::class, 'show'])->name('inbox.show');
+
+// Route untuk daftar inbox (dengan filter status)
 Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
-Route::get('/inbox/{conversation}', [InboxController::class, 'show'])->name('inbox.show');
+
+// Route untuk melihat detail thread percakapan
+Route::get('/inbox/{id}', [InboxController::class, 'show'])->name('inbox.show');
+
+// Route untuk mengirim balasan pesan
+Route::post('/inbox/{id}/reply', [InboxController::class, 'reply'])->name('inbox.reply');
