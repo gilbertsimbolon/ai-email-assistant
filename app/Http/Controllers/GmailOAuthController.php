@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\GmailAccount;
 use App\Services\Gmail\GmailAuthService;
+use App\Services\Gmail\GmailConfigurationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -14,6 +15,7 @@ class GmailOAuthController extends Controller
 {
     public function __construct(
         protected GmailAuthService $gmailAuth,
+        protected GmailConfigurationService $gmailConfig,
     ) {
     }
 
@@ -22,6 +24,11 @@ class GmailOAuthController extends Controller
      */
     public function redirect(Request $request): RedirectResponse
     {
+        if (!$this->gmailConfig->isEnabled()) {
+            return redirect()->route('settings.index')
+                ->withErrors(['gmail' => 'Integrasi Gmail sedang dinonaktifkan oleh administrator.']);
+        }
+
         $state = Str::random(40);
         $request->session()->put('gmail_oauth_state', $state);
 

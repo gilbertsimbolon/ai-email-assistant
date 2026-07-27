@@ -27,11 +27,17 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
         ];
     }
 
     public function gmailAccounts()
     {
         return $this->hasMany(GmailAccount::class);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->is_admin;
     }
 }

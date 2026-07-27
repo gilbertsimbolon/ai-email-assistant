@@ -18,6 +18,7 @@ class UserSeeder extends Seeder
             'name' => 'Bator',
             'email' => 'gilbertttsimbolon@gmail.com',
             'password' => Hash::make('password'),
+            'is_admin' => true,
         ]);
     }
 }

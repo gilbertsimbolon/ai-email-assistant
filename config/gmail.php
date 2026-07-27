@@ -7,6 +7,13 @@ return [
     |--------------------------------------------------------------------------
     | Create an OAuth 2.0 Client ID in Google Cloud Console with the Gmail API
     | enabled, and register GOOGLE_REDIRECT_URI as an authorized redirect URI.
+    |
+    | These three values are a *fallback only*. The application reads Gmail
+    | OAuth credentials through GmailConfigurationService, which prefers the
+    | admin-managed `gmail_settings` database row and only falls back to
+    | these env-based values until an administrator saves a configuration
+    | from Settings > Gmail API Configuration. Do not read these config()
+    | keys directly anywhere else — go through GmailConfigurationService.
     */
 
     'client_id' => env('GOOGLE_CLIENT_ID'),

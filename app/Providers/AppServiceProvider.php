@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\Gmail\GmailConfigurationService;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -12,7 +13,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Singleton so the gmail_settings row is read from the database at
+        // most once per request/job instead of once per Gmail API call.
+        $this->app->singleton(GmailConfigurationService::class);
     }
 
     /**

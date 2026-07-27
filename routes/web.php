@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\LupaPasswordController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DraftController;
 use App\Http\Controllers\GmailOAuthController;
+use App\Http\Controllers\GmailSettingsController;
 use App\Http\Controllers\InboxController;
 use App\Http\Controllers\ProfilController;
 use App\Http\Controllers\SettingsController;
@@ -75,6 +76,14 @@ Route::middleware('auth')->group(function () {
             Route::get('/connect', [GmailOAuthController::class, 'redirect'])->name('connect');
             Route::get('/callback', [GmailOAuthController::class, 'callback'])->name('callback');
             Route::delete('/{gmailAccount}', [GmailOAuthController::class, 'disconnect'])->name('disconnect');
+        });
+
+        // Global Gmail OAuth configuration (client id/secret/redirect uri),
+        // admin-only: this replaces editing .env for Gmail credentials.
+        Route::middleware('admin')->prefix('gmail-config')->name('gmail-config.')->group(function () {
+            Route::get('/', [GmailSettingsController::class, 'index'])->name('index');
+            Route::put('/', [GmailSettingsController::class, 'update'])->name('update');
+            Route::post('/test-connection', [GmailSettingsController::class, 'testConnection'])->name('test-connection');
         });
     });
 });

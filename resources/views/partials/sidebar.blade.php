@@ -119,11 +119,13 @@
                     </a>
                 </li>
 
-                <li class="menu-item">
-                    <a href="#" class="menu-link">
-                        <div>API Configuration</div>
-                    </a>
-                </li>
+                @if (auth()->user()?->isAdmin())
+                    <li class="menu-item {{ request()->routeIs('settings.gmail-config.*') ? 'active' : '' }}">
+                        <a href="{{ route('settings.gmail-config.index') }}" class="menu-link">
+                            <div>Gmail API Configuration</div>
+                        </a>
+                    </li>
+                @endif
 
                 <li class="menu-item">
                     <a href="#" class="menu-link">

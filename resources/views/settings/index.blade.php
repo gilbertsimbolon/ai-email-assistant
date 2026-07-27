@@ -41,6 +41,12 @@
                     <a href="{{ route('settings.gmail.connect') }}" class="btn btn-primary">
                         <i class="icon-base bx bxl-google me-1"></i> Hubungkan Akun Gmail
                     </a>
+
+                    @if (auth()->user()?->isAdmin())
+                        <a href="{{ route('settings.gmail-config.index') }}" class="btn btn-outline-secondary ms-2">
+                            <i class="icon-base bx bx-cog me-1"></i> Konfigurasi Gmail OAuth
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>

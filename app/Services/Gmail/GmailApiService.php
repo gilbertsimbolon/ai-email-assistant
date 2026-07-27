@@ -14,16 +14,25 @@ use Throwable;
  * Thin HTTP client for Google OAuth2 and the Gmail REST API. Stateless by
  * design — callers always pass a bare access token, they never touch
  * GmailAccount persistence (that's GmailAuthService's job).
+ *
+ * OAuth client credentials (client id/secret/redirect uri) come from
+ * GmailConfigurationService, not env()/config() directly, so they follow
+ * whatever an administrator has configured on the Settings page.
  */
 class GmailApiService
 {
+    public function __construct(
+        protected GmailConfigurationService $config,
+    ) {
+    }
+
     public function buildAuthorizationUrl(string $state): string
     {
         $params = [
-            'client_id' => config('gmail.client_id'),
-            'redirect_uri' => config('gmail.redirect_uri'),
+            'client_id' => $this->config->getClientId(),
+            'redirect_uri' => $this->config->getRedirectUri(),
             'response_type' => 'code',
-            'scope' => implode(' ', config('gmail.scopes')),
+            'scope' => implode(' ', $this->config->getScopes()),
             'access_type' => 'offline',
             'prompt' => 'consent',
             'state' => $state,
@@ -39,9 +48,9 @@ class GmailApiService
     {
         return $this->request('exchangeCodeForToken', fn () => $this->httpClient()->asForm()->post(config('gmail.token_url'), [
             'code' => $code,
-            'client_id' => config('gmail.client_id'),
-            'client_secret' => config('gmail.client_secret'),
-            'redirect_uri' => config('gmail.redirect_uri'),
+            'client_id' => $this->config->getClientId(),
+            'client_secret' => $this->config->getClientSecret(),
+            'redirect_uri' => $this->config->getRedirectUri(),
             'grant_type' => 'authorization_code',
         ]));
     }
@@ -53,10 +62,64 @@ class GmailApiService
     {
         return $this->request('refreshAccessToken', fn () => $this->httpClient()->asForm()->post(config('gmail.token_url'), [
             'refresh_token' => $refreshToken,
-            'client_id' => config('gmail.client_id'),
-            'client_secret' => config('gmail.client_secret'),
+            'client_id' => $this->config->getClientId(),
+            'client_secret' => $this->config->getClientSecret(),
             'grant_type' => 'refresh_token',
         ]));
+    }
+
+    /**
+     * Validate a (possibly unsaved) set of OAuth credentials without
+     * performing a real login and without persisting anything: Google has no
+     * "check my client id/secret" endpoint, so this sends a refresh_token
+     * grant with a token that cannot possibly be valid. Google still
+     * validates the client id/secret *first* — an `invalid_client` error
+     * means the credentials themselves are wrong, while `invalid_grant`
+     * means they were accepted and only the (intentionally fake) token
+     * failed, which is what we treat as success.
+     */
+    public function testCredentials(string $clientId, string $clientSecret, string $redirectUri): array
+    {
+        try {
+            $response = $this->httpClient()->asForm()->post(config('gmail.token_url'), [
+                'refresh_token' => 'test-connection-probe',
+                'client_id' => $clientId,
+                'client_secret' => $clientSecret,
+                'redirect_uri' => $redirectUri,
+                'grant_type' => 'refresh_token',
+            ]);
+        } catch (ConnectionException $e) {
+            return [
+                'success' => false,
+                'message' => 'Tidak dapat menghubungi server Google: '.$e->getMessage(),
+            ];
+        }
+
+        $error = $response->json('error');
+
+        if ($error === 'invalid_grant') {
+            return [
+                'success' => true,
+                'message' => 'Client ID dan Client Secret valid.',
+            ];
+        }
+
+        if ($error === 'invalid_client') {
+            return [
+                'success' => false,
+                'message' => 'Client ID atau Client Secret tidak valid.',
+            ];
+        }
+
+        Log::warning('Unexpected response while testing Gmail OAuth credentials', [
+            'status' => $response->status(),
+            'error' => $error,
+        ]);
+
+        return [
+            'success' => false,
+            'message' => 'Respon tidak terduga dari Google: '.($error ?? $response->status()),
+        ];
     }
 
     public function revokeToken(string $token): void
