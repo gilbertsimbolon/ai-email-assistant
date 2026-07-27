@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+use App\Enums\CustomerStatus;
+use App\Enums\Priority;
+use App\Enums\Sentiment;
 use App\Models\Analysis;
 use App\Models\Conversation;
 
@@ -40,12 +43,17 @@ class AnalysisService
             ['conversation_id' => $conversation->id],
             [
                 'language' => $analysis['language'] ?? null,
-                'intent' => $analysis['intent'] ?? null,
-                'priority' => $this->normalize($analysis['priority'] ?? null), // <-- Gunakan normalize di sini
-                'sentiment' => $this->normalize($analysis['sentiment'] ?? null), // <-- Dan di sini juga
-                'needs_escalation' => $analysis['needs_escalation'] ?? false,
-                'summary' => $analysis['summary'] ?? null,
+                'summary' => $analysis['summary'] ?? '',
+                'customer_intent' => $analysis['intent'] ?? null,
+                'sentiment' => $this->normalize($analysis['sentiment'] ?? null) ?? Sentiment::Neutral->value,
+                'customer_status' => $this->normalize($analysis['customer_status'] ?? null) ?? CustomerStatus::Unknown->value,
+                'priority' => $this->normalize($analysis['priority'] ?? null) ?? Priority::Medium->value,
+                'last_customer_request' => $analysis['last_customer_request'] ?? null,
                 'recommended_action' => $analysis['recommended_action'] ?? null,
+                'refund_requested' => (bool) ($analysis['refund_requested'] ?? false),
+                'escalation_required' => (bool) ($analysis['needs_escalation'] ?? false),
+                'confidence_score' => $analysis['confidence_score'] ?? null,
+                'raw_json' => $analysis,
             ]
         );
     }

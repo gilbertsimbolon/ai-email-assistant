@@ -43,11 +43,24 @@ class DraftService
         return Draft::updateOrCreate(
             ['conversation_id' => $conversation->id],
             [
-                'content' => $content,
+                'content' => [
+                    'subject' => $conversation->subject ?: 'Re: percakapan Anda',
+                    'body' => $content,
+                    'tone' => null,
+                    'confidence' => null,
+                ],
                 'type' => strtolower($channelValue), // Pastikan nilai berupa string backing value
-                'status' => 'active', 
+                'status' => 'active',
                 'provider' => 'openai',
             ]
         );
+    }
+
+    /**
+     * Generate the reply draft and persist it in a single call.
+     */
+    public function generateAndSave(Conversation $conversation, Analysis $analysis): Draft
+    {
+        return $this->save($conversation, $this->generate($conversation, $analysis));
     }
 }

@@ -3,6 +3,8 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\LupaPasswordController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DraftController;
 use App\Http\Controllers\InboxController;
 use App\Http\Controllers\ProfilController;
 use Illuminate\Support\Facades\Route;
@@ -32,10 +34,12 @@ Route::prefix('profil')->group(function () {
 });
 
 // Route Dashboard
-Route::get('/dashboard', function () {
-    return view('layouts.app');
-})->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
 // Rute Inbox
 Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
+Route::get('/inbox/poll', [InboxController::class, 'poll'])->name('inbox.poll');
+Route::put('/inbox/drafts/{draft}', [DraftController::class, 'update'])->name('inbox.drafts.update');
+Route::post('/inbox/drafts/{draft}/approve', [DraftController::class, 'approve'])->name('inbox.drafts.approve');
 Route::get('/inbox/{conversation}', [InboxController::class, 'show'])->name('inbox.show');
+Route::put('/inbox/{conversation}/status', [InboxController::class, 'updateStatus'])->name('inbox.status.update');

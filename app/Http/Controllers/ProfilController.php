@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Requests\UpdatePasswordRequest;
+use App\Http\Requests\UpdateProfileRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
@@ -15,14 +16,8 @@ class ProfilController extends Controller
     }
 
     // fungsi update data
-    public function update(Request $request)
+    public function update(UpdateProfileRequest $request)
     {
-        // validasi data
-        $request->validate([
-            'name' => 'nullable|string|max:255',
-            'email' => 'nullable|string|email|max:255|unique:users,email,' . Auth::id(),
-        ]);
-
         // update data user
         $user = Auth::user();
         $user->name = $request->name ?? $user->name;
@@ -34,14 +29,8 @@ class ProfilController extends Controller
     }
 
     // fungsi ganti password
-    public function updatePassword(Request $request)
+    public function updatePassword(UpdatePasswordRequest $request)
     {
-        // validasi password
-        $request->validate([
-            'current_password' => ['required'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-        ]);
-
         $user = Auth::user();
 
         // validasi password lama

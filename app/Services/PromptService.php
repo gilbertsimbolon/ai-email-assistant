@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\ChannelType;
 use App\Models\Analysis;
 use App\Models\Conversation;
 
@@ -197,7 +198,7 @@ TEXT
         $analysisArray = $analysis->toArray();
 
         // Pilih prompt berdasarkan channel (email / whatsapp)
-        if ($conversation->channel === 'whatsapp') {
+        if ($conversation->channel === ChannelType::WhatsApp) {
             return $this->buildWhatsAppPrompt($thread, $analysisArray);
         }
 

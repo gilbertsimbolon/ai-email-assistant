@@ -32,7 +32,7 @@ class ConversationService
             );
 
             $analysis = $this->analysisService->analyzeAndSave($conversation, $thread);
-            $this->draftService->generate($conversation, $thread, $analysis);
+            $this->draftService->generateAndSave($conversation, $analysis);
         } catch (Throwable $e) {
             Log::error('AI processing failed', [
                 'conversation_id' => $conversation->id,
