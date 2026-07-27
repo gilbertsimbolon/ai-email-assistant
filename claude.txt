@@ -1,0 +1,17 @@
+Tolong bantu saya merombak struktur sidebar dan tampilan menu pada aplikasi saya dengan instruksi detail berikut:
+
+1. **Pembaruan Struktur Menu Sidebar:**
+   - Ubah menu **Inbox** utama agar memiliki *sub-menu* (dropdown/collapse) di bawahnya.
+   - Pisahkan sub-menu tersebut menjadi beberapa channel, yaitu: **Email**, **WhatsApp**, dan channel pendukung lainnya (jika ada).
+
+2. **Kustomisasi Tampilan Menu Email:**
+   - Buat halaman/tampilan untuk sub-menu **Email** agar menyerupai antarmuka klien email profesional (memiliki daftar pesan masuk di sebelah kiri, pratinjau pesan di sebelah kanan, badge unread count, serta tata letak yang bersih ala *inbox style*).
+
+3. **Kustomisasi Tampilan Menu WhatsApp:**
+   - Untuk sub-menu **WhatsApp**, buatkan halaman tampilan sederhana yang menginformasikan bahwa fitur ini **"Dalam Tahap Pengembangan" (Under Development)**, lengkap dengan ilustrasi atau ikon yang menarik dan rapi.
+
+4. **Pembersihan Menu Lama:**
+   - Hapus menu-menu filter lama seperti **"Replied"**, **"Archived"** (atau menu status pesan lainnya yang sudah usang).
+   - Ganti dan selaraskan struktur filternya agar mengikuti standar fungsionalitas panel email modern (misalnya: *All*, *Unread*, *Starred*, dll., jika diperlukan).
+
+Tolong berikan kode implementasinya (baik untuk struktur sidebar maupun komponen halamannya) secara lengkap, bersih, dan mudah diintegrasikan.
