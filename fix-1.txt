@@ -1,0 +1,347 @@
+Kamu adalah seorang Senior Software Engineer, Laravel Architect, dan AI Integration Engineer.
+
+Tugasmu adalah melakukan audit menyeluruh terhadap seluruh source code project ini, menemukan seluruh bug, memperbaiki kode yang bermasalah, serta mengimplementasikan sinkronisasi data email/conversations dari GoHighLevel (GHL) secara realtime.
+
+## Tujuan Utama
+
+Pastikan sistem ini dapat mengambil seluruh Conversations/Email dari GoHighLevel secara realtime sehingga dashboard Laravel selalu menampilkan data terbaru tanpa perlu refresh manual.
+
+## Yang harus kamu lakukan
+
+### 1. Audit Seluruh Project
+
+Periksa seluruh project tanpa terkecuali, termasuk:
+
+- routes
+- controllers
+- services
+- models
+- migrations
+- jobs
+- events
+- listeners
+- middleware
+- config
+- scheduler
+- queue
+- database
+- frontend
+- javascript
+- ajax
+- websocket (jika ada)
+
+Cari semua bug seperti:
+
+- duplicate code
+- dead code
+- unused class
+- wrong dependency injection
+- query yang tidak efisien
+- N+1 query
+- security issue
+- race condition
+- exception yang tidak ditangani
+- typo
+- variable yang salah
+- function yang tidak digunakan
+- API yang tidak konsisten
+
+Perbaiki semuanya.
+
+---
+
+### 2. Audit Integrasi GoHighLevel
+
+Periksa apakah integrasi GoHighLevel sudah benar.
+
+Cek:
+
+- OAuth
+- Access Token
+- Refresh Token
+- API Endpoint
+- Header Authorization
+- Error Handling
+- Retry Request
+- Rate Limit
+- Pagination
+
+Pastikan semua endpoint menggunakan endpoint terbaru dari GoHighLevel API.
+
+---
+
+### 3. Sinkronisasi Conversation Realtime
+
+Implementasikan sistem agar Laravel mendapatkan data Conversation secara realtime.
+
+Prioritas:
+
+1.
+Jika GoHighLevel menyediakan Webhook untuk Conversation
+
+Gunakan webhook.
+
+Alur:
+
+GHL
+↓
+Webhook
+↓
+Laravel
+↓
+Database
+↓
+Dashboard Update
+
+Jangan menggunakan polling jika webhook tersedia.
+
+---
+
+2.
+Jika webhook tidak tersedia
+
+Gunakan polling yang efisien.
+
+Misalnya:
+
+- Scheduler setiap 30 detik
+- Queue Job
+- Ambil hanya conversation terbaru
+- Hindari duplicate
+
+Jangan mengambil seluruh conversation setiap request.
+
+Gunakan incremental sync berdasarkan:
+
+- updatedAt
+- lastMessageAt
+- atau field timestamp terbaru.
+
+---
+
+### 4. Sinkronisasi Email
+
+Pastikan email yang masuk di GoHighLevel langsung muncul di Laravel.
+
+Yang harus tersimpan:
+
+- Conversation ID
+- Contact ID
+- Email Subject
+- Sender
+- Receiver
+- Body
+- Direction
+- Status
+- Attachments
+- Created At
+- Updated At
+
+Jika email berubah, update database.
+
+Jika email baru, insert.
+
+Jangan membuat data duplicate.
+
+---
+
+### 5. Optimasi Database
+
+Pastikan database memiliki:
+
+- index
+- unique key
+- foreign key
+- relasi yang benar
+
+Gunakan transaction jika diperlukan.
+
+---
+
+### 6. Queue
+
+Jika proses sinkronisasi berat,
+
+gunakan Queue.
+
+Misalnya:
+
+Webhook
+↓
+
+Dispatch Job
+↓
+
+Sync Conversation
+
+↓
+
+Update Database
+
+Jangan memproses request berat di controller.
+
+---
+
+### 7. Logging
+
+Tambahkan logging yang jelas.
+
+Contoh:
+
+Sync Started
+
+Conversation Updated
+
+Conversation Created
+
+Email Created
+
+Webhook Received
+
+API Failed
+
+Retry
+
+Rate Limit
+
+Gunakan Log::info(), warning(), dan error() dengan informasi yang jelas.
+
+---
+
+### 8. Error Handling
+
+Semua request API wajib menggunakan:
+
+try {
+
+} catch(Throwable $e){
+
+}
+
+Tangani:
+
+401
+
+403
+
+404
+
+429
+
+500
+
+Timeout
+
+Connection Error
+
+Refresh Token
+
+Retry
+
+---
+
+### 9. Optimasi Service
+
+Jika ada service yang terlalu besar,
+
+pecah menjadi beberapa service.
+
+Contoh:
+
+ConversationService
+
+EmailService
+
+WebhookService
+
+SyncService
+
+GHLApiService
+
+ParserService
+
+DraftService
+
+AIService
+
+Setiap service hanya memiliki satu tanggung jawab (Single Responsibility Principle).
+
+---
+
+### 10. Dashboard
+
+Pastikan dashboard selalu menampilkan data terbaru.
+
+Jika memungkinkan gunakan:
+
+Laravel Broadcasting
+
+atau
+
+Websocket
+
+atau
+
+AJAX Auto Refresh
+
+tanpa reload halaman.
+
+---
+
+### 11. Refactoring
+
+Lakukan refactor sesuai best practice Laravel terbaru.
+
+Gunakan:
+
+Service Pattern
+
+Repository bila diperlukan
+
+Form Request Validation
+
+DTO bila cocok
+
+Dependency Injection
+
+Configuration
+
+Environment Variable
+
+---
+
+### 12. Hasil Akhir
+
+Saya ingin project ini menjadi:
+
+- Clean Code
+- Mudah dipelihara
+- Cepat
+- Aman
+- Modular
+- Realtime
+- Siap Production
+
+---
+
+## Aturan
+
+- Jangan menghapus fitur yang sudah ada kecuali memang rusak.
+- Pertahankan kompatibilitas dengan fitur AI Reply yang sudah ada.
+- Jangan membuat perubahan yang dapat merusak alur aplikasi.
+- Sebelum mengubah kode, pahami dulu alur kerja project secara menyeluruh.
+- Jika menemukan arsitektur yang kurang baik, lakukan refactor secara bertahap agar tidak merusak sistem.
+- Setelah setiap perubahan besar, lakukan pengecekan apakah fitur lain tetap berjalan dengan baik.
+
+## Output yang saya inginkan
+
+Setiap selesai mengerjakan satu bagian:
+
+1. Jelaskan masalah yang ditemukan.
+2. Jelaskan penyebabnya.
+3. Jelaskan solusi yang diterapkan.
+4. Tampilkan file yang diubah.
+5. Jelaskan dampak perubahan terhadap sistem.
+6. Lanjutkan ke tahap berikutnya hingga seluruh project selesai diaudit dan diperbaiki.
+
+Kerjakan secara menyeluruh sampai seluruh project benar-benar siap digunakan dalam lingkungan production dengan sinkronisasi Conversations/Email GoHighLevel secara realtime.

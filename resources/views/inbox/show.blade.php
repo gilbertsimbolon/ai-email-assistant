@@ -1,143 +1,132 @@
 @extends('layouts.app')
 
-@section('title', 'Percakapan | AI Email Assistant')
+@section('title', 'Detail Percakapan | AI Email Assistant')
 
 @section('content')
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h5 class="mb-0">{{ $conversation->subject ?? 'Tanpa Subjek' }}</h5>
-            <small class="text-muted">
-                {{ $conversation->contact_name ?? $conversation->contact_email ?? '-' }}
-                &middot; {{ $conversation->contact_email }}
-                &middot; <span class="text-capitalize">{{ $conversation->channel->value }}</span>
-            </small>
-        </div>
+<div class="container-xxl flex-grow-1 container-p-y">
 
-        <form action="{{ route('inbox.status.update', $conversation) }}" method="POST" class="d-flex gap-2">
-            @csrf
-            @method('PUT')
-            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
-                @foreach (\App\Enums\ConversationStatus::cases() as $case)
-                    <option value="{{ $case->value }}" @selected($conversation->status === $case)>
-                        {{ ucwords(str_replace('_', ' ', $case->value)) }}
-                    </option>
-                @endforeach
-            </select>
-        </form>
+    {{-- Tombol Kembali & Status --}}
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <a href="{{ route('inbox.index', ['status' => $conversation->status]) }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bx bx-arrow-back me-1"></i> Kembali ke Inbox
+        </a>
+        <div class="d-flex gap-2">
+            <span class="badge bg-label-primary fs-6">
+                Channel: {{ strtoupper($conversation->channel->value ?? $conversation->channel) }}
+            </span>
+            <span class="badge bg-{{ $conversation->status === 'pending_review' ? 'warning' : ($conversation->status === 'replied' ? 'success' : 'secondary') }} fs-6">
+                Status: {{ ucwords(str_replace('_', ' ', $conversation->status)) }}
+            </span>
+        </div>
     </div>
 
     <div class="row">
-        <div class="col-md-7">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h6 class="mb-0">Percakapan</h6>
-                </div>
-                <div class="card-body" style="max-height: 480px; overflow-y: auto;">
-                    @forelse ($conversation->messages as $message)
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between">
-                                <strong class="text-capitalize">{{ $message->sender_type->value }}</strong>
-                                <small class="text-muted">{{ optional($message->sent_at)->format('d M Y H:i') }}</small>
-                            </div>
-                            <div>{{ $message->body }}</div>
-                        </div>
-                        <hr>
-                    @empty
-                        <p class="text-muted mb-0">Belum ada pesan.</p>
-                    @endforelse
+        {{-- Sisi Kiri: Informasi Kontak & Riwayat Thread Pesan --}}
+        <div class="col-lg-8 mb-4 mb-lg-0">
+
+            {{-- Informasi Kontak --}}
+            <div class="card mb-3 shadow-sm">
+                <div class="card-body">
+                    <h4 class="fw-bold mb-1">{{ $conversation->contact_name ?? ($conversation->contact_email ?? 'Pelanggan') }}</h4>
+                    <p class="text-muted mb-0"><i class="bx bx-envelope me-1"></i> {{ $conversation->contact_email ?? 'Tidak ada email' }}</p>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0">Draft Balasan (AI)</h6>
-                    @if ($activeDraft)
-                        <span class="badge bg-label-info">v{{ $activeDraft->version }} &middot; {{ $activeDraft->status->value }}</span>
-                    @endif
-                </div>
+            {{-- List Thread Pesan (Dari Relasi messages) --}}
+            <div class="card mb-4 shadow-sm">
                 <div class="card-body">
-                    @if ($activeDraft)
-                        <form action="{{ route('inbox.drafts.update', $activeDraft) }}" method="POST">
-                            @csrf
-                            @method('PUT')
+                    <h5 class="fw-bold mb-3 border-bottom pb-2">Riwayat Percakapan</h5>
 
-                            <div class="mb-3">
-                                <label class="form-label">Subjek</label>
-                                <input type="text" name="subject" class="form-control"
-                                    value="{{ old('subject', $activeDraft->content['subject'] ?? '') }}">
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label">Isi Balasan</label>
-                                <textarea name="body" rows="8" class="form-control">{{ old('body', $activeDraft->content['body'] ?? '') }}</textarea>
-                            </div>
-
-                            <div class="d-flex justify-content-between align-items-center">
-                                <small class="text-muted">
-                                    Tone: {{ $activeDraft->content['tone'] ?? '-' }}
-                                    @if (!is_null($activeDraft->content['confidence'] ?? null))
-                                        &middot; Confidence: {{ number_format($activeDraft->content['confidence'] * 100, 0) }}%
-                                    @endif
-                                </small>
-
-                                <div class="d-flex gap-2">
-                                    <button type="submit" class="btn btn-outline-primary btn-sm">Simpan</button>
+                    <div class="timeline">
+                        @forelse($conversation->messages ?? [] as $message)
+                            <div class="card border mb-3 shadow-none bg-light">
+                                <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-2 px-3 border-bottom">
+                                    <span class="fw-bold text-dark">
+                                        {{ $message->direction === 'inbound' ? ($conversation->contact_name ?? 'Pelanggan') : 'Anda / AI' }}
+                                    </span>
+                                    <small class="text-muted">{{ $message->created_at ? $message->created_at->format('d M Y, H:i') : '' }}</small>
+                                </div>
+                                <div class="card-body py-3">
+                                    <p class="mb-0 text-secondary" style="white-space: pre-line;">{!! $message->body ?? $message->text ?? '-' !!}</p>
                                 </div>
                             </div>
-                        </form>
-
-                        <form action="{{ route('inbox.drafts.approve', $activeDraft) }}" method="POST" class="mt-2">
-                            @csrf
-                            <button type="submit" class="btn btn-success btn-sm">Approve &amp; Kirim</button>
-                        </form>
-                    @else
-                        <p class="text-muted mb-0">Belum ada draft AI untuk percakapan ini.</p>
-                    @endif
+                        @empty
+                            <div class="alert alert-secondary text-center mb-0" role="alert">
+                                Belum ada riwayat pesan dalam thread ini.
+                            </div>
+                        @endforelse
+                    </div>
                 </div>
             </div>
+
+            {{-- Form Balas Pesan / Draft AI --}}
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-3">Balas Percakapan</h5>
+
+                    {{-- Jika ada draf AI yang tersimpan dari relasi drafts --}}
+                    @if($conversation->drafts && $conversation->drafts->count() > 0)
+                        <div class="alert alert-primary mb-3">
+                            <span class="fw-bold"><i class="bx bx-brain"></i> Draf AI Tersedia:</span>
+                            <p class="mb-2 small">{{ $conversation->drafts->last()->body ?? '' }}</p>
+                            <button type="button" class="btn btn-sm btn-primary" onclick="document.getElementById('reply_body').value = `{!! addslashes($conversation->drafts->last()->body ?? '') !!}`">
+                                Gunakan Draf Ini
+                            </button>
+                        </div>
+                    @endif
+
+                    <form action="#" method="POST">
+                        @csrf
+                        <div class="mb-3">
+                            <textarea class="form-control" id="reply_body" name="reply_body" rows="4" placeholder="Tulis balasan pesan di sini..."></textarea>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <button type="button" class="btn btn-outline-primary btn-sm">
+                                <i class="bx bx-brain me-1"></i> Generate Ulang AI
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bx bx-send me-1"></i> Kirim Balasan
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
         </div>
 
-        <div class="col-md-5">
-            <div class="card">
-                <div class="card-header">
-                    <h6 class="mb-0">Analisis AI</h6>
-                </div>
+        {{-- Sisi Kanan: Analisis AI (Dari Relasi analysis) --}}
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
                 <div class="card-body">
-                    @if ($conversation->analysis)
-                        @php $analysis = $conversation->analysis; @endphp
-                        <dl class="row mb-0">
-                            <dt class="col-5">Intent</dt>
-                            <dd class="col-7">{{ $analysis->customer_intent ?? '-' }}</dd>
+                    <h5 class="fw-bold mb-3 text-primary"><i class="bx bx-brain me-1"></i> AI Analysis</h5>
 
-                            <dt class="col-5">Sentiment</dt>
-                            <dd class="col-7 text-capitalize">{{ $analysis->sentiment?->value ?? '-' }}</dd>
+                    @if($conversation->analysis)
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-bold">CUSTOMER INTENT</label>
+                            <p class="fw-semibold mb-2 text-dark">{{ $conversation->analysis->customer_intent ?? '-' }}</p>
+                        </div>
 
-                            <dt class="col-5">Prioritas</dt>
-                            <dd class="col-7 text-capitalize">{{ $analysis->priority?->value ?? '-' }}</dd>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-bold">SENTIMEN</label>
+                            <div>
+                                @php
+                                    $sentiment = $conversation->analysis->sentiment->value ?? $conversation->analysis->sentiment ?? 'neutral';
+                                    $badgeColor = $sentiment === 'positive' ? 'success' : ($sentiment === 'negative' ? 'danger' : 'warning');
+                                @endphp
+                                <span class="badge bg-{{ $badgeColor }}">{{ ucfirst($sentiment) }}</span>
+                            </div>
+                        </div>
 
-                            <dt class="col-5">Status Pelanggan</dt>
-                            <dd class="col-7 text-capitalize">{{ str_replace('_', ' ', $analysis->customer_status?->value ?? '-') }}</dd>
-
-                            <dt class="col-5">Perlu Eskalasi</dt>
-                            <dd class="col-7">{{ $analysis->escalation_required ? 'Ya' : 'Tidak' }}</dd>
-
-                            <dt class="col-5">Permintaan Refund</dt>
-                            <dd class="col-7">{{ $analysis->refund_requested ? 'Ya' : 'Tidak' }}</dd>
-
-                            <dt class="col-12 mt-2">Ringkasan</dt>
-                            <dd class="col-12">{{ $analysis->summary }}</dd>
-
-                            <dt class="col-12">Permintaan Terakhir</dt>
-                            <dd class="col-12">{{ $analysis->last_customer_request ?? '-' }}</dd>
-
-                            <dt class="col-12">Rekomendasi Tindakan</dt>
-                            <dd class="col-12 mb-0">{{ $analysis->recommended_action ?? '-' }}</dd>
-                        </dl>
+                        <div class="mb-0">
+                            <label class="form-label text-muted small fw-bold">RINGKASAN</label>
+                            <p class="text-secondary small mb-0">{{ $conversation->analysis->summary ?? 'Tidak ada ringkasan.' }}</p>
+                        </div>
                     @else
-                        <p class="text-muted mb-0">Belum ada analisis AI untuk percakapan ini.</p>
+                        <p class="text-muted small mb-0">Belum ada data analisis AI untuk percakapan ini.</p>
                     @endif
                 </div>
             </div>
         </div>
     </div>
+</div>
 @endsection

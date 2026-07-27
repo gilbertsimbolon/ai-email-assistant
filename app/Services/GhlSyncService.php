@@ -2,19 +2,26 @@
 
 namespace App\Services;
 
-use App\Enums\ChannelType;
-use App\Enums\ConversationStatus;
-use App\Enums\MessageType;
-use App\Enums\SenderType;
 use App\Models\Conversation;
-use App\Models\Message;
+use App\Repositories\ConversationRepository;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class GhlSyncService
 {
+    /**
+     * Safety cap on how many pages of conversations a single sync run will walk,
+     * so a GHL API/pagination bug can't turn into an infinite loop.
+     */
+    protected const MAX_PAGES = 20;
+
+    protected const PAGE_SIZE = 100;
+
     public function __construct(
         protected GoHighLevelService $ghl,
+        protected ParserService $parser,
+        protected ConversationRepository $conversations,
         protected ConversationService $conversationService,
     ) {
     }
@@ -22,53 +29,94 @@ class GhlSyncService
     /**
      * Tarik conversations email dari GHL, simpan/perbarui secara lokal,
      * lalu trigger draft AI untuk conversation yang punya pesan customer baru.
+     *
+     * Incremental: conversations are requested newest-updated-first, and we stop
+     * paginating as soon as we hit one that's already synced locally, so a normal
+     * run only touches conversations that actually changed since the last sync.
      */
     public function sync(): void
     {
-        $result = $this->ghl->getConversations(['limit' => 100]);
+        Log::info('GHL sync started');
 
-        foreach ($result['conversations'] ?? [] as $raw) {
-            if (!Str::contains(strtolower($raw['type'] ?? $raw['lastMessageType'] ?? ''), 'email')) {
-                continue;
+        $processed = 0;
+        $created = 0;
+        $updated = 0;
+        $page = 0;
+        $cursor = [];
+
+        do {
+            $result = $this->ghl->getConversations(array_merge(['limit' => self::PAGE_SIZE], $cursor));
+            $rawConversations = $result['conversations'] ?? [];
+
+            if (empty($rawConversations)) {
+                break;
             }
 
-            $conversation = $this->upsertConversation($raw);
+            $reachedSynced = false;
 
-            $remoteUpdatedAt = isset($raw['dateUpdated'])
-                ? Carbon::parse($raw['dateUpdated'])
-                : now();
+            foreach ($rawConversations as $raw) {
+                if (!isset($raw['id']) || !Str::contains(strtolower($raw['type'] ?? $raw['lastMessageType'] ?? ''), 'email')) {
+                    continue;
+                }
 
-            if ($conversation->synced_at && $conversation->synced_at->gte($remoteUpdatedAt)) {
-                continue;
+                $wasExisting = Conversation::where('ghl_conversation_id', $raw['id'])->exists();
+
+                $conversation = $this->conversations->upsertConversation(
+                    $this->parser->conversationFromSearchApi($raw)
+                );
+
+                $remoteUpdatedAt = isset($raw['dateUpdated'])
+                    ? Carbon::parse($raw['dateUpdated'])
+                    : now();
+
+                if ($conversation->synced_at && $conversation->synced_at->gte($remoteUpdatedAt)) {
+                    // Results are newest-updated-first: once we hit an already-synced
+                    // conversation, everything after it on this page is stale too.
+                    $reachedSynced = true;
+
+                    continue;
+                }
+
+                $hasNewCustomerMessage = $this->syncMessages($conversation, $raw['id']);
+
+                $conversation->update(['synced_at' => now()]);
+
+                $wasExisting ? $updated++ : $created++;
+                $processed++;
+
+                Log::info($wasExisting ? 'GHL conversation updated' : 'GHL conversation created', [
+                    'conversation_id' => $conversation->id,
+                    'ghl_conversation_id' => $conversation->ghl_conversation_id,
+                ]);
+
+                if ($hasNewCustomerMessage) {
+                    $this->conversationService->triggerAiReply($conversation->fresh());
+                }
             }
 
-            $hasNewCustomerMessage = $this->syncMessages($conversation, $raw['id']);
-
-            $conversation->update(['synced_at' => now()]);
-
-            if ($hasNewCustomerMessage) {
-                $this->conversationService->triggerAiReply($conversation->fresh());
+            if ($reachedSynced || count($rawConversations) < self::PAGE_SIZE) {
+                break;
             }
-        }
-    }
 
-    protected function upsertConversation(array $raw): Conversation
-    {
-        $existing = Conversation::where('ghl_conversation_id', $raw['id'])->first();
+            // NOTE: `startAfterDate`/`startAfter` follow GHL API v2's documented
+            // cursor-pagination convention. Verify the exact param names against
+            // your account's live /conversations/search docs before relying on
+            // multi-page syncs in production.
+            $last = end($rawConversations);
+            $cursor = [
+                'startAfterDate' => $last['dateUpdated'] ?? null,
+                'startAfter' => $last['id'] ?? null,
+            ];
 
-        return Conversation::updateOrCreate(
-            ['ghl_conversation_id' => $raw['id']],
-            [
-                'ghl_location_id' => $raw['locationId'] ?? config('ghl.location_id'),
-                'contact_id' => $raw['contactId'] ?? null,
-                'contact_name' => $raw['contactName'] ?? $raw['fullName'] ?? null,
-                'contact_email' => $raw['email'] ?? $existing?->contact_email,
-                'contact_phone' => $raw['phone'] ?? $existing?->contact_phone,
-                'channel' => ChannelType::Email,
-                'subject' => $existing?->subject ?? ($raw['lastMessageBody'] ?? null ? Str::limit($raw['lastMessageBody'], 100) : null),
-                'status' => $existing?->status ?? ConversationStatus::PendingReview,
-            ]
-        );
+            $page++;
+        } while ($page < self::MAX_PAGES);
+
+        Log::info('GHL sync finished', [
+            'processed' => $processed,
+            'created' => $created,
+            'updated' => $updated,
+            'pages_fetched' => $page + 1,
+        ]);
     }
 
     /**
@@ -78,39 +126,33 @@ class GhlSyncService
      */
     protected function syncMessages(Conversation $conversation, string $ghlConversationId): bool
     {
-        $result = $this->ghl->getConversationMessages($ghlConversationId);
-        $messages = data_get($result, 'messages.messages', $result['messages'] ?? []);
+        $result = $this->ghl->getConversationMessages($ghlConversationId, ['limit' => 100]);
+        $rawMessages = data_get($result, 'messages.messages', $result['messages'] ?? []);
 
         $hasNewCustomerMessage = false;
-        $latestSentAt = $conversation->last_message_at;
 
-        foreach ($messages as $msg) {
-            if (!isset($msg['id']) || Message::where('ghl_message_id', $msg['id'])->exists()) {
+        foreach ($rawMessages as $raw) {
+            $messageData = $this->parser->messageFromSearchApi($raw);
+
+            if (!$messageData) {
                 continue;
             }
 
-            $direction = $msg['direction'] ?? 'inbound';
-            $sentAt = isset($msg['dateAdded']) ? Carbon::parse($msg['dateAdded']) : now();
+            $message = $this->conversations->recordMessage($conversation, $messageData);
 
-            $conversation->messages()->create([
-                'ghl_message_id' => $msg['id'],
-                'sender_type' => $direction === 'inbound' ? SenderType::Customer : SenderType::Agent,
-                'message_type' => MessageType::Email,
-                'body' => $msg['body'] ?? '',
-                'sent_at' => $sentAt,
+            if (!$message) {
+                // Already recorded (dedup by ghl_message_id).
+                continue;
+            }
+
+            Log::info('GHL message created', [
+                'conversation_id' => $conversation->id,
+                'direction' => $messageData->direction,
             ]);
 
-            if ($direction === 'inbound') {
+            if ($messageData->isInbound()) {
                 $hasNewCustomerMessage = true;
             }
-
-            if (!$latestSentAt || $sentAt->gt($latestSentAt)) {
-                $latestSentAt = $sentAt;
-            }
-        }
-
-        if ($latestSentAt && $latestSentAt !== $conversation->last_message_at) {
-            $conversation->update(['last_message_at' => $latestSentAt]);
         }
 
         return $hasNewCustomerMessage;

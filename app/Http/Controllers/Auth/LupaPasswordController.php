@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ForgotPasswordRequest;
+use App\Http\Requests\ResetPasswordRequest;
 use App\Models\User;
 use Carbon\Carbon;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -20,15 +21,8 @@ class LupaPasswordController extends Controller
     }
 
     // fungsi kirim link reset
-    public function kirimLinkReset(Request $request)
+    public function kirimLinkReset(ForgotPasswordRequest $request)
     {
-        // validasi input email
-        $request->validate([
-            'email' => 'required|email|exists:users,email',
-        ], [
-            'email.exists' => 'Email tidak terdaftar di sistem kami.',
-        ]);
-
         // membuat token unik
         $token = Str::random(64);
 
@@ -60,15 +54,8 @@ class LupaPasswordController extends Controller
     }
 
     // fungsi reset password
-    public function resetPassword(Request $request)
+    public function resetPassword(ResetPasswordRequest $request)
     {
-        // validasi password
-        $request->validate([
-            'email' => 'required|email|exists:users,email',
-            'token' => 'required',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
-
         // pengecekan token valid dan email cocok
         $resetData = DB::table('password_reset_tokens')->where('email', $request->email)->first();
 

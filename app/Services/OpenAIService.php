@@ -126,30 +126,6 @@ class OpenAIService
     }
 
     /**
-     * Return plain text.
-     *
-     * @param array<int, array<string, mixed>> $messages
-     */
-    public function text(string $prompt)
-    {
-        return Http::withHeaders([
-                'Authorization' => 'Bearer ' . config('openai.api_key'),
-                'Content-Type' => 'application/json',
-            ])
-            ->withoutVerifying() // <-- Tambahkan baris ini untuk melewati error SSL ke OpenAI
-            ->post(config('openai.base_url') . '/chat/completions', [
-                'model' => config('openai.model', 'gpt-4o'),
-                'messages' => [
-                    ['role' => 'user', 'content' => $prompt]
-                ],
-                'temperature' => (float) config('openai.temperature', 0.3),
-                'max_tokens' => (int) config('openai.max_tokens', 1200),
-            ])
-            ->throw()
-            ->json('choices.0.message.content');
-    }
-
-    /**
      * Remove Markdown wrapper.
      */
     protected function cleanJson(string $content): string
