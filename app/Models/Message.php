@@ -13,11 +13,13 @@ class Message extends Model
 
     protected $fillable = [
         'conversation_id',
-        'ghl_message_id',
+        'gmail_message_id',
+        'message_id_header',
         'sender_type',
         'message_type',
         'body',
         'attachments',
+        'label_ids',
         'sent_at',
     ];
 
@@ -25,6 +27,7 @@ class Message extends Model
         'sender_type' => SenderType::class,
         'message_type' => MessageType::class,
         'attachments' => 'array',
+        'label_ids' => 'array',
         'sent_at' => 'datetime',
     ];
 

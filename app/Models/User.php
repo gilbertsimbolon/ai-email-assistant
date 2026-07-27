@@ -29,4 +29,9 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function gmailAccounts()
+    {
+        return $this->hasMany(GmailAccount::class);
+    }
 }

@@ -5,12 +5,17 @@ use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\LupaPasswordController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DraftController;
+use App\Http\Controllers\GmailOAuthController;
 use App\Http\Controllers\InboxController;
 use App\Http\Controllers\ProfilController;
+use App\Http\Controllers\SettingsController;
 use Illuminate\Support\Facades\Route;
 
 // Route Login
 Route::get('/', [LoginController::class, 'index'])->name('login.index');
+// Alias so the framework's default `auth` middleware (which redirects guests
+// to the route named "login") has somewhere valid to send them.
+Route::get('/', [LoginController::class, 'index'])->name('login');
 Route::post('/login', [LoginController::class, 'store'])->name('login.store');
 
 // Route Lupa Password
@@ -24,27 +29,52 @@ Route::post('/reset-password', [LupaPasswordController::class, 'resetPassword'])
 // Route Logout
 Route::post('/logout', [LogoutController::class, 'logout'])->name('logout');
 
-// Route Profil
-Route::prefix('profil')->group(function () {
-    // Halaman Profil
-    Route::get('/', [ProfilController::class, 'index'])->name('profil.index');
-    // Edit Data Profil
-    Route::post('/update', [ProfilController::class, 'update'])->name('profil.update');
-    Route::post('/password', [ProfilController::class, 'updatePassword'])->name('profil.update.password');
+// Everything below belongs to a logged-in user: Inbox/Dashboard now scope
+// their data to the Gmail account(s) that user connected, so a request
+// without an authenticated user has no sensible data to show.
+Route::middleware('auth')->group(function () {
+    // Route Profil
+    Route::prefix('profil')->group(function () {
+        Route::get('/', [ProfilController::class, 'index'])->name('profil.index');
+        Route::post('/update', [ProfilController::class, 'update'])->name('profil.update');
+        Route::post('/password', [ProfilController::class, 'updatePassword'])->name('profil.update.password');
+    });
+
+    // Route Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Rute Inbox
+    Route::prefix('inbox')->name('inbox.')->group(function () {
+        // Daftar inbox (dengan filter status)
+        Route::get('/', [InboxController::class, 'index'])->name('index');
+
+        // Endpoint AJAX polling untuk auto-refresh daftar inbox
+        Route::get('/poll', [InboxController::class, 'poll'])->name('poll');
+
+        // Detail thread percakapan
+        Route::get('/{conversation}', [InboxController::class, 'show'])->name('show');
+
+        // Ubah status percakapan (pending_review / replied / closed)
+        Route::put('/{conversation}/status', [InboxController::class, 'updateStatus'])->name('status.update');
+
+        // Unduh attachment (fetch on-demand dari Gmail API)
+        Route::get('/messages/{message}/attachments/{attachmentId}', [InboxController::class, 'downloadAttachment'])
+            ->name('messages.attachments.download');
+
+        // Review, approve, reject draft AI
+        Route::put('/drafts/{draft}', [DraftController::class, 'update'])->name('drafts.update');
+        Route::post('/drafts/{draft}/approve', [DraftController::class, 'approve'])->name('drafts.approve');
+        Route::post('/drafts/{draft}/reject', [DraftController::class, 'reject'])->name('drafts.reject');
+    });
+
+    // Route Settings & koneksi Gmail (token OAuth per user)
+    Route::prefix('settings')->name('settings.')->group(function () {
+        Route::get('/', [SettingsController::class, 'index'])->name('index');
+
+        Route::prefix('gmail')->name('gmail.')->group(function () {
+            Route::get('/connect', [GmailOAuthController::class, 'redirect'])->name('connect');
+            Route::get('/callback', [GmailOAuthController::class, 'callback'])->name('callback');
+            Route::delete('/{gmailAccount}', [GmailOAuthController::class, 'disconnect'])->name('disconnect');
+        });
+    });
 });
-
-// Route Dashboard
-Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
-// Rute Inbox
-// Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
-// Route::get('/inbox/{conversation}', [InboxController::class, 'show'])->name('inbox.show');
-
-// Route untuk daftar inbox (dengan filter status)
-Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
-
-// Route untuk melihat detail thread percakapan
-Route::get('/inbox/{id}', [InboxController::class, 'show'])->name('inbox.show');
-
-// Route untuk mengirim balasan pesan
-Route::post('/inbox/{id}/reply', [InboxController::class, 'reply'])->name('inbox.reply');

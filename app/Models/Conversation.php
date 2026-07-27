@@ -12,8 +12,8 @@ class Conversation extends Model
     use HasFactory;
 
     protected $fillable = [
-        'ghl_conversation_id',
-        'ghl_location_id',
+        'gmail_account_id',
+        'gmail_thread_id',
         'contact_id',
         'contact_name',
         'contact_email',
@@ -31,6 +31,11 @@ class Conversation extends Model
         'last_message_at' => 'datetime',
         'synced_at' => 'datetime',
     ];
+
+    public function gmailAccount()
+    {
+        return $this->belongsTo(GmailAccount::class);
+    }
 
     public function messages()
     {

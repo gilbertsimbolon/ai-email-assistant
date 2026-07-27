@@ -42,12 +42,23 @@
                             <div class="card border mb-3 shadow-none bg-light">
                                 <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-2 px-3 border-bottom">
                                     <span class="fw-bold text-dark">
-                                        {{ $message->direction === 'inbound' ? ($conversation->contact_name ?? 'Pelanggan') : 'Anda / AI' }}
+                                        {{ $message->sender_type->value === 'customer' ? ($conversation->contact_name ?? 'Pelanggan') : 'Anda / AI' }}
                                     </span>
-                                    <small class="text-muted">{{ $message->created_at ? $message->created_at->format('d M Y, H:i') : '' }}</small>
+                                    <small class="text-muted">{{ $message->sent_at ? $message->sent_at->format('d M Y, H:i') : '' }}</small>
                                 </div>
                                 <div class="card-body py-3">
-                                    <p class="mb-0 text-secondary" style="white-space: pre-line;">{!! $message->body ?? $message->text ?? '-' !!}</p>
+                                    <p class="mb-0 text-secondary" style="white-space: pre-line;">{{ $message->body ?? '-' }}</p>
+
+                                    @if (!empty($message->attachments))
+                                        <div class="mt-2 d-flex flex-wrap gap-2">
+                                            @foreach ($message->attachments as $attachment)
+                                                <a href="{{ route('inbox.messages.attachments.download', ['message' => $message->id, 'attachmentId' => $attachment['id']]) }}"
+                                                   class="badge bg-label-secondary text-decoration-none">
+                                                    <i class="bx bx-paperclip"></i> {{ $attachment['filename'] ?? 'attachment' }}
+                                                </a>
+                                            @endforeach
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         @empty
@@ -59,36 +70,48 @@
                 </div>
             </div>
 
-            {{-- Form Balas Pesan / Draft AI --}}
+            {{-- Review / Approve / Reject Draft AI --}}
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <h5 class="fw-bold mb-3">Balas Percakapan</h5>
+                    <h5 class="fw-bold mb-3">Draf Balasan AI</h5>
 
-                    {{-- Jika ada draf AI yang tersimpan dari relasi drafts --}}
-                    @if($conversation->drafts && $conversation->drafts->count() > 0)
-                        <div class="alert alert-primary mb-3">
-                            <span class="fw-bold"><i class="bx bx-brain"></i> Draf AI Tersedia:</span>
-                            <p class="mb-2 small">{{ $conversation->drafts->last()->body ?? '' }}</p>
-                            <button type="button" class="btn btn-sm btn-primary" onclick="document.getElementById('reply_body').value = `{!! addslashes($conversation->drafts->last()->body ?? '') !!}`">
-                                Gunakan Draf Ini
+                    @if ($activeDraft)
+                        <form action="{{ route('inbox.drafts.update', $activeDraft) }}" method="POST" class="mb-3">
+                            @csrf
+                            @method('PUT')
+                            <div class="mb-3">
+                                <label class="form-label small text-muted">Subjek</label>
+                                <input type="text" class="form-control" name="subject"
+                                       value="{{ old('subject', $activeDraft->content['subject'] ?? '') }}">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small text-muted">Isi Balasan</label>
+                                <textarea class="form-control" name="body" rows="5">{{ old('body', $activeDraft->content['body'] ?? '') }}</textarea>
+                            </div>
+                            <button type="submit" class="btn btn-outline-primary btn-sm">
+                                <i class="bx bx-save me-1"></i> Simpan Perubahan
                             </button>
+                        </form>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <form action="{{ route('inbox.drafts.reject', $activeDraft) }}" method="POST"
+                                  onsubmit="return confirm('Tolak draf ini?');">
+                                @csrf
+                                <button type="submit" class="btn btn-outline-danger">
+                                    <i class="bx bx-x me-1"></i> Tolak
+                                </button>
+                            </form>
+                            <form action="{{ route('inbox.drafts.approve', $activeDraft) }}" method="POST"
+                                  onsubmit="return confirm('Kirim balasan ini via Gmail?');">
+                                @csrf
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bx bx-send me-1"></i> Approve &amp; Kirim
+                                </button>
+                            </form>
                         </div>
+                    @else
+                        <p class="text-muted small mb-0">Belum ada draf AI aktif untuk percakapan ini.</p>
                     @endif
-
-                    <form action="#" method="POST">
-                        @csrf
-                        <div class="mb-3">
-                            <textarea class="form-control" id="reply_body" name="reply_body" rows="4" placeholder="Tulis balasan pesan di sini..."></textarea>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <button type="button" class="btn btn-outline-primary btn-sm">
-                                <i class="bx bx-brain me-1"></i> Generate Ulang AI
-                            </button>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bx bx-send me-1"></i> Kirim Balasan
-                            </button>
-                        </div>
-                    </form>
                 </div>
             </div>
 

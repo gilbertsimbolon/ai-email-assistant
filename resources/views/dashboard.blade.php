@@ -4,6 +4,13 @@
     <div class="container-fluid py-4">
         <h2 class="mb-4">Dashboard</h2>
 
+        @unless ($hasGmailAccount)
+            <div class="alert alert-warning d-flex justify-content-between align-items-center">
+                <span>Belum ada akun Gmail yang terhubung. Inbox tidak akan menampilkan data apa pun.</span>
+                <a href="{{ route('settings.index') }}" class="btn btn-sm btn-warning">Hubungkan Gmail</a>
+            </div>
+        @endunless
+
         <div class="row g-3 mb-4">
             <div class="col-md-4">
                 <a href="{{ route('inbox.index', ['status' => 'pending_review']) }}" class="text-decoration-none">

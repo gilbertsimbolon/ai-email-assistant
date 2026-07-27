@@ -107,6 +107,12 @@
             </a>
 
             <ul class="menu-sub">
+                <li class="menu-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
+                    <a href="{{ route('settings.index') }}" class="menu-link">
+                        <div>Gmail Account</div>
+                    </a>
+                </li>
+
                 <li class="menu-item">
                     <a href="#" class="menu-link">
                         <div>Company</div>
@@ -126,7 +132,7 @@
                 </li>
 
                 <li class="menu-item">
-                    <a href="#" class="menu-link">
+                    <a href="{{ route('profil.index') }}" class="menu-link">
                         <div>Profile</div>
                     </a>
                 </li>

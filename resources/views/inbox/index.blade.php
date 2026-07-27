@@ -3,6 +3,14 @@
 @section('title', 'Inbox Percakapan | AI Email Assistant')
 
 @section('content')
+
+@unless ($hasGmailAccount)
+    <div class="alert alert-warning d-flex justify-content-between align-items-center">
+        <span>Belum ada akun Gmail yang terhubung, jadi belum ada data untuk ditampilkan di sini.</span>
+        <a href="{{ route('settings.index') }}" class="btn btn-sm btn-warning">Hubungkan Gmail</a>
+    </div>
+@endunless
+
 <div class="app-email card overflow-hidden">
     <div class="row g-0">
 
