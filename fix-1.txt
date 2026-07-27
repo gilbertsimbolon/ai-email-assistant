@@ -1,347 +1,256 @@
-Kamu adalah seorang Senior Software Engineer, Laravel Architect, dan AI Integration Engineer.
+Kamu adalah Senior Software Architect, Senior Laravel Developer, dan SaaS System Designer.
 
-Tugasmu adalah melakukan audit menyeluruh terhadap seluruh source code project ini, menemukan seluruh bug, memperbaiki kode yang bermasalah, serta mengimplementasikan sinkronisasi data email/conversations dari GoHighLevel (GHL) secara realtime.
+Saya ingin mengubah cara konfigurasi Gmail API pada project ini.
 
-## Tujuan Utama
+Saat ini aplikasi masih membaca konfigurasi Gmail dari file .env.
 
-Pastikan sistem ini dapat mengambil seluruh Conversations/Email dari GoHighLevel secara realtime sehingga dashboard Laravel selalu menampilkan data terbaru tanpa perlu refresh manual.
+Saya ingin mengubah arsitektur tersebut agar seluruh konfigurasi Gmail dapat diatur melalui halaman Settings pada aplikasi (frontend/admin panel), tanpa perlu mengubah file .env lagi.
 
-## Yang harus kamu lakukan
+==================================================
+TUJUAN
+==================================================
 
-### 1. Audit Seluruh Project
+Seluruh konfigurasi Gmail OAuth harus bersifat dinamis.
 
-Periksa seluruh project tanpa terkecuali, termasuk:
+Administrator dapat mengubah konfigurasi langsung dari halaman Settings.
 
-- routes
-- controllers
-- services
-- models
-- migrations
-- jobs
-- events
-- listeners
-- middleware
-- config
-- scheduler
-- queue
-- database
-- frontend
-- javascript
-- ajax
-- websocket (jika ada)
+Aplikasi harus langsung menggunakan konfigurasi terbaru tanpa perlu restart aplikasi atau mengedit .env.
 
-Cari semua bug seperti:
+==================================================
+YANG HARUS DILAKUKAN
+==================================================
 
-- duplicate code
-- dead code
-- unused class
-- wrong dependency injection
-- query yang tidak efisien
-- N+1 query
-- security issue
-- race condition
-- exception yang tidak ditangani
-- typo
-- variable yang salah
-- function yang tidak digunakan
-- API yang tidak konsisten
+Lakukan audit seluruh project.
 
-Perbaiki semuanya.
+Cari semua bagian yang membaca:
 
----
+config('services.google')
 
-### 2. Audit Integrasi GoHighLevel
+config('gmail')
 
-Periksa apakah integrasi GoHighLevel sudah benar.
+env('GOOGLE_CLIENT_ID')
 
-Cek:
+env('GOOGLE_CLIENT_SECRET')
 
-- OAuth
-- Access Token
-- Refresh Token
-- API Endpoint
-- Header Authorization
-- Error Handling
-- Retry Request
-- Rate Limit
-- Pagination
+env('GOOGLE_REDIRECT_URI')
 
-Pastikan semua endpoint menggunakan endpoint terbaru dari GoHighLevel API.
+Google Client yang di-hardcode
 
----
+hapus ketergantungan tersebut dan ubah agar membaca konfigurasi dari database.
 
-### 3. Sinkronisasi Conversation Realtime
+==================================================
+DATABASE
+==================================================
 
-Implementasikan sistem agar Laravel mendapatkan data Conversation secara realtime.
-
-Prioritas:
-
-1.
-Jika GoHighLevel menyediakan Webhook untuk Conversation
-
-Gunakan webhook.
-
-Alur:
-
-GHL
-↓
-Webhook
-↓
-Laravel
-↓
-Database
-↓
-Dashboard Update
-
-Jangan menggunakan polling jika webhook tersedia.
-
----
-
-2.
-Jika webhook tidak tersedia
-
-Gunakan polling yang efisien.
-
-Misalnya:
-
-- Scheduler setiap 30 detik
-- Queue Job
-- Ambil hanya conversation terbaru
-- Hindari duplicate
-
-Jangan mengambil seluruh conversation setiap request.
-
-Gunakan incremental sync berdasarkan:
-
-- updatedAt
-- lastMessageAt
-- atau field timestamp terbaru.
-
----
-
-### 4. Sinkronisasi Email
-
-Pastikan email yang masuk di GoHighLevel langsung muncul di Laravel.
-
-Yang harus tersimpan:
-
-- Conversation ID
-- Contact ID
-- Email Subject
-- Sender
-- Receiver
-- Body
-- Direction
-- Status
-- Attachments
-- Created At
-- Updated At
-
-Jika email berubah, update database.
-
-Jika email baru, insert.
-
-Jangan membuat data duplicate.
-
----
-
-### 5. Optimasi Database
-
-Pastikan database memiliki:
-
-- index
-- unique key
-- foreign key
-- relasi yang benar
-
-Gunakan transaction jika diperlukan.
-
----
-
-### 6. Queue
-
-Jika proses sinkronisasi berat,
-
-gunakan Queue.
-
-Misalnya:
-
-Webhook
-↓
-
-Dispatch Job
-↓
-
-Sync Conversation
-
-↓
-
-Update Database
-
-Jangan memproses request berat di controller.
-
----
-
-### 7. Logging
-
-Tambahkan logging yang jelas.
+Buat tabel baru apabila belum ada.
 
 Contoh:
 
-Sync Started
+gmail_settings
 
-Conversation Updated
+id
 
-Conversation Created
+client_id
 
-Email Created
+client_secret
 
-Webhook Received
+redirect_uri
 
-API Failed
+enabled
 
-Retry
+created_at
 
-Rate Limit
+updated_at
 
-Gunakan Log::info(), warning(), dan error() dengan informasi yang jelas.
+atau gunakan tabel settings apabila project sudah memiliki Global Settings.
 
----
+Gunakan struktur database yang paling sesuai dengan project.
 
-### 8. Error Handling
+==================================================
+MODEL
+==================================================
 
-Semua request API wajib menggunakan:
+Buat model:
 
-try {
+GmailSetting
 
-} catch(Throwable $e){
+atau gunakan model Setting apabila sudah tersedia.
 
-}
+==================================================
+SERVICE
+==================================================
 
-Tangani:
+Buat service khusus.
 
-401
+Misalnya:
 
-403
+GmailConfigurationService
 
-404
+Service ini bertugas mengambil konfigurasi Gmail dari database.
 
-429
+Jangan membaca langsung dari env().
 
-500
+==================================================
+GOOGLE CLIENT
+==================================================
 
-Timeout
+Saat membuat Google\Client, konfigurasi harus berasal dari database.
 
-Connection Error
+Contoh alur:
+
+Database
+
+↓
+
+GmailConfigurationService
+
+↓
+
+Google\Client
+
+Bukan lagi:
+
+.env
+
+↓
+
+config
+
+↓
+
+Google\Client
+
+==================================================
+SETTINGS PAGE
+==================================================
+
+Buat halaman konfigurasi Gmail.
+
+Field:
+
+Google Client ID
+
+Google Client Secret
+
+Redirect URI
+
+Enable Gmail Integration
+
+Test Connection
+
+Save Configuration
+
+Tambahkan validasi.
+
+==================================================
+TEST CONNECTION
+==================================================
+
+Tambahkan tombol:
+
+Test Connection
+
+Saat ditekan:
+
+- validasi konfigurasi
+- buat instance Google Client
+- cek apakah konfigurasi valid
+- tampilkan pesan berhasil atau gagal
+
+Jangan menyimpan token.
+
+Hanya menguji konfigurasi OAuth.
+
+==================================================
+OAUTH LOGIN
+==================================================
+
+Saat user menghubungkan akun Gmail.
+
+Jangan membaca konfigurasi dari env.
+
+Gunakan konfigurasi dari database.
+
+==================================================
+TOKEN
+==================================================
+
+Konfigurasi Gmail bersifat global.
+
+Sedangkan:
+
+Access Token
 
 Refresh Token
 
-Retry
+Expiry
 
----
+tetap disimpan per akun Gmail.
 
-### 9. Optimasi Service
+Jangan mencampurkan konfigurasi global dengan token user.
 
-Jika ada service yang terlalu besar,
+==================================================
+SECURITY
+==================================================
 
-pecah menjadi beberapa service.
+Client Secret wajib disimpan secara aman.
 
-Contoh:
+Gunakan encryption Laravel apabila diperlukan.
 
-ConversationService
+Jangan pernah mengirim Client Secret ke frontend kecuali saat memang diperlukan untuk pengisian form administrator.
 
-EmailService
+Pastikan hanya administrator yang dapat mengakses halaman konfigurasi Gmail.
 
-WebhookService
+==================================================
+BACKWARD COMPATIBILITY
+==================================================
 
-SyncService
+Apabila belum ada konfigurasi di database.
 
-GHLApiService
+Gunakan nilai dari .env sebagai fallback sementara.
 
-ParserService
+Namun setelah konfigurasi berhasil disimpan melalui halaman Settings.
 
-DraftService
+Seluruh proses harus menggunakan data dari database.
 
-AIService
+==================================================
+REFACTOR
+==================================================
 
-Setiap service hanya memiliki satu tanggung jawab (Single Responsibility Principle).
+Lakukan refactor terhadap seluruh bagian project yang masih bergantung pada konfigurasi Gmail dari .env.
 
----
+Pastikan tidak ada pembacaan konfigurasi Gmail secara langsung menggunakan env() di dalam controller, service, job, listener, middleware, maupun helper.
 
-### 10. Dashboard
+==================================================
+DOKUMENTASI
+==================================================
 
-Pastikan dashboard selalu menampilkan data terbaru.
+Setelah selesai.
 
-Jika memungkinkan gunakan:
+Jelaskan:
 
-Laravel Broadcasting
+- File yang ditambahkan
+- File yang diubah
+- Migration baru
+- Model baru
+- Service baru
+- Controller baru
+- Route baru
+- Cara kerja konfigurasi baru
+- Alur OAuth setelah perubahan
+- Perbedaan dengan arsitektur sebelumnya
 
-atau
+==================================================
+ATURAN
+==================================================
 
-Websocket
+- Jangan membuat quick fix.
+- Gunakan best practice Laravel terbaru.
+- Ikuti prinsip SOLID.
+- Gunakan Dependency Injection.
+- Gunakan Clean Architecture.
+- Jangan merusak fitur Gmail yang sudah ada.
+- Pastikan seluruh fitur tetap berjalan setelah refactor.
+- Pastikan project tetap siap dikembangkan untuk mendukung provider lain seperti Outlook, Microsoft 365, atau Yahoo Mail di masa depan.
 
-atau
-
-AJAX Auto Refresh
-
-tanpa reload halaman.
-
----
-
-### 11. Refactoring
-
-Lakukan refactor sesuai best practice Laravel terbaru.
-
-Gunakan:
-
-Service Pattern
-
-Repository bila diperlukan
-
-Form Request Validation
-
-DTO bila cocok
-
-Dependency Injection
-
-Configuration
-
-Environment Variable
-
----
-
-### 12. Hasil Akhir
-
-Saya ingin project ini menjadi:
-
-- Clean Code
-- Mudah dipelihara
-- Cepat
-- Aman
-- Modular
-- Realtime
-- Siap Production
-
----
-
-## Aturan
-
-- Jangan menghapus fitur yang sudah ada kecuali memang rusak.
-- Pertahankan kompatibilitas dengan fitur AI Reply yang sudah ada.
-- Jangan membuat perubahan yang dapat merusak alur aplikasi.
-- Sebelum mengubah kode, pahami dulu alur kerja project secara menyeluruh.
-- Jika menemukan arsitektur yang kurang baik, lakukan refactor secara bertahap agar tidak merusak sistem.
-- Setelah setiap perubahan besar, lakukan pengecekan apakah fitur lain tetap berjalan dengan baik.
-
-## Output yang saya inginkan
-
-Setiap selesai mengerjakan satu bagian:
-
-1. Jelaskan masalah yang ditemukan.
-2. Jelaskan penyebabnya.
-3. Jelaskan solusi yang diterapkan.
-4. Tampilkan file yang diubah.
-5. Jelaskan dampak perubahan terhadap sistem.
-6. Lanjutkan ke tahap berikutnya hingga seluruh project selesai diaudit dan diperbaiki.
-
-Kerjakan secara menyeluruh sampai seluruh project benar-benar siap digunakan dalam lingkungan production dengan sinkronisasi Conversations/Email GoHighLevel secara realtime.
+Kerjakan secara bertahap. Sebelum mengubah kode, pahami arsitektur project terlebih dahulu. Setelah setiap tahap selesai, pastikan project masih dapat dijalankan tanpa error dan seluruh fitur tetap berfungsi.

@@ -19,4 +19,7 @@ Schedule::call(function () {
     GmailAccount::query()->pluck('id')->each(
         fn (int $gmailAccountId) => SyncGmailAccountJob::dispatch($gmailAccountId)
     );
-})->everyThirtySeconds()->withoutOverlapping()->name('gmail-sync-dispatch');
+})
+->name('gmail-sync-dispatch')
+->everyThirtySeconds()
+->withoutOverlapping();
