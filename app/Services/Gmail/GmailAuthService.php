@@ -32,8 +32,12 @@ class GmailAuthService
     {
         $token = $this->api->exchangeCodeForToken($code);
         $userInfo = $this->api->getUserInfo($token['access_token']);
-        $profile = $this->api->getProfile($token['access_token']);
 
+        // history_id is intentionally left unset here: GmailSyncService
+        // treats a blank history_id as "never synced yet" and does a full
+        // inbox backfill on the next sync run, then records the cursor
+        // itself. Setting it here would skip that backfill entirely and
+        // leave the inbox empty until a new message happens to arrive.
         return GmailAccount::updateOrCreate(
             ['user_id' => $user->id, 'email' => $userInfo['email']],
             [
@@ -41,7 +45,6 @@ class GmailAuthService
                 'refresh_token' => $token['refresh_token'] ?? null,
                 'token_expires_at' => Carbon::now()->addSeconds((int) ($token['expires_in'] ?? 3600)),
                 'scope' => $token['scope'] ?? null,
-                'history_id' => $profile['historyId'] ?? null,
             ]
         );
     }
