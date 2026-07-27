@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ChannelType;
 use App\Enums\DraftStatus;
 use App\Http\Requests\Inbox\UpdateConversationStatusRequest;
 use App\Models\Conversation;
@@ -14,16 +15,27 @@ use Illuminate\Http\Response;
 class InboxController extends Controller
 {
     /**
-     * Menampilkan halaman Inbox utama (List Percakapan).
+     * Menampilkan halaman Inbox Email (dua panel: daftar percakapan di kiri,
+     * pratinjau percakapan yang dipilih — via ?conversation= — di kanan).
      */
     public function index(Request $request)
     {
-        $status = $request->get('status', 'pending_review');
+        $filter = $request->get('filter', 'all');
 
-        $conversations = $this->conversationsByStatus($request, $status);
+        $conversations = $this->conversationsByFilter($request, $filter)
+            ->appends(['filter' => $filter]);
+
         $hasGmailAccount = $request->user()->gmailAccounts()->exists();
 
-        return view('inbox.index', compact('conversations', 'status', 'hasGmailAccount'));
+        [$activeConversation, $activeDraft] = $this->resolveActiveConversation($request);
+
+        return view('inbox.index', compact(
+            'conversations',
+            'filter',
+            'hasGmailAccount',
+            'activeConversation',
+            'activeDraft',
+        ));
     }
 
     /**
@@ -32,35 +44,29 @@ class InboxController extends Controller
      */
     public function poll(Request $request)
     {
-        $status = $request->get('status', 'pending_review');
+        $filter = $request->get('filter', 'all');
 
-        $conversations = $this->conversationsByStatus($request, $status, (int) $request->get('page', 1));
+        $conversations = $this->conversationsByFilter($request, $filter, (int) $request->get('page', 1));
 
         // Pagination links must point back at the real inbox page, not this
         // JSON polling endpoint (which is what the current request's URL is).
-        $conversations->withPath(route('inbox.index'))->appends(['status' => $status]);
+        $conversations->withPath(route('inbox.index'))->appends(['filter' => $filter]);
 
         return response()->json([
-            'html' => view('inbox.partials.list', compact('conversations'))->render(),
+            'html' => view('inbox.partials.list', compact('conversations', 'filter'))->render(),
             'checked_at' => now()->toIso8601String(),
         ]);
     }
 
     /**
-     * Menampilkan detail percakapan yang dipilih dari daftar.
+     * Permalink lama ke detail percakapan — sekarang detailnya tampil sebagai
+     * panel kanan pada halaman Inbox, jadi cukup arahkan ke sana.
      */
     public function show(Request $request, Conversation $conversation)
     {
         $this->authorizeConversation($request, $conversation);
 
-        $conversation->load(['analysis', 'drafts', 'messages']);
-
-        $activeDraft = $conversation->drafts
-            ->whereIn('status', [DraftStatus::Active, DraftStatus::Regenerated])
-            ->sortByDesc('created_at')
-            ->first();
-
-        return view('inbox.show', compact('conversation', 'activeDraft'));
+        return redirect()->route('inbox.index', ['conversation' => $conversation->id]);
     }
 
     /**
@@ -74,6 +80,18 @@ class InboxController extends Controller
         $conversation->update(['status' => $request->validated('status')]);
 
         return back()->with('success', 'Status percakapan berhasil diperbarui.');
+    }
+
+    /**
+     * Toggle bintang (starred) pada percakapan dari daftar Inbox.
+     */
+    public function toggleStar(Request $request, Conversation $conversation)
+    {
+        $this->authorizeConversation($request, $conversation);
+
+        $conversation->update(['is_starred' => ! $conversation->is_starred]);
+
+        return response()->json(['is_starred' => $conversation->is_starred]);
     }
 
     /**
@@ -108,17 +126,48 @@ class InboxController extends Controller
         ]);
     }
 
-    protected function conversationsByStatus(Request $request, ?string $status, int $page = 1)
+    protected function conversationsByFilter(Request $request, ?string $filter, int $page = 1)
     {
         // Ambil percakapan beserta relasi analisis, draf, dan pesan terakhir —
-        // dibatasi hanya ke akun Gmail milik user yang login.
+        // dibatasi ke channel Email dan hanya akun Gmail milik user yang login.
         return Conversation::with(['analysis', 'drafts', 'messages'])
             ->whereHas('gmailAccount', fn ($query) => $query->where('user_id', $request->user()->id))
-            ->when($status, function ($query, $status) {
-                return $query->where('status', $status);
-            })
+            ->where('channel', ChannelType::Email)
+            ->when($filter === 'unread', fn ($query) => $query->where('is_read', false))
+            ->when($filter === 'starred', fn ($query) => $query->where('is_starred', true))
             ->latest('last_message_at')
             ->paginate(15, page: $page);
+    }
+
+    /**
+     * Muat percakapan yang sedang dipilih (?conversation=) untuk panel kanan,
+     * lalu tandai sudah dibaca begitu dibuka.
+     */
+    protected function resolveActiveConversation(Request $request): array
+    {
+        if (! $request->filled('conversation')) {
+            return [null, null];
+        }
+
+        $activeConversation = Conversation::with(['analysis', 'drafts', 'messages'])
+            ->whereHas('gmailAccount', fn ($query) => $query->where('user_id', $request->user()->id))
+            ->where('channel', ChannelType::Email)
+            ->find($request->get('conversation'));
+
+        if (! $activeConversation) {
+            return [null, null];
+        }
+
+        if (! $activeConversation->is_read) {
+            $activeConversation->update(['is_read' => true]);
+        }
+
+        $activeDraft = $activeConversation->drafts
+            ->whereIn('status', [DraftStatus::Active, DraftStatus::Regenerated])
+            ->sortByDesc('created_at')
+            ->first();
+
+        return [$activeConversation, $activeDraft];
     }
 
     /**

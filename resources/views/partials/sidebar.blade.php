@@ -30,22 +30,26 @@
             <span class="menu-header-text">Inbox</span>
         </li>
 
-        <li class="menu-item {{ request()->routeIs('inbox.index') ? 'active open' : '' }}">
+        <li class="menu-item {{ request()->routeIs('inbox.index', 'inbox.whatsapp') ? 'active open' : '' }}">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class="menu-icon tf-icons bx bx-envelope"></i>
                 <div>Inbox</div>
             </a>
 
             <ul class="menu-sub">
-                <li class="menu-item {{ request()->input('status') === 'pending_review' ? 'active' : '' }}">
-                    <a href="{{ route('inbox.index', ['status' => 'pending_review']) }}" class="menu-link">
-                        <div>Pending Review</div>
+                <li class="menu-item {{ request()->routeIs('inbox.index') ? 'active' : '' }}">
+                    <a href="{{ route('inbox.index') }}" class="menu-link d-flex align-items-center justify-content-between">
+                        <div><i class="bx bx-envelope me-1"></i> Email</div>
+                        @if (($emailUnreadCount ?? 0) > 0)
+                            <span class="badge bg-primary rounded-pill">{{ $emailUnreadCount }}</span>
+                        @endif
                     </a>
                 </li>
 
-                <li class="menu-item {{ request()->input('status') === 'replied' ? 'active' : '' }}">
-                    <a href="{{ route('inbox.index', ['status' => 'replied']) }}" class="menu-link">
-                        <div>Replied</div>
+                <li class="menu-item {{ request()->routeIs('inbox.whatsapp') ? 'active' : '' }}">
+                    <a href="{{ route('inbox.whatsapp') }}" class="menu-link d-flex align-items-center justify-content-between">
+                        <div><i class="bx bxl-whatsapp me-1"></i> WhatsApp</div>
+                        <span class="badge bg-label-secondary rounded-pill">Soon</span>
                     </a>
                 </li>
             </ul>

@@ -10,6 +10,7 @@ use App\Http\Controllers\GmailSettingsController;
 use App\Http\Controllers\InboxController;
 use App\Http\Controllers\ProfilController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\WhatsAppController;
 use Illuminate\Support\Facades\Route;
 
 // Route Login
@@ -52,11 +53,18 @@ Route::middleware('auth')->group(function () {
         // Endpoint AJAX polling untuk auto-refresh daftar inbox
         Route::get('/poll', [InboxController::class, 'poll'])->name('poll');
 
-        // Detail thread percakapan
+        // Sub-menu channel WhatsApp (belum terintegrasi, halaman "coming soon").
+        // Harus didaftarkan sebelum /{conversation} agar tidak tertangkap wildcard.
+        Route::get('/whatsapp', [WhatsAppController::class, 'index'])->name('whatsapp');
+
+        // Detail thread percakapan (permalink lama, redirect ke panel kanan Inbox)
         Route::get('/{conversation}', [InboxController::class, 'show'])->name('show');
 
         // Ubah status percakapan (pending_review / replied / closed)
         Route::put('/{conversation}/status', [InboxController::class, 'updateStatus'])->name('status.update');
+
+        // Toggle bintang (starred) pada percakapan
+        Route::put('/{conversation}/star', [InboxController::class, 'toggleStar'])->name('star');
 
         // Unduh attachment (fetch on-demand dari Gmail API)
         Route::get('/messages/{message}/attachments/{attachmentId}', [InboxController::class, 'downloadAttachment'])

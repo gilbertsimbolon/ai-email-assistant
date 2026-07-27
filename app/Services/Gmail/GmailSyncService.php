@@ -123,6 +123,10 @@ class GmailSyncService
         ]);
 
         if ($messageData->isInbound()) {
+            // A new customer message makes the conversation unread again,
+            // even if an agent had already read/replied to earlier messages.
+            $conversation->update(['is_read' => false]);
+
             MessageReceived::dispatch($conversation->fresh());
         }
     }

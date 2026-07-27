@@ -2,9 +2,12 @@
 
 namespace App\Providers;
 
+use App\Enums\ChannelType;
+use App\Models\Conversation;
 use App\Services\Gmail\GmailConfigurationService;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -30,5 +33,18 @@ class AppServiceProvider extends ServiceProvider
         if (config('app.env') !== 'local' || request()->server('HTTP_X_FORWARDED_PROTO') === 'https') {
             URL::forceScheme('https');
         }
+
+        // Sidebar is included on every authenticated page, so it needs its
+        // own composer to know the Email unread badge count.
+        View::composer('partials.sidebar', function ($view) {
+            $emailUnreadCount = auth()->check()
+                ? Conversation::whereHas('gmailAccount', fn ($query) => $query->where('user_id', auth()->id()))
+                    ->where('channel', ChannelType::Email)
+                    ->where('is_read', false)
+                    ->count()
+                : 0;
+
+            $view->with('emailUnreadCount', $emailUnreadCount);
+        });
     }
 }

@@ -21,6 +21,8 @@ class Conversation extends Model
         'channel',
         'subject',
         'status',
+        'is_read',
+        'is_starred',
         'last_message_at',
         'synced_at',
     ];
@@ -28,6 +30,8 @@ class Conversation extends Model
     protected $casts = [
         'status' => ConversationStatus::class,
         'channel' => ChannelType::class,
+        'is_read' => 'boolean',
+        'is_starred' => 'boolean',
         'last_message_at' => 'datetime',
         'synced_at' => 'datetime',
     ];

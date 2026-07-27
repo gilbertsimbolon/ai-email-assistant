@@ -3,9 +3,13 @@
     <div class="card-body p-0">
         <div class="list-group list-group-flush">
             @forelse($conversations as $item)
-                <a href="{{ route('inbox.show', $item->id) }}" class="list-group-item list-group-item-action p-3">
+                <a href="{{ route('inbox.index', ['conversation' => $item->id, 'filter' => $filter ?? 'all']) }}" class="list-group-item list-group-item-action p-3">
                     <div class="d-flex w-100 justify-content-between align-items-center">
-                        <h5 class="mb-1 fw-bold">{{ $item->contact_name ?? ($item->contact_email ?? 'Pelanggan') }}
+                        <h5 class="mb-1 {{ $item->is_read ? 'fw-normal' : 'fw-bold' }}">
+                            @unless ($item->is_read)
+                                <span class="bg-primary rounded-circle d-inline-block me-1" style="width: 8px; height: 8px;"></span>
+                            @endunless
+                            {{ $item->contact_name ?? ($item->contact_email ?? 'Pelanggan') }}
                         </h5>
                         <small
                             class="text-muted">{{ $item->last_message_at ? $item->last_message_at->diffForHumans() : '' }}</small>
