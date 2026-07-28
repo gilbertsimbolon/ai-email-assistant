@@ -8,29 +8,33 @@ use App\Enums\Sentiment;
 use App\Models\Analysis;
 use App\Models\Conversation;
 use App\Services\AI\Contracts\AiClientInterface;
+use App\Services\AiCenter\Engines\IntentDetectionEngine;
+use App\Services\AiCenter\Support\AnalysisPromptFactory;
 
 class AnalysisService
 {
     public function __construct(
-        protected PromptService $promptService,
-        protected AiClientInterface $aiClient
+        protected AnalysisPromptFactory $promptFactory,
+        protected AiClientInterface $aiClient,
+        protected IntentDetectionEngine $intentDetectionEngine,
     ) {
     }
 
     /**
-     * Analyze conversation using AI.
+     * Analyze conversation using AI. Hints the classification prompt with
+     * the shortlist of known Intent names so IntentDetectionEngine::resolve
+     * has an easier time matching the AI's free-text answer back to a
+     * configured Intent — no extra AI call is made for this.
      */
     public function analyze(string $thread): array
     {
-        $prompt = $this->promptService
-            ->buildAnalysisPrompt($thread);
+        $shortlist = $this->intentDetectionEngine->shortlist($thread)->pluck('name')->all();
+
+        $prompt = $this->promptFactory->build($thread, $shortlist);
 
         return $this->aiClient->json($prompt);
     }
 
-    /**
-     * Save analysis result.
-     */
     /**
      * Save analysis result.
      */
@@ -45,6 +49,7 @@ class AnalysisService
                 'language' => $analysis['language'] ?? null,
                 'summary' => $analysis['summary'] ?? '',
                 'customer_intent' => $analysis['intent'] ?? null,
+                'intent_id' => $analysis['intent_id'] ?? null,
                 'sentiment' => $this->normalize($analysis['sentiment'] ?? null) ?? Sentiment::Neutral->value,
                 'customer_status' => $this->normalize($analysis['customer_status'] ?? null) ?? CustomerStatus::Unknown->value,
                 'priority' => $this->normalize($analysis['priority'] ?? null) ?? Priority::Medium->value,
@@ -59,11 +64,19 @@ class AnalysisService
     }
 
     /**
-     * Analyze the thread and persist the result in a single call.
+     * Analyze the thread and persist the result in a single call. Resolves
+     * the AI Center Intent (App\Models\AiCenter\Intent) from the same JSON
+     * response used for the rest of the analysis — see
+     * IntentDetectionEngine::resolve for the matching/fallback strategy.
      */
     public function analyzeAndSave(Conversation $conversation, string $thread): Analysis
     {
-        return $this->save($conversation, $this->analyze($thread));
+        $analysis = $this->analyze($thread);
+
+        $intent = $this->intentDetectionEngine->resolve($thread, $analysis);
+        $analysis['intent_id'] = $intent?->id;
+
+        return $this->save($conversation, $analysis);
     }
 
     /**
@@ -78,6 +91,4 @@ class AnalysisService
 
         return str_replace(' ', '_', strtolower(trim($value)));
     }
-
-    
 }

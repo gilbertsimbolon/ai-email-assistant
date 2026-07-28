@@ -20,6 +20,11 @@ final class AiSettingsData
         public readonly int $maxTokens,
         public readonly int $timeout,
         public readonly bool $enabled,
+        public readonly ?float $topP = null,
+        public readonly ?string $reasoningEffort = null,
+        public readonly ?float $presencePenalty = null,
+        public readonly ?float $frequencyPenalty = null,
+        public readonly ?string $responseFormat = null,
     ) {
     }
 }

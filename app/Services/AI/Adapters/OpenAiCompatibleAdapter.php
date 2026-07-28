@@ -23,15 +23,25 @@ abstract class OpenAiCompatibleAdapter extends AbstractAiProviderAdapter
             'model' => $settings->model,
         ]);
 
+        $payload = array_filter([
+            'model' => $settings->model,
+            'messages' => $messages,
+            'temperature' => $settings->temperature,
+            'max_tokens' => $settings->maxTokens,
+            'top_p' => $settings->topP,
+            'reasoning_effort' => $settings->reasoningEffort,
+            'presence_penalty' => $settings->presencePenalty,
+            'frequency_penalty' => $settings->frequencyPenalty,
+        ], fn ($value) => $value !== null);
+
+        if ($settings->responseFormat === 'json') {
+            $payload['response_format'] = ['type' => 'json_object'];
+        }
+
         $response = $this->client($settings)
             ->withToken((string) $settings->apiKey)
             ->retry(3, 1000)
-            ->post(self::CHAT_ENDPOINT, [
-                'model' => $settings->model,
-                'messages' => $messages,
-                'temperature' => $settings->temperature,
-                'max_tokens' => $settings->maxTokens,
-            ])
+            ->post(self::CHAT_ENDPOINT, $payload)
             ->throw()
             ->json();
 

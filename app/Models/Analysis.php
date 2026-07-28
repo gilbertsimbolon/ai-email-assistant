@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\CustomerStatus;
 use App\Enums\Priority;
 use App\Enums\Sentiment;
+use App\Models\AiCenter\Intent;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -22,6 +23,7 @@ class Analysis extends Model
         'language',
         'summary',
         'customer_intent',
+        'intent_id',
         'sentiment',
         'customer_status',
         'priority',
@@ -66,6 +68,16 @@ class Analysis extends Model
     public function conversation(): BelongsTo
     {
         return $this->belongsTo(Conversation::class);
+    }
+
+    /**
+     * The AI Center Intent resolved by IntentDetectionEngine for this
+     * analysis, distinct from the free-text `customer_intent` label the AI
+     * returned (kept for backward-compat/display).
+     */
+    public function intent(): BelongsTo
+    {
+        return $this->belongsTo(Intent::class);
     }
 
     /*

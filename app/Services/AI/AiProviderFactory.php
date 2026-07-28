@@ -5,6 +5,7 @@ namespace App\Services\AI;
 use App\Enums\AiProvider;
 use App\Services\AI\Adapters\AnthropicAdapter;
 use App\Services\AI\Adapters\GeminiAdapter;
+use App\Services\AI\Adapters\OllamaAdapter;
 use App\Services\AI\Adapters\OpenAiAdapter;
 use App\Services\AI\Adapters\OpenRouterAdapter;
 use App\Services\AI\Contracts\AiProviderAdapterInterface;
@@ -29,6 +30,7 @@ class AiProviderFactory
             AiProvider::OpenRouter => OpenRouterAdapter::class,
             AiProvider::Anthropic => AnthropicAdapter::class,
             AiProvider::Gemini => GeminiAdapter::class,
+            AiProvider::Ollama => OllamaAdapter::class,
         });
     }
 }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ChannelType;
 use App\Enums\ConversationStatus;
+use App\Models\AiCenter\AiLog;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -25,6 +26,7 @@ class Conversation extends Model
         'is_starred',
         'last_message_at',
         'synced_at',
+        'metadata',
     ];
 
     protected $casts = [
@@ -34,6 +36,7 @@ class Conversation extends Model
         'is_starred' => 'boolean',
         'last_message_at' => 'datetime',
         'synced_at' => 'datetime',
+        'metadata' => 'array',
     ];
 
     public function gmailAccount()
@@ -64,5 +67,10 @@ class Conversation extends Model
     public function drafts()
     {
         return $this->hasMany(Draft::class);
+    }
+
+    public function aiLogs()
+    {
+        return $this->hasMany(AiLog::class);
     }
 }

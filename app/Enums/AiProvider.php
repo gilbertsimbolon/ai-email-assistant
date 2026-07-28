@@ -8,6 +8,7 @@ enum AiProvider: string
     case OpenRouter = 'openrouter';
     case Anthropic = 'anthropic';
     case Gemini = 'gemini';
+    case Ollama = 'ollama';
 
     public function label(): string
     {
@@ -16,6 +17,7 @@ enum AiProvider: string
             self::OpenRouter => 'OpenRouter',
             self::Anthropic => 'Anthropic Claude',
             self::Gemini => 'Google Gemini',
+            self::Ollama => 'Ollama',
         };
     }
 
@@ -32,6 +34,7 @@ enum AiProvider: string
             self::OpenRouter => 'https://openrouter.ai/api/v1',
             self::Anthropic => 'https://api.anthropic.com',
             self::Gemini => 'https://generativelanguage.googleapis.com/v1beta',
+            self::Ollama => 'http://localhost:11434/v1',
         };
     }
 
@@ -42,6 +45,7 @@ enum AiProvider: string
             self::OpenRouter => 'openai/gpt-4o',
             self::Anthropic => 'claude-sonnet-4-5',
             self::Gemini => 'gemini-2.0-flash',
+            self::Ollama => 'llama3.1',
         };
     }
 }

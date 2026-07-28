@@ -2,11 +2,9 @@
 
 namespace App\Services;
 
-use App\Enums\SenderType;
 use App\Models\Conversation;
 use App\Models\Draft;
-use App\Models\Message;
-use Illuminate\Support\Collection;
+use App\Services\AiCenter\Support\ConversationThreadFormatter;
 use RuntimeException;
 
 /**
@@ -20,6 +18,7 @@ class AiGenerationService
     public function __construct(
         protected AnalysisService $analysisService,
         protected DraftService $draftService,
+        protected ConversationThreadFormatter $threadFormatter,
     ) {
     }
 
@@ -32,28 +31,12 @@ class AiGenerationService
             throw new RuntimeException('Belum ada pesan pada percakapan ini untuk dianalisis.');
         }
 
-        $thread = $this->buildPromptFromMessages(
+        $thread = $this->threadFormatter->format(
             $conversation->messages()->orderBy('sent_at')->get()
         );
 
         $analysis = $this->analysisService->analyzeAndSave($conversation, $thread);
 
-        return $this->draftService->generateAndSave($conversation, $analysis, $asNewVersion);
-    }
-
-    /**
-     * Mengubah kumpulan Message (Eloquent) menjadi format thread untuk AI.
-     *
-     * @param  Collection<int, Message>  $messages
-     */
-    protected function buildPromptFromMessages(Collection $messages): string
-    {
-        return $messages
-            ->map(function (Message $message) {
-                $sender = $message->sender_type === SenderType::Customer ? 'Customer' : 'Agent';
-
-                return "{$sender}: {$message->body}";
-            })
-            ->implode("\n\n");
+        return $this->draftService->generateAndSave($conversation, $analysis, $thread, $asNewVersion);
     }
 }

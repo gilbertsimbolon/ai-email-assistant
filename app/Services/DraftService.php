@@ -2,33 +2,42 @@
 
 namespace App\Services;
 
+use App\Enums\AiCenter\AiCenterLogSource;
 use App\Enums\DraftStatus;
+use App\Models\Analysis;
 use App\Models\Conversation;
 use App\Models\Draft;
-use App\Models\Analysis;
 use App\Services\AI\AiConfigurationService;
-use App\Services\AI\Contracts\AiClientInterface;
+use App\Services\AiCenter\AiCenterPipeline;
 
 class DraftService
 {
     public function __construct(
-        protected PromptService $promptService,
-        protected AiClientInterface $aiClient,
-        protected AiConfigurationService $aiConfig
+        protected AiCenterPipeline $pipeline,
+        protected AiConfigurationService $aiConfig,
     ) {
     }
 
     /**
-     * Generate reply draft using AI.
+     * Generate reply draft by running the full AI Center pipeline (Intent
+     * Detection has already resolved onto $analysis by AnalysisService;
+     * from here it's SOP Matching -> Rule Engine -> Workflow Engine ->
+     * Knowledge Base Retrieval -> Reply Template Selection -> Prompt
+     * Builder -> AI Generate Draft). When nothing is configured yet,
+     * PromptBuilder falls back to generic instructions so this behaves
+     * exactly like the old hardcoded PromptService prompts.
      */
-    public function generate(Conversation $conversation, Analysis $analysis): string
+    public function generate(Conversation $conversation, Analysis $analysis, string $thread): string
     {
-        $prompt = $this->promptService
-            ->buildDraftPrompt($conversation, $analysis);
+        $result = $this->pipeline->run(
+            $conversation,
+            $analysis,
+            $thread,
+            AiCenterLogSource::Production,
+            auth()->id(),
+        );
 
-        $response = $this->aiClient->chat($prompt);
-
-        return $response['content'];
+        return $result->draftContent;
     }
 
     /**
@@ -83,8 +92,8 @@ class DraftService
     /**
      * Generate the reply draft and persist it in a single call.
      */
-    public function generateAndSave(Conversation $conversation, Analysis $analysis, bool $asNewVersion = false): Draft
+    public function generateAndSave(Conversation $conversation, Analysis $analysis, string $thread, bool $asNewVersion = false): Draft
     {
-        return $this->save($conversation, $this->generate($conversation, $analysis), $asNewVersion);
+        return $this->save($conversation, $this->generate($conversation, $analysis, $thread), $asNewVersion);
     }
 }

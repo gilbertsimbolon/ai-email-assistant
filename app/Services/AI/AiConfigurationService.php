@@ -4,14 +4,18 @@ namespace App\Services\AI;
 
 use App\DataTransferObjects\AiSettingsData;
 use App\Enums\AiProvider;
+use App\Models\AiCenter\AiModel;
 use App\Models\AiSetting;
 
 /**
  * Single source of truth for AI provider configuration (provider, api key,
  * base url, model, temperature, max tokens, timeout, enabled). Reads the
- * admin-managed AiSetting row only — unlike GmailConfigurationService this
- * never falls back to config()/env(), per product requirement that AI
- * configuration lives exclusively in the database.
+ * default AiModel row (AI Center > AI Models) first, falling back to the
+ * legacy singleton AiSetting row so installs that configured AI before the
+ * AI Center redesign keep working without any manual migration step — see
+ * the ai_models migration's "Migrated Default" data seed. Never falls back
+ * to config()/env(), per product requirement that AI configuration lives
+ * exclusively in the database.
  *
  * Bound as a singleton (see AppServiceProvider) so the settings row is read
  * from the database at most once per request/job.
@@ -20,7 +24,7 @@ class AiConfigurationService
 {
     protected bool $loaded = false;
 
-    protected ?AiSetting $setting = null;
+    protected AiModel|AiSetting|null $setting = null;
 
     public function getProvider(): AiProvider
     {
@@ -44,7 +48,7 @@ class AiConfigurationService
 
     public function getTemperature(): float
     {
-        return $this->setting()?->temperature ?? 0.3;
+        return (float) ($this->setting()?->temperature ?? 0.3);
     }
 
     public function getMaxTokens(): int
@@ -57,10 +61,45 @@ class AiConfigurationService
         return $this->setting()?->timeout ?? 60;
     }
 
+    public function getTopP(): ?float
+    {
+        $setting = $this->setting();
+
+        return $setting instanceof AiModel ? $setting->top_p : null;
+    }
+
+    public function getReasoningEffort(): ?string
+    {
+        $setting = $this->setting();
+
+        return $setting instanceof AiModel ? $setting->reasoning_effort : null;
+    }
+
+    public function getPresencePenalty(): ?float
+    {
+        $setting = $this->setting();
+
+        return $setting instanceof AiModel ? $setting->presence_penalty : null;
+    }
+
+    public function getFrequencyPenalty(): ?float
+    {
+        $setting = $this->setting();
+
+        return $setting instanceof AiModel ? $setting->frequency_penalty : null;
+    }
+
+    public function getResponseFormat(): ?string
+    {
+        $setting = $this->setting();
+
+        return $setting instanceof AiModel ? $setting->response_format?->value : null;
+    }
+
     /**
      * Whether an administrator has explicitly enabled AI features. A
-     * missing settings row (fresh install, nobody has visited the Settings
-     * page yet) is treated as disabled.
+     * missing settings row (fresh install, nobody has visited AI Models or
+     * Settings > AI Configuration yet) is treated as disabled.
      */
     public function isEnabled(): bool
     {
@@ -116,13 +155,18 @@ class AiConfigurationService
             maxTokens: $this->getMaxTokens(),
             timeout: $this->getTimeout(),
             enabled: $this->isEnabled(),
+            topP: $this->getTopP(),
+            reasoningEffort: $this->getReasoningEffort(),
+            presencePenalty: $this->getPresencePenalty(),
+            frequencyPenalty: $this->getFrequencyPenalty(),
+            responseFormat: $this->getResponseFormat(),
         );
     }
 
-    protected function setting(): ?AiSetting
+    protected function setting(): AiModel|AiSetting|null
     {
         if (!$this->loaded) {
-            $this->setting = AiSetting::current();
+            $this->setting = AiModel::default() ?? AiSetting::current();
             $this->loaded = true;
         }
 

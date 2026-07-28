@@ -1,5 +1,21 @@
 <?php
 
+use App\Http\Controllers\AiCenter\AiCenterAiLogController;
+use App\Http\Controllers\AiCenter\AiCenterAiModelController;
+use App\Http\Controllers\AiCenter\AiCenterAiParameterController;
+use App\Http\Controllers\AiCenter\AiCenterCategoryController;
+use App\Http\Controllers\AiCenter\AiCenterDashboardController;
+use App\Http\Controllers\AiCenter\AiCenterForbiddenActionController;
+use App\Http\Controllers\AiCenter\AiCenterIntentController;
+use App\Http\Controllers\AiCenter\AiCenterKnowledgeBaseController;
+use App\Http\Controllers\AiCenter\AiCenterPlaygroundController;
+use App\Http\Controllers\AiCenter\AiCenterPromptPreviewController;
+use App\Http\Controllers\AiCenter\AiCenterReplyTemplateController;
+use App\Http\Controllers\AiCenter\AiCenterSettingsController;
+use App\Http\Controllers\AiCenter\AiCenterSopController;
+use App\Http\Controllers\AiCenter\AiCenterSopRuleController;
+use App\Http\Controllers\AiCenter\AiCenterWorkflowController;
+use App\Http\Controllers\AiCenter\AiCenterWorkflowNodeController;
 use App\Http\Controllers\AiSettingsController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
@@ -113,5 +129,44 @@ Route::middleware('auth')->group(function () {
             Route::put('/', [AiSettingsController::class, 'update'])->name('update');
             Route::post('/test-connection', [AiSettingsController::class, 'testConnection'])->name('test-connection');
         });
+    });
+
+    // AI Center: the orchestration "brain" (Intent/SOP/Rule/Workflow/
+    // Knowledge Base/Reply Template/AI Models/AI Parameters/Prompt Preview/
+    // Playground/AI Logs/Dashboard/Settings). Admin-only, per claude.txt.
+    Route::middleware('admin')->prefix('ai-center')->name('ai-center.')->group(function () {
+        Route::get('/', [AiCenterDashboardController::class, 'index'])->name('dashboard');
+
+        Route::post('categories', [AiCenterCategoryController::class, 'store'])->name('categories.store');
+
+        Route::resource('intents', AiCenterIntentController::class);
+        Route::resource('forbidden-actions', AiCenterForbiddenActionController::class)->only(['index', 'store', 'destroy']);
+        Route::resource('knowledge-bases', AiCenterKnowledgeBaseController::class);
+        Route::resource('reply-templates', AiCenterReplyTemplateController::class);
+
+        Route::resource('sops', AiCenterSopController::class);
+        Route::resource('sops.rules', AiCenterSopRuleController::class)->shallow()->except(['show']);
+
+        Route::resource('workflows', AiCenterWorkflowController::class);
+        Route::post('workflows/{workflow}/nodes', [AiCenterWorkflowNodeController::class, 'store'])->name('workflows.nodes.store');
+        Route::delete('workflows/{workflow}/nodes/{node}', [AiCenterWorkflowNodeController::class, 'destroy'])->name('workflows.nodes.destroy');
+
+        Route::resource('ai-models', AiCenterAiModelController::class);
+        Route::post('ai-models/{aiModel}/set-default', [AiCenterAiModelController::class, 'setDefault'])->name('ai-models.set-default');
+        Route::post('ai-models/{aiModel}/test-connection', [AiCenterAiModelController::class, 'testConnection'])->name('ai-models.test-connection');
+
+        Route::get('ai-parameters', [AiCenterAiParameterController::class, 'edit'])->name('ai-parameters.edit');
+        Route::put('ai-parameters', [AiCenterAiParameterController::class, 'update'])->name('ai-parameters.update');
+
+        Route::get('prompt-preview', [AiCenterPromptPreviewController::class, 'index'])->name('prompt-preview.index');
+
+        Route::get('playground', [AiCenterPlaygroundController::class, 'index'])->name('playground.index');
+        Route::post('playground', [AiCenterPlaygroundController::class, 'run'])->name('playground.run');
+
+        Route::get('ai-logs', [AiCenterAiLogController::class, 'index'])->name('ai-logs.index');
+        Route::get('ai-logs/{aiLog}', [AiCenterAiLogController::class, 'show'])->name('ai-logs.show');
+
+        Route::get('settings', [AiCenterSettingsController::class, 'edit'])->name('settings.edit');
+        Route::put('settings', [AiCenterSettingsController::class, 'update'])->name('settings.update');
     });
 });
