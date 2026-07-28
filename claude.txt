@@ -1,156 +1,338 @@
-Saya ingin mengubah total tampilan dan alur kerja halaman Inbox Email agar menyerupai aplikasi chat modern (seperti WhatsApp, Telegram, Discord, atau Gmail Conversation View), namun tetap mempertahankan konsep email.
+# REDESIGN TOTAL UI/UX - AI EMAIL ASSISTANT INBOX
 
-Tujuan utama adalah agar AI tidak otomatis berjalan setiap email masuk, sehingga penggunaan token jauh lebih hemat.
+## Tujuan
 
-Lakukan analisis terlebih dahulu terhadap seluruh project, kemudian lakukan refactoring secara menyeluruh.
+Saya ingin melakukan **redesign total** halaman Inbox pada project Laravel ini.
 
-1. Redesign UI Inbox
+Sebelum menulis kode apa pun, lakukan analisis terhadap seluruh project terlebih dahulu, termasuk:
 
-Ubah halaman Inbox menjadi layout 3 panel modern.
+- Struktur folder
+- Blade
+- Bootstrap
+- Template Sneat
+- Controller
+- Routes
+- Service
+- JavaScript
+- Asset
+- CSS
+- Seluruh alur Inbox yang sudah berjalan
 
-Panel kiri
+Jangan langsung coding.
 
-Berisi daftar seluruh percakapan email.
+Pahami dulu arsitektur project agar redesign tidak merusak fitur yang sudah ada.
 
-Setiap item menampilkan:
+---
 
-Nama pengirim
-Subject
-Preview isi email
-Waktu
-Badge unread
-Badge draft AI (jika sudah ada draft)
-Badge replied
-Avatar
-Search
-Filter
-Pagination / Infinite Scroll
+# Filosofi Aplikasi
 
-Layout harus terasa seperti aplikasi chat.
+Project ini **bukan lagi aplikasi email biasa**.
 
-Panel tengah
+Project ini adalah **AI Customer Communication Platform**.
 
-Berisi seluruh isi conversation.
+Hari ini menggunakan:
 
-Jangan tampil sebagai daftar email biasa.
+- Gmail API
 
-Tampilkan sebagai bubble conversation seperti aplikasi chat.
+Ke depannya akan mendukung:
 
-Contoh:
+- WhatsApp
+- Instagram
+- Facebook Messenger
+- Telegram
+- Live Chat
+- Channel lainnya
+
+Artinya UI harus dibuat sejak awal agar siap menjadi **Omnichannel Inbox**, bukan hanya Gmail.
+
+---
+
+# Gunakan Template Sneat
+
+Project ini menggunakan **Sneat Bootstrap Admin Template**.
+
+Gunakan seluruh komponen bawaan Sneat.
+
+Jangan membuat design system baru.
+
+Gunakan:
+
+- Bootstrap
+- Utility Class
+- Layout
+- Icons
+- Typography
+- Color
+- Spacing
+- Animation
+
+yang sudah tersedia.
+
+Saya ingin hasil akhirnya terlihat seperti halaman resmi bawaan Sneat.
+
+---
+
+# Jangan Menggunakan Banyak Card
+
+Saya tidak ingin tampilan seperti sekarang.
+
+Saat ini terlalu banyak Card Bootstrap.
+
+Saya ingin tampilan seperti aplikasi modern.
+
+Panel memenuhi tinggi layar.
+
+Scrolling hanya terjadi pada panel yang membutuhkan.
+
+---
+
+# Layout Baru
+
+Buat layout seperti ini.
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Navbar                                                                                                     │
+├──────────────┬────────────────────────────┬────────────────────────────────────────────┬──────────────────┤
+│ Sidebar      │ Conversation List          │ Conversation                               │ AI Assistant     │
+│              │                            │                                            │                  │
+│ Email        │ Search                     │ Subject                                    │ Summary          │
+│ WhatsApp     │                            │ Customer                                   │                  │
+│ Instagram    │ Filter                     │                                            │ Intent           │
+│ Messenger    │                            │ Bubble Conversation                        │                  │
+│              │                            │                                            │ Tone             │
+│ AI Center    │ Conversation               │                                            │                  │
+│ Reports      │                            │                                            │ Rewrite          │
+│ Settings     │                            │                                            │                  │
+├──────────────┴────────────────────────────┼────────────────────────────────────────────┼──────────────────┤
+│                                           │ Composer                                   │ Generate AI      │
+│                                           │ Subject                                    │ Improve          │
+│                                           │ Textarea                                   │ Translate        │
+│                                           │ Attachment                                 │ Send             │
+└───────────────────────────────────────────┴────────────────────────────────────────────┴──────────────────┘
+```
+
+Gunakan Flexbox Bootstrap.
+
+Bukan Card.
+
+---
+
+# Sidebar
+
+Pertahankan sidebar sekarang.
+
+Tetapi ubah agar siap Multi Channel.
+
+```
+Inbox
+
+Email
+
+WhatsApp (Soon)
+
+Instagram (Soon)
+
+Facebook Messenger (Soon)
+
+Live Chat (Soon)
+
+AI Center
+
+Reports
+
+Settings
+```
+
+Gunakan badge "Soon".
+
+---
+
+# Conversation List
+
+Panel kiri harus memenuhi tinggi layar.
+
+Scrolling hanya pada panel ini.
+
+Setiap conversation harus menampilkan:
+
+- Avatar
+- Nama Customer
+- Subject
+- Preview isi email
+- Waktu
+- Badge Unread
+- Badge AI Draft
+- Badge Waiting
+- Badge Replied
+- Attachment Indicator
+
+Hover harus seperti Gmail.
+
+Conversation aktif harus memiliki highlight.
+
+---
+
+# Search & Filter
+
+Bagian atas Conversation List.
+
+Search.
+
+Filter:
+
+- All
+- Unread
+- Starred
+- Waiting Customer
+- Waiting Agent
+- AI Draft
+- Closed
+
+---
+
+# Conversation View
+
+Panel tengah adalah area terbesar.
+
+Saya tidak ingin email ditampilkan menggunakan Card.
+
+Saya ingin tampilannya seperti aplikasi chat.
+
+Urutan:
 
 Customer
 
-Halo saya ingin bertanya...
+↓
 
-Saya
+Support
 
-Terima kasih telah menghubungi kami...
+↓
 
 Customer
 
-Baik terima kasih.
+↓
 
-dst.
+Support
 
-Bubble harus berbeda warna antara customer dan kita.
+↓
 
-Setiap bubble menampilkan:
+Customer
 
-waktu
-status
-attachment
-sender
+Gunakan Bubble Conversation.
 
-Jika email memiliki attachment, tampilkan preview.
+Bubble Customer berbeda warna.
 
-Jika berupa image tampilkan thumbnail.
+Bubble Support berbeda warna.
 
-Jika PDF tampilkan icon.
+Tetap tampilkan metadata:
 
-Panel kanan
+- Sender
+- Receiver
+- Date
+- Time
 
-Berisi informasi conversation.
+Jika ada attachment:
 
-Misalnya:
+- Preview Image
+- Preview PDF
+- Download
 
-Subject
-Email customer
-Nama customer
-Label Gmail
-Status
-AI Summary
-Jumlah email
-Thread ID
-Gmail Labels
-Attachment list
+---
 
-Panel ini dapat di-collapse.
+# Toolbar
 
-2. Composer Area
+Di atas Conversation tambahkan toolbar.
 
-Di bagian bawah conversation buat composer seperti aplikasi chat.
+- Reply
+- Reply All
+- Forward
+- Archive
+- Delete
+- Star
+- Mark Read
+- Labels
 
-Bukan form email biasa.
+---
+
+# Composer
+
+Composer selalu berada di bawah.
+
+Sticky.
+
+Tidak ikut scroll.
 
 Composer terdiri dari:
 
+Subject
+
 Textarea besar
 
-Attachment button
+Attachment
 
-Emoji (optional)
+Generate AI
 
-Template button (future)
+Regenerate
 
-AI button
+Improve
 
-Send button
+Translate
 
-Shortcut:
+Clear
 
-Ctrl + Enter = Send
+Copy
 
-Enter = New Line
+Send
 
-3. AI Workflow Baru
+Textarea harus besar seperti ChatGPT.
 
-Ini yang paling penting.
+---
 
-JANGAN lagi memanggil AI setiap email masuk.
+# AI Workflow
 
-Saya ingin workflow seperti berikut.
+Ini sangat penting.
 
-Email masuk
+AI **TIDAK BOLEH** berjalan otomatis.
 
-↓
+Flow yang saya inginkan:
 
-Disimpan ke database
-
-↓
-
-Ditampilkan di Inbox
+```
+Email Masuk
 
 ↓
 
-User membaca email
+Sync Gmail
 
 ↓
 
-User menekan tombol
+Masuk Database
+
+↓
+
+Muncul di Inbox
+
+↓
+
+Agent Membaca
+
+↓
+
+Klik
 
 ✨ Generate AI Reply
 
 ↓
 
-Baru AI dipanggil
+AI Membuat Draft
 
 ↓
 
-Draft muncul di textarea
+Draft muncul di Textarea
 
 ↓
 
-User bebas mengedit
+Agent Edit
 
 ↓
 
@@ -159,128 +341,79 @@ Klik Send
 ↓
 
 Email dikirim melalui Gmail API
+```
 
-Artinya AI hanya dipanggil jika user memang meminta.
+AI tidak boleh berjalan ketika:
 
-Ini akan menghemat token secara signifikan.
+- Inbox dibuka
+- Gmail melakukan polling
+- Gmail melakukan sync
+- Refresh halaman
 
-4. Tombol AI
+AI hanya berjalan ketika user menekan tombol:
 
-Tambahkan tombol:
+Generate AI Reply
 
-✨ Generate Reply
+Hal ini untuk menghemat penggunaan token AI.
 
-Fungsi:
+---
 
-Mengambil seluruh isi thread email.
+# AI Panel
 
-Mengambil konteks conversation.
+Panel kanan.
 
-Mengirim semuanya ke AI.
+Bisa di Collapse.
 
-Menghasilkan draft balasan.
+Berisi:
 
-Draft TIDAK langsung dikirim.
+- Conversation Summary
+- Customer Information
+- Sentiment
+- Priority
+- Intent
+- Suggested Action
+- Internal Notes
+- AI Prompt
 
-Draft hanya dimasukkan ke textarea.
+Tool AI:
 
-Tambahkan juga:
+- Rewrite
+- Friendly
+- Professional
+- Shorter
+- Longer
+- Translate
 
-🔄 Regenerate
+Future Feature.
 
-Menghasilkan draft baru.
+---
+
+# Draft
+
+Draft AI harus tersimpan otomatis.
+
+Jika browser di-refresh.
+
+Draft tetap ada.
+
+Jika Generate lagi.
+
+Tampilkan pilihan.
+
+- Replace Draft
+- Create New Version
+
+---
+
+# UX
 
 Tambahkan:
 
-🧹 Clear Draft
-
-Menghapus isi textarea.
-
-Tambahkan:
-
-📋 Copy
-
-Copy draft.
-
-5. Prompt AI
-
-Saat Generate Reply ditekan, AI harus menerima:
-
-seluruh thread email
-subject
-sender
-receiver
-histori conversation
-attachment text (jika ada)
-instruksi perusahaan
-tone
-bahasa customer
-
-AI harus otomatis membalas menggunakan bahasa customer.
-
-Jika customer memakai Bahasa Indonesia → balas Indonesia.
-
-Jika customer memakai English → balas English.
-
-Jika campuran → AI menentukan yang paling sesuai.
-
-6. Draft Management
-
-Draft AI disimpan ke database.
-
-Jika user refresh halaman:
-
-draft tetap ada.
-
-Jika Generate lagi:
-
-tanya:
-
-Replace Draft?
-
-atau
-
-Create New Version?
-
-Simpan versi draft.
-
-7. Loading UX
-
-Saat AI sedang bekerja:
-
-Textarea disable.
-
-Tampilkan typing animation.
-
-Contoh:
-
-AI is thinking...
-
-atau tiga titik animasi.
-
-Jangan freeze UI.
-
-8. Streaming Response
-
-Jika provider AI mendukung streaming:
-
-draft muncul sedikit demi sedikit.
-
-Seperti ChatGPT.
-
-Jika tidak mendukung:
-
-fallback ke response biasa.
-
-9. Auto Save
-
-Saat user mengedit draft.
-
-Auto save setiap beberapa detik.
-
-Jangan sampai draft hilang.
-
-10. Keyboard Experience
+- Loading Skeleton
+- Typing Animation
+- Smooth Transition
+- Hover Animation
+- Keyboard Shortcut
 
 Ctrl + Enter
 
@@ -292,68 +425,121 @@ Generate AI
 
 ESC
 
-Cancel Generate
+Cancel
 
-11. Token Optimization
+---
 
-AI TIDAK BOLEH dipanggil ketika:
+# Responsive
 
-inbox dibuka
-email masuk
-refresh halaman
-polling Gmail
-sinkronisasi Gmail
+Desktop
 
-AI hanya dipanggil ketika user menekan:
+Sidebar
 
-Generate AI Reply
+Conversation List
 
-Dengan demikian penggunaan token menjadi jauh lebih hemat.
+Conversation
 
-12. Performance
+AI Panel
 
-Gunakan lazy loading conversation.
+Tablet
 
-Gunakan pagination.
+Sidebar
 
-Gunakan cache jika diperlukan.
+Conversation
 
-Hindari N+1 Query.
+Mobile
 
-Gunakan eager loading.
+Conversation List
 
-Optimalkan query database.
+Conversation
 
-13. UI
+---
 
-Gunakan template Sneat yang sudah ada.
+# Struktur Blade
 
-Pertahankan seluruh style aplikasi.
+Pisahkan Blade menjadi beberapa component.
 
-Jangan membuat CSS framework baru.
+Contoh:
 
-Gunakan Bootstrap yang sudah tersedia.
+resources/views/inbox/
 
-UI harus terasa modern seperti:
+- index.blade.php
 
-Gmail
-ChatGPT
-WhatsApp Web
-Front
-Missive
+components/
 
-Namun tetap mempertahankan identitas email, bukan aplikasi chat murni.
+- sidebar.blade.php
+- conversation-list.blade.php
+- conversation-item.blade.php
+- conversation-thread.blade.php
+- message-bubble.blade.php
+- composer.blade.php
+- ai-panel.blade.php
+- toolbar.blade.php
 
-14. Arsitektur
+Jangan membuat satu file Blade dengan ribuan baris.
 
-Pisahkan dengan jelas:
+---
 
-Gmail Sync Service
-Conversation Service
-Draft Service
-AI Generation Service
-Send Email Service
+# Yang Tidak Boleh Diubah
 
-Setiap service hanya memiliki satu tanggung jawab (Single Responsibility Principle).
+Jangan merusak:
 
-Sebelum mengubah kode, analisis seluruh project terlebih dahulu untuk memahami arsitektur yang ada. Setelah analisis selesai, lakukan refactoring secara bertahap tanpa merusak fitur yang sudah berjalan. Hasil akhir harus menghasilkan pengalaman seperti aplikasi chat modern untuk email, dengan AI yang hanya bekerja saat diminta pengguna, sehingga efisien dalam penggunaan token, mudah dikembangkan, dan tetap mengikuti best practice Laravel 13 serta prinsip Clean Architecture.
+- Gmail API Integration
+- Gmail Sync
+- AI Service
+- Queue
+- Scheduler
+- Database
+- Authentication
+- Settings
+- Service Layer
+
+Fokus redesign hanya pada:
+
+- UI
+- UX
+- Blade
+- Bootstrap
+- JavaScript
+- Layout
+
+---
+
+# Clean Code
+
+Gunakan:
+
+- Bootstrap Utility
+- Blade Component
+- Reusable Component
+- Clean HTML
+- DRY Principle
+
+Hindari JavaScript yang berulang.
+
+Hindari CSS yang tidak perlu.
+
+Gunakan class bawaan Bootstrap sebanyak mungkin.
+
+---
+
+# Ekspektasi
+
+Saya tidak ingin Anda hanya mempercantik tampilan yang sekarang.
+
+Saya ingin Anda berpikir sebagai **Senior UI/UX Engineer**, **Senior Laravel Developer**, dan **Software Architect**.
+
+Analisis terlebih dahulu seluruh project.
+
+Kemudian lakukan redesign total halaman Inbox agar terasa seperti aplikasi profesional sekelas:
+
+- Front
+- Missive
+- Help Scout
+- Intercom Inbox
+- Outlook Web
+- Gmail Conversation View
+
+Namun tetap menggunakan Sneat sebagai design system.
+
+Saya ingin hasil akhirnya terlihat seperti sebuah produk SaaS profesional yang siap berkembang menjadi platform omnichannel berbasis AI, bukan sekadar halaman email sederhana.
