@@ -64,6 +64,9 @@ Route::middleware('auth')->group(function () {
         // Toggle bintang (starred) pada percakapan
         Route::put('/{conversation}/star', [InboxController::class, 'toggleStar'])->name('star');
 
+        // Toggle status baca (tombol "Mark Read" di toolbar)
+        Route::put('/{conversation}/read', [InboxController::class, 'toggleRead'])->name('read.toggle');
+
         // Unduh attachment (fetch on-demand dari Gmail API)
         Route::get('/messages/{message}/attachments/{attachmentId}', [InboxController::class, 'downloadAttachment'])
             ->name('messages.attachments.download');

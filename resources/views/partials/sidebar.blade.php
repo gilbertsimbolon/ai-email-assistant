@@ -30,29 +30,41 @@
             <span class="menu-header-text">Inbox</span>
         </li>
 
-        <li class="menu-item {{ request()->routeIs('inbox.index', 'inbox.whatsapp') ? 'active open' : '' }}">
-            <a href="javascript:void(0);" class="menu-link menu-toggle">
-                <i class="menu-icon tf-icons bx bx-envelope"></i>
-                <div>Inbox</div>
+        <li class="menu-item {{ request()->routeIs('inbox.index') ? 'active' : '' }}">
+            <a href="{{ route('inbox.index') }}" class="menu-link d-flex align-items-center justify-content-between">
+                <div><i class="menu-icon tf-icons bx bx-envelope"></i> Email</div>
+                @if (($emailUnreadCount ?? 0) > 0)
+                    <span class="badge bg-primary rounded-pill">{{ $emailUnreadCount }}</span>
+                @endif
             </a>
+        </li>
 
-            <ul class="menu-sub">
-                <li class="menu-item {{ request()->routeIs('inbox.index') ? 'active' : '' }}">
-                    <a href="{{ route('inbox.index') }}" class="menu-link d-flex align-items-center justify-content-between">
-                        <div><i class="bx bx-envelope me-1"></i> Email</div>
-                        @if (($emailUnreadCount ?? 0) > 0)
-                            <span class="badge bg-primary rounded-pill">{{ $emailUnreadCount }}</span>
-                        @endif
-                    </a>
-                </li>
+        <li class="menu-item {{ request()->routeIs('inbox.whatsapp') ? 'active' : '' }}">
+            <a href="{{ route('inbox.whatsapp') }}" class="menu-link d-flex align-items-center justify-content-between">
+                <div><i class="menu-icon tf-icons bx bxl-whatsapp"></i> WhatsApp</div>
+                <span class="badge bg-label-secondary rounded-pill">Soon</span>
+            </a>
+        </li>
 
-                <li class="menu-item {{ request()->routeIs('inbox.whatsapp') ? 'active' : '' }}">
-                    <a href="{{ route('inbox.whatsapp') }}" class="menu-link d-flex align-items-center justify-content-between">
-                        <div><i class="bx bxl-whatsapp me-1"></i> WhatsApp</div>
-                        <span class="badge bg-label-secondary rounded-pill">Soon</span>
-                    </a>
-                </li>
-            </ul>
+        <li class="menu-item">
+            <a href="javascript:void(0);" class="menu-link d-flex align-items-center justify-content-between disabled" aria-disabled="true">
+                <div><i class="menu-icon tf-icons bx bxl-instagram"></i> Instagram</div>
+                <span class="badge bg-label-secondary rounded-pill">Soon</span>
+            </a>
+        </li>
+
+        <li class="menu-item">
+            <a href="javascript:void(0);" class="menu-link d-flex align-items-center justify-content-between disabled" aria-disabled="true">
+                <div><i class="menu-icon tf-icons bx bxl-messenger"></i> Messenger</div>
+                <span class="badge bg-label-secondary rounded-pill">Soon</span>
+            </a>
+        </li>
+
+        <li class="menu-item">
+            <a href="javascript:void(0);" class="menu-link d-flex align-items-center justify-content-between disabled" aria-disabled="true">
+                <div><i class="menu-icon tf-icons bx bx-chat"></i> Live Chat</div>
+                <span class="badge bg-label-secondary rounded-pill">Soon</span>
+            </a>
         </li>
 
         {{-- AI Center --}}

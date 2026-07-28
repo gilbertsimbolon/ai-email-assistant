@@ -1,25 +1,13 @@
 (function () {
     'use strict';
 
-    const composer = document.getElementById('composer');
-    if (!composer) {
-        return;
-    }
-
-    const subjectEl = document.getElementById('composer-subject');
-    const bodyEl = document.getElementById('composer-body');
-    const btnGenerate = document.getElementById('btn-generate');
-    const btnRegenerate = document.getElementById('btn-regenerate');
-    const btnClear = document.getElementById('btn-clear');
-    const btnCopy = document.getElementById('btn-copy');
-    const btnSend = document.getElementById('btn-send');
-    const thinkingEl = document.getElementById('ai-thinking');
-    const thinkingDotsEl = thinkingEl ? thinkingEl.querySelector('.ai-thinking-dots') : null;
-    const saveIndicatorEl = document.getElementById('draft-save-indicator');
-
-    const draftUpdateUrlTemplate = composer.dataset.draftUpdateUrlTemplate;
-    const generateUrl = composer.dataset.generateUrl;
-    const sendUrl = composer.dataset.sendUrl;
+    // Re-queried every time initComposer() runs, because the composer DOM is
+    // replaced wholesale on every AJAX conversation swap (see
+    // inbox-navigation.js) — old element references would point at nodes no
+    // longer in the document.
+    let composer, subjectEl, bodyEl, btnGenerate, btnRegenerate, btnClear, btnCopy, btnSend;
+    let thinkingEl, thinkingDotsEl, saveIndicatorEl;
+    let draftUpdateUrlTemplate, generateUrl, sendUrl;
 
     let autosaveTimer = null;
     let dotsTimer = null;
@@ -80,7 +68,7 @@
     }
 
     function saveDraftNow() {
-        if (!composer.dataset.draftId) {
+        if (!composer || !composer.dataset.draftId) {
             return Promise.resolve();
         }
 
@@ -240,22 +228,7 @@
         });
     }
 
-    btnGenerate.addEventListener('click', handleGenerateClick);
-    btnRegenerate.addEventListener('click', handleGenerateClick);
-
-    btnClear.addEventListener('click', function () {
-        bodyEl.value = '';
-        bodyEl.focus();
-        scheduleAutosave();
-    });
-
-    btnCopy.addEventListener('click', function () {
-        navigator.clipboard.writeText(bodyEl.value).then(function () {
-            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Disalin', timer: 1200, showConfirmButton: false });
-        });
-    });
-
-    btnSend.addEventListener('click', function () {
+    function handleSendClick() {
         if (autosaveTimer) {
             clearTimeout(autosaveTimer);
         }
@@ -292,58 +265,114 @@
                 setThinking(false);
                 Swal.fire({ icon: 'error', title: 'Gagal Mengirim', text: error.message });
             });
-    });
+    }
 
-    subjectEl.addEventListener('input', scheduleAutosave);
-    bodyEl.addEventListener('input', scheduleAutosave);
+    function initLazyThumbs() {
+        const lazyThumbs = document.querySelectorAll('.lazy-thumb[data-src]');
+        if (lazyThumbs.length && 'IntersectionObserver' in window) {
+            const observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        img.src = img.dataset.src;
+                        img.removeAttribute('data-src');
+                        observer.unobserve(img);
+                    }
+                });
+            });
+            lazyThumbs.forEach(function (img) {
+                observer.observe(img);
+            });
+        } else {
+            lazyThumbs.forEach(function (img) {
+                img.src = img.dataset.src;
+            });
+        }
+    }
 
+    /**
+     * (Re)binds the composer for whatever conversation is currently in the
+     * DOM. Called once on initial page load, and again by
+     * inbox-navigation.js every time it swaps in a new thread via AJAX.
+     */
+    function initComposer() {
+        composer = document.getElementById('composer');
+        if (!composer) {
+            return;
+        }
+
+        subjectEl = document.getElementById('composer-subject');
+        bodyEl = document.getElementById('composer-body');
+        btnGenerate = document.getElementById('btn-generate');
+        btnRegenerate = document.getElementById('btn-regenerate');
+        btnClear = document.getElementById('btn-clear');
+        btnCopy = document.getElementById('btn-copy');
+        btnSend = document.getElementById('btn-send');
+        thinkingEl = document.getElementById('ai-thinking');
+        thinkingDotsEl = thinkingEl ? thinkingEl.querySelector('.ai-thinking-dots') : null;
+        saveIndicatorEl = document.getElementById('draft-save-indicator');
+
+        draftUpdateUrlTemplate = composer.dataset.draftUpdateUrlTemplate;
+        generateUrl = composer.dataset.generateUrl;
+        sendUrl = composer.dataset.sendUrl;
+
+        autosaveTimer = null;
+        generateAbortController = null;
+
+        btnGenerate.addEventListener('click', handleGenerateClick);
+        btnRegenerate.addEventListener('click', handleGenerateClick);
+
+        btnClear.addEventListener('click', function () {
+            bodyEl.value = '';
+            bodyEl.focus();
+            scheduleAutosave();
+        });
+
+        btnCopy.addEventListener('click', function () {
+            navigator.clipboard.writeText(bodyEl.value).then(function () {
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Disalin', timer: 1200, showConfirmButton: false });
+            });
+        });
+
+        btnSend.addEventListener('click', handleSendClick);
+
+        subjectEl.addEventListener('input', scheduleAutosave);
+        bodyEl.addEventListener('input', scheduleAutosave);
+
+        bodyEl.addEventListener('keydown', function (event) {
+            const isCtrlOrCmd = event.ctrlKey || event.metaKey;
+
+            if (isCtrlOrCmd && event.key === 'Enter') {
+                event.preventDefault();
+                if (!btnSend.disabled) {
+                    btnSend.click();
+                }
+            } else if (isCtrlOrCmd && event.shiftKey && (event.key === 'G' || event.key === 'g')) {
+                event.preventDefault();
+                (composer.dataset.draftId ? btnRegenerate : btnGenerate).click();
+            } else if (event.key === 'Escape' && generateAbortController) {
+                generateAbortController.abort();
+            }
+        });
+
+        initLazyThumbs();
+
+        const chatHistory = document.getElementById('chatHistory');
+        if (chatHistory) {
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+    }
+
+    // The composer element itself gets replaced on every AJAX swap, so a
+    // single beforeunload listener registered once here (reading whatever
+    // `composer`/`autosaveTimer` currently point at) is enough — no need to
+    // re-register it from initComposer, which would stack up duplicates.
     window.addEventListener('beforeunload', function () {
-        if (autosaveTimer && composer.dataset.draftId) {
+        if (autosaveTimer && composer && composer.dataset.draftId) {
             saveDraftNow();
         }
     });
 
-    bodyEl.addEventListener('keydown', function (event) {
-        const isCtrlOrCmd = event.ctrlKey || event.metaKey;
-
-        if (isCtrlOrCmd && event.key === 'Enter') {
-            event.preventDefault();
-            if (!btnSend.disabled) {
-                btnSend.click();
-            }
-        } else if (isCtrlOrCmd && event.shiftKey && (event.key === 'G' || event.key === 'g')) {
-            event.preventDefault();
-            (composer.dataset.draftId ? btnRegenerate : btnGenerate).click();
-        } else if (event.key === 'Escape' && generateAbortController) {
-            generateAbortController.abort();
-        }
-    });
-
-    // Lazy-load image attachment thumbnails only once they scroll into view.
-    const lazyThumbs = document.querySelectorAll('.lazy-thumb[data-src]');
-    if (lazyThumbs.length && 'IntersectionObserver' in window) {
-        const observer = new IntersectionObserver(function (entries) {
-            entries.forEach(function (entry) {
-                if (entry.isIntersecting) {
-                    const img = entry.target;
-                    img.src = img.dataset.src;
-                    img.removeAttribute('data-src');
-                    observer.unobserve(img);
-                }
-            });
-        });
-        lazyThumbs.forEach(function (img) {
-            observer.observe(img);
-        });
-    } else {
-        lazyThumbs.forEach(function (img) {
-            img.src = img.dataset.src;
-        });
-    }
-
-    // Scroll chat history to the latest message on load.
-    const chatHistory = document.getElementById('chatHistory');
-    if (chatHistory) {
-        chatHistory.scrollTop = chatHistory.scrollHeight;
-    }
+    window.initComposer = initComposer;
+    document.addEventListener('DOMContentLoaded', initComposer);
 })();

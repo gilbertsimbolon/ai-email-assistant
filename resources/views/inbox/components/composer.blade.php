@@ -9,13 +9,32 @@
      data-draft-update-url-template="{{ route('inbox.drafts.update', ['draft' => '__ID__']) }}"
      data-draft-id="{{ $activeDraft->id ?? '' }}">
 
-    <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+    <input type="text" id="composer-subject" class="form-control form-control-sm mb-2"
+           placeholder="Subjek..." value="{{ $activeDraft->content['subject'] ?? $defaultSubject }}">
+
+    <textarea id="composer-body" class="form-control composer-textarea" rows="6"
+              placeholder="Tulis balasan, atau klik Generate Reply untuk membuat draft AI...">{{ $activeDraft->content['body'] ?? '' }}</textarea>
+
+    <div class="d-flex align-items-center flex-wrap gap-2 mt-2">
         <button type="button" id="btn-generate" class="btn btn-sm btn-primary {{ $activeDraft ? 'd-none' : '' }}">
             ✨ Generate Reply
         </button>
         <button type="button" id="btn-regenerate" class="btn btn-sm btn-outline-primary {{ $activeDraft ? '' : 'd-none' }}">
             🔄 Regenerate
         </button>
+
+        <div class="vr mx-1 d-none d-sm-block"></div>
+
+        <button type="button" class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Segera hadir">
+            <i class="bx bx-magic-wand me-1"></i>Improve
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Segera hadir">
+            <i class="bx bx-globe me-1"></i>Translate
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Segera hadir">
+            <i class="bx bx-paperclip me-1"></i>Attachment
+        </button>
+
         <button type="button" id="btn-clear" class="btn btn-sm btn-outline-secondary">
             🧹 Clear
         </button>
@@ -34,12 +53,6 @@
             </button>
         </div>
     </div>
-
-    <input type="text" id="composer-subject" class="form-control form-control-sm mb-2"
-           placeholder="Subjek..." value="{{ $activeDraft->content['subject'] ?? $defaultSubject }}">
-
-    <textarea id="composer-body" class="form-control" rows="4"
-              placeholder="Tulis balasan, atau klik Generate Reply untuk membuat draft AI...">{{ $activeDraft->content['body'] ?? '' }}</textarea>
 
     <div class="form-text">Ctrl+Enter: Send &middot; Ctrl+Shift+G: Generate/Regenerate &middot; Esc: Batal</div>
 </div>

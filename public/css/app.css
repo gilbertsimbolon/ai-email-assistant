@@ -63,3 +63,129 @@
     min-width: 1.2em;
     text-align: left;
 }
+
+/* ---------------------------------------------------------------------
+   Layout 3-panel — flexbox murni, tanpa Bootstrap grid/Card, supaya
+   panel mengisi tinggi layar dan hanya list & thread yang scroll.
+   --------------------------------------------------------------------- */
+
+.inbox-app {
+    height: calc(100vh - 12rem);
+    min-height: 560px;
+}
+
+.inbox-list-panel {
+    width: 100%;
+    flex-shrink: 0;
+}
+
+.inbox-thread-panel {
+    min-width: 0;
+}
+
+.inbox-ai-panel {
+    transition: width 0.2s ease, padding 0.2s ease;
+}
+
+@media (min-width: 992px) {
+    .inbox-list-panel {
+        width: 360px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .inbox-ai-panel {
+        width: 320px;
+    }
+}
+
+.inbox-ai-panel.ai-panel-collapsed {
+    width: 0 !important;
+    min-width: 0 !important;
+    border: 0 !important;
+    overflow: hidden;
+}
+
+/* ---------------------------------------------------------------------
+   Conversation list — hover & active state ala Gmail.
+   --------------------------------------------------------------------- */
+
+.conversation-item {
+    cursor: pointer;
+    transition: background-color 0.12s ease;
+}
+
+.conversation-item:hover {
+    background-color: #f5f5f9 !important;
+}
+
+/* ---------------------------------------------------------------------
+   Composer — textarea besar ala ChatGPT.
+   --------------------------------------------------------------------- */
+
+.composer-textarea {
+    min-height: 140px;
+    resize: vertical;
+}
+
+/* ---------------------------------------------------------------------
+   Toolbar actions yang belum punya backend (Reply All, Forward, Archive,
+   Delete, Labels, AI Tools) — nonaktif dengan tooltip "Segera hadir".
+   --------------------------------------------------------------------- */
+
+.conversation-toolbar .btn:disabled,
+#aiPanelBody .btn:disabled,
+.composer-textarea ~ div .btn:disabled {
+    cursor: not-allowed;
+}
+
+/* ---------------------------------------------------------------------
+   Skeleton loading — ditampilkan sesaat saat AJAX memuat thread lain
+   (lihat inbox-navigation.js).
+   --------------------------------------------------------------------- */
+
+.skeleton-line,
+.skeleton-bubble {
+    border-radius: 0.5rem;
+    background: linear-gradient(90deg, #eee 25%, #f5f5f5 37%, #eee 63%);
+    background-size: 400% 100%;
+    animation: skeleton-shimmer 1.4s ease infinite;
+}
+
+.skeleton-line {
+    height: 0.9rem;
+    border-radius: 0.25rem;
+}
+
+.skeleton-line-title {
+    width: 40%;
+    height: 1.1rem;
+}
+
+.skeleton-line-sm {
+    width: 60%;
+}
+
+.skeleton-bubble {
+    height: 2.5rem;
+}
+
+@keyframes skeleton-shimmer {
+    0% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0 50%;
+    }
+}
+
+/* ---------------------------------------------------------------------
+   Sidebar — channel omnichannel yang belum aktif (Instagram/Messenger/
+   Live Chat), badge "Soon" konsisten dengan WhatsApp.
+   --------------------------------------------------------------------- */
+
+.menu-link.disabled {
+    pointer-events: none;
+    opacity: 0.55;
+    cursor: not-allowed;
+}

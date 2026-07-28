@@ -13,32 +13,10 @@
 
     <div class="p-3 overflow-auto flex-grow-1">
 
-        <h6 class="fw-bold border-bottom pb-2 mb-3">Info Percakapan</h6>
-
-        <div class="mb-3">
-            <label class="form-label text-muted small fw-bold mb-0">SUBJECT</label>
-            <p class="mb-0">{{ $activeConversation->subject ?: '(Tanpa subjek)' }}</p>
-        </div>
-
         <div class="mb-3">
             <label class="form-label text-muted small fw-bold mb-0">CUSTOMER</label>
             <p class="mb-0">{{ $activeConversation->contact_name ?? '-' }}</p>
             <p class="mb-0 text-muted small">{{ $activeConversation->contact_email ?? '-' }}</p>
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label text-muted small fw-bold mb-0">STATUS</label>
-            <form action="{{ route('inbox.status.update', $activeConversation) }}" method="POST" class="mt-1">
-                @csrf
-                @method('PUT')
-                <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
-                    @foreach (\App\Enums\ConversationStatus::cases() as $status)
-                        <option value="{{ $status->value }}" @selected($activeConversation->status === $status)>
-                            {{ ucwords(str_replace('_', ' ', $status->value)) }}
-                        </option>
-                    @endforeach
-                </select>
-            </form>
         </div>
 
         @if ($labels->isNotEmpty())
@@ -52,13 +30,22 @@
             </div>
         @endif
 
-        <div class="card mb-3 shadow-none border">
-            <div class="card-body py-3">
-                <h6 class="fw-bold text-primary mb-2"><i class="bx bx-brain me-1"></i> AI Analysis</h6>
+        <div class="border-top pt-3 mb-3">
+            <h6 class="fw-bold text-primary mb-2"><i class="bx bx-brain me-1"></i> AI Analysis</h6>
 
-                <div id="ai-analysis-card">
-                    @include('inbox.partials.analysis-card', ['analysis' => $activeConversation->analysis])
-                </div>
+            <div id="ai-analysis-card">
+                @include('inbox.components.analysis-card', ['analysis' => $activeConversation->analysis])
+            </div>
+        </div>
+
+        <div class="border-top pt-3 mb-3">
+            <label class="form-label text-muted small fw-bold mb-2 d-block">AI TOOLS <span class="badge bg-label-secondary ms-1">Future Feature</span></label>
+            <div class="d-flex flex-wrap gap-1">
+                @foreach (['Rewrite' => 'bx-edit-alt', 'Friendly' => 'bx-smile', 'Professional' => 'bx-briefcase', 'Shorter' => 'bx-collapse-horizontal', 'Longer' => 'bx-expand-horizontal', 'Translate' => 'bx-globe'] as $label => $icon)
+                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Segera hadir">
+                        <i class="bx {{ $icon }} me-1"></i>{{ $label }}
+                    </button>
+                @endforeach
             </div>
         </div>
 

@@ -1,4 +1,5 @@
-<li class="email-item border-bottom d-flex align-items-center px-4 py-3 position-relative hover-shadow {{ $isActive ? 'bg-label-primary' : 'bg-white' }}">
+<li class="email-item conversation-item border-bottom d-flex align-items-center px-4 py-3 position-relative {{ $isActive ? 'bg-label-primary' : 'bg-white' }}"
+    data-conversation-id="{{ $item->id }}">
 
     {{-- Star --}}
     <div class="d-flex align-items-center me-3">
@@ -9,7 +10,7 @@
 
     {{-- Informasi Pengirim & Isi Pesan --}}
     <a href="{{ route('inbox.index', ['conversation' => $item->id, 'filter' => $filter, 'q' => $search ?? null]) }}"
-       class="email-list-item-content d-flex align-items-center flex-grow-1 overflow-hidden text-decoration-none text-reset">
+       class="email-list-item-content js-conversation-link d-flex align-items-center flex-grow-1 overflow-hidden text-decoration-none text-reset">
 
         {{-- Avatar / Inisial Nama --}}
         <div class="avatar avatar-sm me-3 flex-shrink-0">
@@ -29,9 +30,14 @@
                 </h6>
                 @if ($item->status === \App\Enums\ConversationStatus::Replied)
                     <span class="badge bg-label-success rounded-pill" title="Sudah dibalas"><i class="bx bx-check"></i></span>
+                @elseif ($item->status === \App\Enums\ConversationStatus::PendingReview && ! $item->has_draft)
+                    <span class="badge bg-label-warning rounded-pill" title="Menunggu balasan agent">Waiting</span>
                 @endif
                 @if ($item->has_draft)
                     <span class="badge bg-label-primary rounded-pill ms-1" title="Draft AI tersedia">✨</span>
+                @endif
+                @if (!empty($item->latestMessage?->attachments))
+                    <i class="bx bx-paperclip text-muted ms-1" title="Ada lampiran"></i>
                 @endif
             </div>
             <p class="email-list-item-subject mb-0 text-truncate text-secondary small fw-semibold">

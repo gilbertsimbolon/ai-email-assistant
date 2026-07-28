@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ChannelType;
+use App\Enums\ConversationStatus;
 use App\Enums\DraftStatus;
 use App\Http\Controllers\Concerns\AuthorizesConversationAccess;
 use App\Http\Requests\Inbox\UpdateConversationStatusRequest;
@@ -32,6 +33,19 @@ class InboxController extends Controller
         $hasGmailAccount = $request->user()->gmailAccounts()->exists();
 
         [$activeConversation, $activeDraft] = $this->resolveActiveConversation($request);
+
+        // Klik conversation di list dilakukan lewat AJAX (lihat inbox-navigation.js)
+        // agar tidak perlu reload seluruh halaman — cukup kirim balik markup thread
+        // & AI panel yang sudah dirender, JS yang menukar innerHTML-nya. Navigasi
+        // filter/search/pagination tetap full page load seperti biasa.
+        if ($request->wantsJson()) {
+            return response()->json([
+                'thread_html' => view('inbox.components.conversation-thread', compact('activeConversation', 'activeDraft'))->render(),
+                'ai_panel_html' => view('inbox.components.ai-panel', compact('activeConversation'))->render(),
+                'conversation_id' => $activeConversation?->id,
+                'is_read' => $activeConversation?->is_read,
+            ]);
+        }
 
         return view('inbox.index', compact(
             'conversations',
@@ -77,6 +91,20 @@ class InboxController extends Controller
         $conversation->update(['is_starred' => ! $conversation->is_starred]);
 
         return response()->json(['is_starred' => $conversation->is_starred]);
+    }
+
+    /**
+     * Toggle status baca (dipakai tombol "Mark Read" di toolbar untuk menandai
+     * balik sebagai belum dibaca — membuka percakapan sudah otomatis menandai
+     * terbaca lewat resolveActiveConversation()).
+     */
+    public function toggleRead(Request $request, Conversation $conversation)
+    {
+        $this->authorizeConversation($request, $conversation);
+
+        $conversation->update(['is_read' => ! $conversation->is_read]);
+
+        return response()->json(['is_read' => $conversation->is_read]);
     }
 
     /**
@@ -157,6 +185,14 @@ class InboxController extends Controller
             ->where('channel', ChannelType::Email)
             ->when($filter === 'unread', fn ($query) => $query->where('is_read', false))
             ->when($filter === 'starred', fn ($query) => $query->where('is_starred', true))
+            // "Waiting Agent" / "Waiting Customer" tidak ada di skema DB — di-mapping
+            // ke ConversationStatus yang sudah ada: pending_review = customer baru
+            // kirim & agent belum balas, replied = agent sudah balas & menunggu
+            // customer.
+            ->when($filter === 'waiting_agent', fn ($query) => $query->where('status', ConversationStatus::PendingReview))
+            ->when($filter === 'waiting_customer', fn ($query) => $query->where('status', ConversationStatus::Replied))
+            ->when($filter === 'ai_draft', fn ($query) => $query->whereHas('drafts', fn ($q) => $q->whereIn('status', [DraftStatus::Active, DraftStatus::Regenerated])))
+            ->when($filter === 'closed', fn ($query) => $query->where('status', ConversationStatus::Closed))
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.$request->string('q').'%';
 

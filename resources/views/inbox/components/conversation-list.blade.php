@@ -1,6 +1,17 @@
 {{-- Panel Kiri: toolbar (search & filter) + daftar percakapan --}}
+@php
+    $filterOptions = [
+        'all' => 'All',
+        'unread' => 'Unread',
+        'starred' => 'Starred',
+        'waiting_agent' => 'Waiting Agent',
+        'waiting_customer' => 'Waiting Customer',
+        'ai_draft' => 'AI Draft',
+        'closed' => 'Closed',
+    ];
+@endphp
 
-<div class="card-header border-bottom py-3 px-4 bg-white flex-shrink-0">
+<div class="border-bottom py-3 px-3 bg-white flex-shrink-0">
     <form method="GET" action="{{ route('inbox.index') }}" class="mb-3">
         <input type="hidden" name="filter" value="{{ $filter }}">
         <div class="input-group input-group-merge">
@@ -9,24 +20,15 @@
         </div>
     </form>
 
-    <div class="d-flex align-items-center justify-content-between gap-2">
-        {{-- Filter: All / Unread / Starred --}}
-        <div class="btn-group" role="group" aria-label="Inbox Filters">
-            <a href="{{ route('inbox.index', ['filter' => 'all', 'q' => $search]) }}"
-               class="btn btn-sm {{ $filter === 'all' ? 'btn-primary' : 'btn-outline-secondary' }}">
-                All
+    <div class="d-flex flex-wrap gap-1">
+        @foreach ($filterOptions as $value => $label)
+            <a href="{{ route('inbox.index', ['filter' => $value, 'q' => $search]) }}"
+               class="btn btn-sm {{ $filter === $value ? 'btn-primary' : 'btn-outline-secondary' }}">
+                {{ $label }}
             </a>
-            <a href="{{ route('inbox.index', ['filter' => 'unread', 'q' => $search]) }}"
-               class="btn btn-sm {{ $filter === 'unread' ? 'btn-primary' : 'btn-outline-secondary' }}">
-                Unread
-            </a>
-            <a href="{{ route('inbox.index', ['filter' => 'starred', 'q' => $search]) }}"
-               class="btn btn-sm {{ $filter === 'starred' ? 'btn-primary' : 'btn-outline-secondary' }}">
-                Starred
-            </a>
-        </div>
+        @endforeach
 
-        <a href="{{ route('inbox.index', ['filter' => $filter, 'q' => $search]) }}" class="btn btn-icon btn-sm btn-outline-secondary" title="Refresh">
+        <a href="{{ route('inbox.index', ['filter' => $filter, 'q' => $search]) }}" class="btn btn-icon btn-sm btn-outline-secondary ms-auto" title="Refresh">
             <i class="bx bx-refresh"></i>
         </a>
     </div>
@@ -34,9 +36,9 @@
 
 {{-- List Email / Percakapan --}}
 <div class="email-list flex-grow-1 overflow-auto">
-    <ul class="list-unstyled m-0">
+    <ul class="list-unstyled m-0" id="conversationList">
         @forelse($conversations as $item)
-            @include('inbox.partials.list-item', ['item' => $item, 'filter' => $filter, 'isActive' => $activeConversation && $activeConversation->id === $item->id])
+            @include('inbox.components.conversation-item', ['item' => $item, 'filter' => $filter, 'isActive' => $activeConversation && $activeConversation->id === $item->id])
         @empty
             <li class="text-center p-5 text-muted bg-white">
                 <i class="bx bx-folder-open display-4 mb-2"></i>
@@ -45,6 +47,14 @@
                         Tidak ada pesan yang belum dibaca.
                     @elseif ($filter === 'starred')
                         Belum ada percakapan yang dibintangi.
+                    @elseif ($filter === 'waiting_agent')
+                        Tidak ada percakapan yang menunggu balasan agent.
+                    @elseif ($filter === 'waiting_customer')
+                        Tidak ada percakapan yang menunggu respon customer.
+                    @elseif ($filter === 'ai_draft')
+                        Tidak ada draft AI yang tersedia.
+                    @elseif ($filter === 'closed')
+                        Tidak ada percakapan yang ditutup.
                     @else
                         Tidak ada percakapan email.
                     @endif
