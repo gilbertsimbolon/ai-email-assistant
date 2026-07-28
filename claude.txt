@@ -1,94 +1,359 @@
-Saya ingin mengubah arsitektur konfigurasi AI pada project Laravel ini.
+Saya ingin mengubah total tampilan dan alur kerja halaman Inbox Email agar menyerupai aplikasi chat modern (seperti WhatsApp, Telegram, Discord, atau Gmail Conversation View), namun tetap mempertahankan konsep email.
 
-Saat ini konfigurasi AI (OpenAI/Gemini/Claude/OpenRouter atau provider lain) masih membaca dari file .env dan config/*.php. Saya ingin menghilangkan ketergantungan tersebut dan memindahkan seluruh konfigurasi ke database serta halaman Settings.
+Tujuan utama adalah agar AI tidak otomatis berjalan setiap email masuk, sehingga penggunaan token jauh lebih hemat.
 
-Lakukan perubahan berikut secara menyeluruh dan konsisten:
+Lakukan analisis terlebih dahulu terhadap seluruh project, kemudian lakukan refactoring secara menyeluruh.
 
-Analisis seluruh project terlebih dahulu, kemudian identifikasi semua file, service, controller, config, middleware, command, job, dan class yang masih mengambil konfigurasi AI dari:
-env()
-config('openai.*')
-config('gemini.*')
-config('anthropic.*')
-config('openrouter.*')
-atau konfigurasi AI lainnya.
-Buat tabel baru (misalnya ai_settings) yang menyimpan konfigurasi AI global, minimal berisi:
-provider
-api_key
-base_url
-model
-temperature
-max_tokens
-timeout
-enabled
-created_at
-updated_at
-Buat migration, model, dan service khusus (misalnya AiConfigurationService) yang bertugas:
-membaca konfigurasi dari database
-melakukan cache per request
-menyediakan getter yang dipakai seluruh aplikasi
-menjadi satu-satunya sumber konfigurasi AI.
-Seluruh service AI wajib menggunakan AiConfigurationService.
-Tidak boleh ada lagi pemanggilan:
-env()
-config('openai...')
-config('gemini...')
-config('anthropic...')
-atau konfigurasi AI lainnya secara langsung.
-Buat halaman Settings → AI Configuration yang memungkinkan administrator mengubah:
-AI Provider
-API Key
-Base URL
-Model
-Temperature
-Max Tokens
-Timeout
-Status Enabled/Disabled
-API Key harus:
-disimpan terenkripsi menggunakan Laravel Crypt
-tidak pernah ditampilkan penuh pada halaman Settings
-apabila field API Key dikosongkan saat update, gunakan API Key lama (jangan dihapus).
+1. Redesign UI Inbox
 
-Tambahkan tombol Test Connection.
+Ubah halaman Inbox menjadi layout 3 panel modern.
 
-Tombol ini harus:
+Panel kiri
 
-mengambil konfigurasi yang sedang diisi pada form (belum harus disimpan)
-melakukan request ke provider AI
-menampilkan:
-Connected
-Authentication Failed
-Invalid API Key
-Invalid Base URL
-Timeout
-Provider Unreachable
-Error lainnya secara jelas.
+Berisi daftar seluruh percakapan email.
 
-Sistem harus mendukung banyak provider AI, minimal:
+Setiap item menampilkan:
 
-OpenAI
-OpenRouter
-Anthropic Claude
-Google Gemini
+Nama pengirim
+Subject
+Preview isi email
+Waktu
+Badge unread
+Badge draft AI (jika sudah ada draft)
+Badge replied
+Avatar
+Search
+Filter
+Pagination / Infinite Scroll
 
-Arsitektur harus mudah diperluas jika nanti ingin menambahkan provider baru.
+Layout harus terasa seperti aplikasi chat.
 
-Terapkan pola Strategy atau Adapter agar setiap provider memiliki implementasi sendiri, namun menggunakan interface yang sama.
-Seluruh service yang membuat draft email, analisis email, reply email, atau fitur AI lainnya harus menggunakan abstraction tersebut, bukan memanggil provider secara langsung.
-Hapus seluruh dependency terhadap konfigurasi AI di .env, kecuali konfigurasi dasar Laravel seperti APP_KEY, DB, MAIL, dan sebagainya.
-Setelah perubahan selesai:
-hapus kode yang sudah tidak digunakan
-hapus konfigurasi lama yang tidak lagi dipakai
-hapus service yang redundant
-jangan meninggalkan dead code.
-Pastikan seluruh fitur lama tetap berjalan tanpa perubahan perilaku, hanya sumber konfigurasinya yang berpindah dari .env ke database.
-Ikuti best practice Laravel 13:
-Service Layer
-Dependency Injection
-Repository hanya jika memang diperlukan
-SOLID Principle
-Clean Architecture
-Type Hint
-Return Type
-Exception Handling
-Logging yang baik.
-Sebelum melakukan perubahan, analisis dahulu seluruh project agar mengetahui semua bagian yang akan terdampak. Setelah analisis selesai, lakukan refactoring secara bertahap sehingga tidak ada error ataupun fitur yang rusak. Jangan membuat implementasi sementara (temporary workaround), tetapi hasil akhir harus menjadi arsitektur permanen yang rapi, konsisten, dan mudah dikembangkan di masa depan.
+Panel tengah
+
+Berisi seluruh isi conversation.
+
+Jangan tampil sebagai daftar email biasa.
+
+Tampilkan sebagai bubble conversation seperti aplikasi chat.
+
+Contoh:
+
+Customer
+
+Halo saya ingin bertanya...
+
+Saya
+
+Terima kasih telah menghubungi kami...
+
+Customer
+
+Baik terima kasih.
+
+dst.
+
+Bubble harus berbeda warna antara customer dan kita.
+
+Setiap bubble menampilkan:
+
+waktu
+status
+attachment
+sender
+
+Jika email memiliki attachment, tampilkan preview.
+
+Jika berupa image tampilkan thumbnail.
+
+Jika PDF tampilkan icon.
+
+Panel kanan
+
+Berisi informasi conversation.
+
+Misalnya:
+
+Subject
+Email customer
+Nama customer
+Label Gmail
+Status
+AI Summary
+Jumlah email
+Thread ID
+Gmail Labels
+Attachment list
+
+Panel ini dapat di-collapse.
+
+2. Composer Area
+
+Di bagian bawah conversation buat composer seperti aplikasi chat.
+
+Bukan form email biasa.
+
+Composer terdiri dari:
+
+Textarea besar
+
+Attachment button
+
+Emoji (optional)
+
+Template button (future)
+
+AI button
+
+Send button
+
+Shortcut:
+
+Ctrl + Enter = Send
+
+Enter = New Line
+
+3. AI Workflow Baru
+
+Ini yang paling penting.
+
+JANGAN lagi memanggil AI setiap email masuk.
+
+Saya ingin workflow seperti berikut.
+
+Email masuk
+
+↓
+
+Disimpan ke database
+
+↓
+
+Ditampilkan di Inbox
+
+↓
+
+User membaca email
+
+↓
+
+User menekan tombol
+
+✨ Generate AI Reply
+
+↓
+
+Baru AI dipanggil
+
+↓
+
+Draft muncul di textarea
+
+↓
+
+User bebas mengedit
+
+↓
+
+Klik Send
+
+↓
+
+Email dikirim melalui Gmail API
+
+Artinya AI hanya dipanggil jika user memang meminta.
+
+Ini akan menghemat token secara signifikan.
+
+4. Tombol AI
+
+Tambahkan tombol:
+
+✨ Generate Reply
+
+Fungsi:
+
+Mengambil seluruh isi thread email.
+
+Mengambil konteks conversation.
+
+Mengirim semuanya ke AI.
+
+Menghasilkan draft balasan.
+
+Draft TIDAK langsung dikirim.
+
+Draft hanya dimasukkan ke textarea.
+
+Tambahkan juga:
+
+🔄 Regenerate
+
+Menghasilkan draft baru.
+
+Tambahkan:
+
+🧹 Clear Draft
+
+Menghapus isi textarea.
+
+Tambahkan:
+
+📋 Copy
+
+Copy draft.
+
+5. Prompt AI
+
+Saat Generate Reply ditekan, AI harus menerima:
+
+seluruh thread email
+subject
+sender
+receiver
+histori conversation
+attachment text (jika ada)
+instruksi perusahaan
+tone
+bahasa customer
+
+AI harus otomatis membalas menggunakan bahasa customer.
+
+Jika customer memakai Bahasa Indonesia → balas Indonesia.
+
+Jika customer memakai English → balas English.
+
+Jika campuran → AI menentukan yang paling sesuai.
+
+6. Draft Management
+
+Draft AI disimpan ke database.
+
+Jika user refresh halaman:
+
+draft tetap ada.
+
+Jika Generate lagi:
+
+tanya:
+
+Replace Draft?
+
+atau
+
+Create New Version?
+
+Simpan versi draft.
+
+7. Loading UX
+
+Saat AI sedang bekerja:
+
+Textarea disable.
+
+Tampilkan typing animation.
+
+Contoh:
+
+AI is thinking...
+
+atau tiga titik animasi.
+
+Jangan freeze UI.
+
+8. Streaming Response
+
+Jika provider AI mendukung streaming:
+
+draft muncul sedikit demi sedikit.
+
+Seperti ChatGPT.
+
+Jika tidak mendukung:
+
+fallback ke response biasa.
+
+9. Auto Save
+
+Saat user mengedit draft.
+
+Auto save setiap beberapa detik.
+
+Jangan sampai draft hilang.
+
+10. Keyboard Experience
+
+Ctrl + Enter
+
+Send
+
+Ctrl + Shift + G
+
+Generate AI
+
+ESC
+
+Cancel Generate
+
+11. Token Optimization
+
+AI TIDAK BOLEH dipanggil ketika:
+
+inbox dibuka
+email masuk
+refresh halaman
+polling Gmail
+sinkronisasi Gmail
+
+AI hanya dipanggil ketika user menekan:
+
+Generate AI Reply
+
+Dengan demikian penggunaan token menjadi jauh lebih hemat.
+
+12. Performance
+
+Gunakan lazy loading conversation.
+
+Gunakan pagination.
+
+Gunakan cache jika diperlukan.
+
+Hindari N+1 Query.
+
+Gunakan eager loading.
+
+Optimalkan query database.
+
+13. UI
+
+Gunakan template Sneat yang sudah ada.
+
+Pertahankan seluruh style aplikasi.
+
+Jangan membuat CSS framework baru.
+
+Gunakan Bootstrap yang sudah tersedia.
+
+UI harus terasa modern seperti:
+
+Gmail
+ChatGPT
+WhatsApp Web
+Front
+Missive
+
+Namun tetap mempertahankan identitas email, bukan aplikasi chat murni.
+
+14. Arsitektur
+
+Pisahkan dengan jelas:
+
+Gmail Sync Service
+Conversation Service
+Draft Service
+AI Generation Service
+Send Email Service
+
+Setiap service hanya memiliki satu tanggung jawab (Single Responsibility Principle).
+
+Sebelum mengubah kode, analisis seluruh project terlebih dahulu untuk memahami arsitektur yang ada. Setelah analisis selesai, lakukan refactoring secara bertahap tanpa merusak fitur yang sudah berjalan. Hasil akhir harus menghasilkan pengalaman seperti aplikasi chat modern untuk email, dengan AI yang hanya bekerja saat diminta pengguna, sehingga efisien dalam penggunaan token, mudah dikembangkan, dan tetap mengikuti best practice Laravel 13 serta prinsip Clean Architecture.
