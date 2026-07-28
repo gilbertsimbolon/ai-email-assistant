@@ -19,7 +19,7 @@
 
     {{-- Panel Kiri: Daftar Percakapan --}}
     <div id="conversationListPanel"
-         class="inbox-list-panel border-end h-100 flex-column {{ $activeConversation ? 'd-none d-lg-flex' : 'd-flex' }}">
+         class="inbox-list-panel border-end h-full flex-column {{ $activeConversation ? 'd-none d-lg-flex' : 'd-flex' }}">
         @include('inbox.components.conversation-list')
     </div>
 
