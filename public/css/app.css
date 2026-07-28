@@ -1,0 +1,65 @@
+/* Inbox 3-panel chat-style layout — plain CSS on top of the existing
+   Bootstrap/Sneat utility classes, no new CSS framework. */
+
+.chat-bubble {
+    max-width: 75%;
+    padding: 0.5rem 0.85rem;
+    border-radius: 0.75rem;
+}
+
+.chat-bubble-customer {
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-bottom-left-radius: 0.25rem;
+}
+
+.chat-bubble-agent {
+    background-color: var(--bs-primary, #696cff);
+    color: #fff;
+    border-bottom-right-radius: 0.25rem;
+}
+
+.chat-bubble-meta {
+    margin-bottom: 0.25rem;
+}
+
+.chat-bubble-body {
+    white-space: pre-line;
+    word-break: break-word;
+}
+
+.chat-bubble-attachments {
+    max-width: 100%;
+}
+
+.chat-attachment-thumb {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 0.375rem;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.chat-attachment-file {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 84px;
+    padding: 0.4rem;
+    border-radius: 0.375rem;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+#composer-body:disabled,
+#composer-subject:disabled {
+    background-color: #f8f9fa;
+    cursor: wait;
+}
+
+.ai-thinking-dots {
+    display: inline-block;
+    min-width: 1.2em;
+    text-align: left;
+}

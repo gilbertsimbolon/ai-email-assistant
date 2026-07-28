@@ -46,6 +46,16 @@ class Conversation extends Model
         return $this->hasMany(Message::class);
     }
 
+    /**
+     * Only the most recent message — used by the conversation list so it
+     * doesn't have to eager-load every message body of every thread just to
+     * render a one-line preview.
+     */
+    public function latestMessage()
+    {
+        return $this->hasOne(Message::class)->latestOfMany('sent_at');
+    }
+
     public function analysis()
     {
         return $this->hasOne(Analysis::class);

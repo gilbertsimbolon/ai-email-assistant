@@ -24,6 +24,7 @@ class Draft extends Model
         'status' => DraftStatus::class,
         'type' => MessageType::class,
         'content' => 'array',
+        'version' => 'integer',
     ];
 
     public function conversation()

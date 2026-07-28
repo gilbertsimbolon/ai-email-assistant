@@ -51,9 +51,6 @@ Route::middleware('auth')->group(function () {
         // Daftar inbox (dengan filter status)
         Route::get('/', [InboxController::class, 'index'])->name('index');
 
-        // Endpoint AJAX polling untuk auto-refresh daftar inbox
-        Route::get('/poll', [InboxController::class, 'poll'])->name('poll');
-
         // Sub-menu channel WhatsApp (belum terintegrasi, halaman "coming soon").
         // Harus didaftarkan sebelum /{conversation} agar tidak tertangkap wildcard.
         Route::get('/whatsapp', [WhatsAppController::class, 'index'])->name('whatsapp');
@@ -71,10 +68,20 @@ Route::middleware('auth')->group(function () {
         Route::get('/messages/{message}/attachments/{attachmentId}', [InboxController::class, 'downloadAttachment'])
             ->name('messages.attachments.download');
 
+        // Preview attachment inline (thumbnail gambar di bubble chat)
+        Route::get('/messages/{message}/attachments/{attachmentId}/preview', [InboxController::class, 'previewAttachment'])
+            ->name('messages.attachments.preview');
+
         // Review, approve, reject draft AI
         Route::put('/drafts/{draft}', [DraftController::class, 'update'])->name('drafts.update');
         Route::post('/drafts/{draft}/approve', [DraftController::class, 'approve'])->name('drafts.approve');
         Route::post('/drafts/{draft}/reject', [DraftController::class, 'reject'])->name('drafts.reject');
+
+        // Tombol "Generate AI Reply" — satu-satunya tempat AI dipanggil
+        Route::post('/{conversation}/drafts/generate', [DraftController::class, 'generate'])->name('drafts.generate');
+
+        // Tombol "Send" pada composer (dengan atau tanpa draft AI)
+        Route::post('/{conversation}/drafts/send', [DraftController::class, 'send'])->name('drafts.send');
     });
 
     // Route Settings & koneksi Gmail (token OAuth per user)

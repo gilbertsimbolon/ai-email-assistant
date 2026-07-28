@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\ChannelType;
 use App\Enums\DraftStatus;
+use App\Http\Controllers\Concerns\AuthorizesConversationAccess;
 use App\Http\Requests\Inbox\UpdateConversationStatusRequest;
 use App\Models\Conversation;
 use App\Models\Message;
@@ -14,6 +15,8 @@ use Illuminate\Http\Response;
 
 class InboxController extends Controller
 {
+    use AuthorizesConversationAccess;
+
     /**
      * Menampilkan halaman Inbox Email (dua panel: daftar percakapan di kiri,
      * pratinjau percakapan yang dipilih — via ?conversation= — di kanan).
@@ -21,9 +24,10 @@ class InboxController extends Controller
     public function index(Request $request)
     {
         $filter = $request->get('filter', 'all');
+        $search = $request->string('q')->toString();
 
         $conversations = $this->conversationsByFilter($request, $filter)
-            ->appends(['filter' => $filter]);
+            ->appends(['filter' => $filter, 'q' => $search]);
 
         $hasGmailAccount = $request->user()->gmailAccounts()->exists();
 
@@ -32,30 +36,11 @@ class InboxController extends Controller
         return view('inbox.index', compact(
             'conversations',
             'filter',
+            'search',
             'hasGmailAccount',
             'activeConversation',
             'activeDraft',
         ));
-    }
-
-    /**
-     * Endpoint AJAX yang dipanggil berkala oleh halaman Inbox agar daftar
-     * percakapan selalu terbaru tanpa reload halaman.
-     */
-    public function poll(Request $request)
-    {
-        $filter = $request->get('filter', 'all');
-
-        $conversations = $this->conversationsByFilter($request, $filter, (int) $request->get('page', 1));
-
-        // Pagination links must point back at the real inbox page, not this
-        // JSON polling endpoint (which is what the current request's URL is).
-        $conversations->withPath(route('inbox.index'))->appends(['filter' => $filter]);
-
-        return response()->json([
-            'html' => view('inbox.partials.list', compact('conversations', 'filter'))->render(),
-            'checked_at' => now()->toIso8601String(),
-        ]);
     }
 
     /**
@@ -105,6 +90,44 @@ class InboxController extends Controller
         GmailApiService $gmailApi,
         GmailAuthService $gmailAuth,
     ): Response {
+        [$attachment, $bytes] = $this->fetchAttachment($request, $message, $attachmentId, $gmailApi, $gmailAuth);
+
+        return response($bytes, 200, [
+            'Content-Type' => $attachment['mime_type'] ?? 'application/octet-stream',
+            'Content-Disposition' => 'attachment; filename="'.$attachment['filename'].'"',
+        ]);
+    }
+
+    /**
+     * Tampilkan satu attachment inline (thumbnail gambar / preview PDF di
+     * bubble chat), sama seperti downloadAttachment tapi tanpa memaksa
+     * unduhan.
+     */
+    public function previewAttachment(
+        Request $request,
+        Message $message,
+        string $attachmentId,
+        GmailApiService $gmailApi,
+        GmailAuthService $gmailAuth,
+    ): Response {
+        [$attachment, $bytes] = $this->fetchAttachment($request, $message, $attachmentId, $gmailApi, $gmailAuth);
+
+        return response($bytes, 200, [
+            'Content-Type' => $attachment['mime_type'] ?? 'application/octet-stream',
+            'Content-Disposition' => 'inline; filename="'.$attachment['filename'].'"',
+        ]);
+    }
+
+    /**
+     * @return array{0: array, 1: string} [attachment metadata, raw file bytes]
+     */
+    protected function fetchAttachment(
+        Request $request,
+        Message $message,
+        string $attachmentId,
+        GmailApiService $gmailApi,
+        GmailAuthService $gmailAuth,
+    ): array {
         $this->authorizeConversation($request, $message->conversation);
 
         $attachment = collect($message->attachments)->firstWhere('id', $attachmentId);
@@ -120,21 +143,27 @@ class InboxController extends Controller
         $data = $gmailApi->getAttachment($account->access_token, $message->gmail_message_id, $attachmentId);
         $bytes = base64_decode(strtr($data['data'] ?? '', '-_', '+/'));
 
-        return response($bytes, 200, [
-            'Content-Type' => $attachment['mime_type'] ?? 'application/octet-stream',
-            'Content-Disposition' => 'attachment; filename="'.$attachment['filename'].'"',
-        ]);
+        return [$attachment, $bytes];
     }
 
     protected function conversationsByFilter(Request $request, ?string $filter, int $page = 1)
     {
-        // Ambil percakapan beserta relasi analisis, draf, dan pesan terakhir —
+        // Ambil percakapan beserta analisis dan pesan TERAKHIR saja (bukan
+        // seluruh thread — daftar hanya butuh satu baris pratinjau per item),
         // dibatasi ke channel Email dan hanya akun Gmail milik user yang login.
-        return Conversation::with(['analysis', 'drafts', 'messages'])
+        return Conversation::with(['analysis', 'latestMessage'])
+            ->withExists(['drafts as has_draft' => fn ($query) => $query->whereIn('status', [DraftStatus::Active, DraftStatus::Regenerated])])
             ->whereHas('gmailAccount', fn ($query) => $query->where('user_id', $request->user()->id))
             ->where('channel', ChannelType::Email)
             ->when($filter === 'unread', fn ($query) => $query->where('is_read', false))
             ->when($filter === 'starred', fn ($query) => $query->where('is_starred', true))
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $term = '%'.$request->string('q').'%';
+
+                $query->where(fn ($q) => $q->where('contact_name', 'like', $term)
+                    ->orWhere('contact_email', 'like', $term)
+                    ->orWhere('subject', 'like', $term));
+            })
             ->latest('last_message_at')
             ->paginate(15, page: $page);
     }
@@ -149,7 +178,11 @@ class InboxController extends Controller
             return [null, null];
         }
 
-        $activeConversation = Conversation::with(['analysis', 'drafts', 'messages'])
+        $activeConversation = Conversation::with([
+                'analysis',
+                'drafts',
+                'messages' => fn ($query) => $query->orderBy('sent_at'),
+            ])
             ->whereHas('gmailAccount', fn ($query) => $query->where('user_id', $request->user()->id))
             ->where('channel', ChannelType::Email)
             ->find($request->get('conversation'));
@@ -162,19 +195,12 @@ class InboxController extends Controller
             $activeConversation->update(['is_read' => true]);
         }
 
+        // Tepat satu draft berstatus Active per percakapan (lihat
+        // DraftService::save) — draft lama otomatis jadi Regenerated saat
+        // versi baru dibuat, jadi tidak perlu sortBy di sini.
         $activeDraft = $activeConversation->drafts
-            ->whereIn('status', [DraftStatus::Active, DraftStatus::Regenerated])
-            ->sortByDesc('created_at')
-            ->first();
+            ->firstWhere('status', DraftStatus::Active);
 
         return [$activeConversation, $activeDraft];
-    }
-
-    /**
-     * Pastikan percakapan ini milik akun Gmail yang dimiliki user yang login.
-     */
-    protected function authorizeConversation(Request $request, Conversation $conversation): void
-    {
-        abort_unless($conversation->gmailAccount?->user_id === $request->user()->id, 403);
     }
 }

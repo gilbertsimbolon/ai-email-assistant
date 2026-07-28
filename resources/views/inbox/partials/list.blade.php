@@ -1,48 +1,62 @@
-{{-- Daftar Percakapan --}}
-<div class="card shadow-sm">
-    <div class="card-body p-0">
-        <div class="list-group list-group-flush">
-            @forelse($conversations as $item)
-                <a href="{{ route('inbox.index', ['conversation' => $item->id, 'filter' => $filter ?? 'all']) }}" class="list-group-item list-group-item-action p-3">
-                    <div class="d-flex w-100 justify-content-between align-items-center">
-                        <h5 class="mb-1 {{ $item->is_read ? 'fw-normal' : 'fw-bold' }}">
-                            @unless ($item->is_read)
-                                <span class="bg-primary rounded-circle d-inline-block me-1" style="width: 8px; height: 8px;"></span>
-                            @endunless
-                            {{ $item->contact_name ?? ($item->contact_email ?? 'Pelanggan') }}
-                        </h5>
-                        <small
-                            class="text-muted">{{ $item->last_message_at ? $item->last_message_at->diffForHumans() : '' }}</small>
-                    </div>
+{{-- Panel Kiri: toolbar (search & filter) + daftar percakapan --}}
 
-                    <p class="mb-1 text-secondary">
-                        <strong>Channel:</strong> <span
-                            class="badge bg-secondary">{{ strtoupper($item->channel->value ?? $item->channel) }}</span>
-                        @if ($item->analysis)
-                            | <strong>Intent:</strong> {{ $item->analysis->customer_intent }}
-                            | <strong>Sentimen:</strong>
-                            <span
-                                class="badge bg-{{ ($item->analysis->sentiment->value ?? $item->analysis->sentiment) === 'positive' ? 'success' : (($item->analysis->sentiment->value ?? $item->analysis->sentiment) === 'negative' ? 'danger' : 'warning') }}">
-                                {{ ucfirst($item->analysis->sentiment->value ?? $item->analysis->sentiment) }}
-                            </span>
-                        @endif
-                    </p>
-
-                    @if ($item->analysis)
-                        <small class="text-muted"><strong>Ringkasan AI:</strong>
-                            {{ Str::limit($item->analysis->summary, 120) }}</small>
-                    @endif
-                </a>
-            @empty
-                <div class="p-4 text-center text-muted">
-                    Tidak ada percakapan dengan status ini.
-                </div>
-            @endforelse
+<div class="card-header border-bottom py-3 px-4 bg-white flex-shrink-0">
+    <form method="GET" action="{{ route('inbox.index') }}" class="mb-3">
+        <input type="hidden" name="filter" value="{{ $filter }}">
+        <div class="input-group input-group-merge">
+            <span class="input-group-text bg-transparent border-end-0"><i class="bx bx-search"></i></span>
+            <input type="text" name="q" value="{{ $search }}" class="form-control border-start-0 ps-0" placeholder="Cari nama, email, atau subjek...">
         </div>
+    </form>
+
+    <div class="d-flex align-items-center justify-content-between gap-2">
+        {{-- Filter: All / Unread / Starred --}}
+        <div class="btn-group" role="group" aria-label="Inbox Filters">
+            <a href="{{ route('inbox.index', ['filter' => 'all', 'q' => $search]) }}"
+               class="btn btn-sm {{ $filter === 'all' ? 'btn-primary' : 'btn-outline-secondary' }}">
+                All
+            </a>
+            <a href="{{ route('inbox.index', ['filter' => 'unread', 'q' => $search]) }}"
+               class="btn btn-sm {{ $filter === 'unread' ? 'btn-primary' : 'btn-outline-secondary' }}">
+                Unread
+            </a>
+            <a href="{{ route('inbox.index', ['filter' => 'starred', 'q' => $search]) }}"
+               class="btn btn-sm {{ $filter === 'starred' ? 'btn-primary' : 'btn-outline-secondary' }}">
+                Starred
+            </a>
+        </div>
+
+        <a href="{{ route('inbox.index', ['filter' => $filter, 'q' => $search]) }}" class="btn btn-icon btn-sm btn-outline-secondary" title="Refresh">
+            <i class="bx bx-refresh"></i>
+        </a>
     </div>
 </div>
 
-{{-- Pagination --}}
-<div class="mt-3">
-    {{ $conversations->links() }}
+{{-- List Email / Percakapan --}}
+<div class="email-list flex-grow-1 overflow-auto">
+    <ul class="list-unstyled m-0">
+        @forelse($conversations as $item)
+            @include('inbox.partials.list-item', ['item' => $item, 'filter' => $filter, 'isActive' => $activeConversation && $activeConversation->id === $item->id])
+        @empty
+            <li class="text-center p-5 text-muted bg-white">
+                <i class="bx bx-folder-open display-4 mb-2"></i>
+                <p class="mb-0">
+                    @if ($filter === 'unread')
+                        Tidak ada pesan yang belum dibaca.
+                    @elseif ($filter === 'starred')
+                        Belum ada percakapan yang dibintangi.
+                    @else
+                        Tidak ada percakapan email.
+                    @endif
+                </p>
+            </li>
+        @endforelse
+    </ul>
 </div>
+
+{{-- Pagination Footer --}}
+@if ($conversations->hasPages())
+    <div class="card-footer bg-white py-2 px-4 d-flex justify-content-center border-top flex-shrink-0">
+        {{ $conversations->links() }}
+    </div>
+@endif

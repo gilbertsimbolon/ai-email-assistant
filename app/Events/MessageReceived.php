@@ -8,8 +8,10 @@ use Illuminate\Queue\SerializesModels;
 
 /**
  * Dispatched by GmailSyncService right after a new inbound customer message
- * has been persisted, decoupling "a message arrived" from "go run AI
- * analysis + draft generation for it".
+ * has been persisted. Currently has no listeners — AI analysis/draft
+ * generation is user-triggered only (see AiGenerationService, called from
+ * DraftController::generate()), never run automatically on sync. Kept as a
+ * hook for future non-AI reactions to new mail (e.g. an unread badge/toast).
  */
 class MessageReceived
 {
