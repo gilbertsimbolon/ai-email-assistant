@@ -7,12 +7,13 @@ use App\Enums\Priority;
 use App\Enums\Sentiment;
 use App\Models\Analysis;
 use App\Models\Conversation;
+use App\Services\AI\Contracts\AiClientInterface;
 
 class AnalysisService
 {
     public function __construct(
         protected PromptService $promptService,
-        protected OpenAIService $openAIService
+        protected AiClientInterface $aiClient
     ) {
     }
 
@@ -24,8 +25,7 @@ class AnalysisService
         $prompt = $this->promptService
             ->buildAnalysisPrompt($thread);
 
-        // Menggunakan method json() dari OpenAIService agar lebih bersih & aman
-        return $this->openAIService->json($prompt);
+        return $this->aiClient->json($prompt);
     }
 
     /**

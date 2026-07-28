@@ -129,6 +129,12 @@
                             <div>Gmail API Configuration</div>
                         </a>
                     </li>
+
+                    <li class="menu-item {{ request()->routeIs('settings.ai-config.*') ? 'active' : '' }}">
+                        <a href="{{ route('settings.ai-config.index') }}" class="menu-link">
+                            <div>AI Configuration</div>
+                        </a>
+                    </li>
                 @endif
 
                 <li class="menu-item">

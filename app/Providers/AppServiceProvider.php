@@ -4,6 +4,9 @@ namespace App\Providers;
 
 use App\Enums\ChannelType;
 use App\Models\Conversation;
+use App\Services\AI\AiConfigurationService;
+use App\Services\AI\AiClientService;
+use App\Services\AI\Contracts\AiClientInterface;
 use App\Services\Gmail\GmailConfigurationService;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\URL;
@@ -20,6 +23,14 @@ class AppServiceProvider extends ServiceProvider
         // Singleton so the gmail_settings row is read from the database at
         // most once per request/job instead of once per Gmail API call.
         $this->app->singleton(GmailConfigurationService::class);
+
+        // Singleton so the ai_settings row is read from the database at
+        // most once per request/job instead of once per AI call.
+        $this->app->singleton(AiConfigurationService::class);
+
+        // AnalysisService/DraftService depend on the AiClientInterface
+        // abstraction only, never on a provider adapter directly.
+        $this->app->bind(AiClientInterface::class, AiClientService::class);
     }
 
     /**

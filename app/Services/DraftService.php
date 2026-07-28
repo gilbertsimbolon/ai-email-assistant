@@ -5,12 +5,15 @@ namespace App\Services;
 use App\Models\Conversation;
 use App\Models\Draft;
 use App\Models\Analysis;
+use App\Services\AI\AiConfigurationService;
+use App\Services\AI\Contracts\AiClientInterface;
 
 class DraftService
 {
     public function __construct(
         protected PromptService $promptService,
-        protected OpenAIService $openAIService
+        protected AiClientInterface $aiClient,
+        protected AiConfigurationService $aiConfig
     ) {
     }
 
@@ -22,8 +25,7 @@ class DraftService
         $prompt = $this->promptService
             ->buildDraftPrompt($conversation, $analysis);
 
-        // Ubah dari ->text($prompt) menjadi ->chat($prompt)['content']
-        $response = $this->openAIService->chat($prompt);
+        $response = $this->aiClient->chat($prompt);
 
         return $response['content'];
     }
@@ -51,7 +53,7 @@ class DraftService
                 ],
                 'type' => strtolower($channelValue), // Pastikan nilai berupa string backing value
                 'status' => 'active',
-                'provider' => 'openai',
+                'provider' => $this->aiConfig->getProvider()->value,
             ]
         );
     }

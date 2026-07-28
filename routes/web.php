@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AiSettingsController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\LupaPasswordController;
@@ -92,6 +93,15 @@ Route::middleware('auth')->group(function () {
             Route::get('/', [GmailSettingsController::class, 'index'])->name('index');
             Route::put('/', [GmailSettingsController::class, 'update'])->name('update');
             Route::post('/test-connection', [GmailSettingsController::class, 'testConnection'])->name('test-connection');
+        });
+
+        // Global AI provider configuration (provider/api key/base url/model/
+        // temperature/max tokens/timeout), admin-only: this replaces editing
+        // .env and config/openai.php for AI credentials.
+        Route::middleware('admin')->prefix('ai-config')->name('ai-config.')->group(function () {
+            Route::get('/', [AiSettingsController::class, 'index'])->name('index');
+            Route::put('/', [AiSettingsController::class, 'update'])->name('update');
+            Route::post('/test-connection', [AiSettingsController::class, 'testConnection'])->name('test-connection');
         });
     });
 });
