@@ -1,17 +1,94 @@
-Tolong bantu saya merombak struktur sidebar dan tampilan menu pada aplikasi saya dengan instruksi detail berikut:
+Saya ingin mengubah arsitektur konfigurasi AI pada project Laravel ini.
 
-1. **Pembaruan Struktur Menu Sidebar:**
-   - Ubah menu **Inbox** utama agar memiliki *sub-menu* (dropdown/collapse) di bawahnya.
-   - Pisahkan sub-menu tersebut menjadi beberapa channel, yaitu: **Email**, **WhatsApp**, dan channel pendukung lainnya (jika ada).
+Saat ini konfigurasi AI (OpenAI/Gemini/Claude/OpenRouter atau provider lain) masih membaca dari file .env dan config/*.php. Saya ingin menghilangkan ketergantungan tersebut dan memindahkan seluruh konfigurasi ke database serta halaman Settings.
 
-2. **Kustomisasi Tampilan Menu Email:**
-   - Buat halaman/tampilan untuk sub-menu **Email** agar menyerupai antarmuka klien email profesional (memiliki daftar pesan masuk di sebelah kiri, pratinjau pesan di sebelah kanan, badge unread count, serta tata letak yang bersih ala *inbox style*).
+Lakukan perubahan berikut secara menyeluruh dan konsisten:
 
-3. **Kustomisasi Tampilan Menu WhatsApp:**
-   - Untuk sub-menu **WhatsApp**, buatkan halaman tampilan sederhana yang menginformasikan bahwa fitur ini **"Dalam Tahap Pengembangan" (Under Development)**, lengkap dengan ilustrasi atau ikon yang menarik dan rapi.
+Analisis seluruh project terlebih dahulu, kemudian identifikasi semua file, service, controller, config, middleware, command, job, dan class yang masih mengambil konfigurasi AI dari:
+env()
+config('openai.*')
+config('gemini.*')
+config('anthropic.*')
+config('openrouter.*')
+atau konfigurasi AI lainnya.
+Buat tabel baru (misalnya ai_settings) yang menyimpan konfigurasi AI global, minimal berisi:
+provider
+api_key
+base_url
+model
+temperature
+max_tokens
+timeout
+enabled
+created_at
+updated_at
+Buat migration, model, dan service khusus (misalnya AiConfigurationService) yang bertugas:
+membaca konfigurasi dari database
+melakukan cache per request
+menyediakan getter yang dipakai seluruh aplikasi
+menjadi satu-satunya sumber konfigurasi AI.
+Seluruh service AI wajib menggunakan AiConfigurationService.
+Tidak boleh ada lagi pemanggilan:
+env()
+config('openai...')
+config('gemini...')
+config('anthropic...')
+atau konfigurasi AI lainnya secara langsung.
+Buat halaman Settings → AI Configuration yang memungkinkan administrator mengubah:
+AI Provider
+API Key
+Base URL
+Model
+Temperature
+Max Tokens
+Timeout
+Status Enabled/Disabled
+API Key harus:
+disimpan terenkripsi menggunakan Laravel Crypt
+tidak pernah ditampilkan penuh pada halaman Settings
+apabila field API Key dikosongkan saat update, gunakan API Key lama (jangan dihapus).
 
-4. **Pembersihan Menu Lama:**
-   - Hapus menu-menu filter lama seperti **"Replied"**, **"Archived"** (atau menu status pesan lainnya yang sudah usang).
-   - Ganti dan selaraskan struktur filternya agar mengikuti standar fungsionalitas panel email modern (misalnya: *All*, *Unread*, *Starred*, dll., jika diperlukan).
+Tambahkan tombol Test Connection.
 
-Tolong berikan kode implementasinya (baik untuk struktur sidebar maupun komponen halamannya) secara lengkap, bersih, dan mudah diintegrasikan.
+Tombol ini harus:
+
+mengambil konfigurasi yang sedang diisi pada form (belum harus disimpan)
+melakukan request ke provider AI
+menampilkan:
+Connected
+Authentication Failed
+Invalid API Key
+Invalid Base URL
+Timeout
+Provider Unreachable
+Error lainnya secara jelas.
+
+Sistem harus mendukung banyak provider AI, minimal:
+
+OpenAI
+OpenRouter
+Anthropic Claude
+Google Gemini
+
+Arsitektur harus mudah diperluas jika nanti ingin menambahkan provider baru.
+
+Terapkan pola Strategy atau Adapter agar setiap provider memiliki implementasi sendiri, namun menggunakan interface yang sama.
+Seluruh service yang membuat draft email, analisis email, reply email, atau fitur AI lainnya harus menggunakan abstraction tersebut, bukan memanggil provider secara langsung.
+Hapus seluruh dependency terhadap konfigurasi AI di .env, kecuali konfigurasi dasar Laravel seperti APP_KEY, DB, MAIL, dan sebagainya.
+Setelah perubahan selesai:
+hapus kode yang sudah tidak digunakan
+hapus konfigurasi lama yang tidak lagi dipakai
+hapus service yang redundant
+jangan meninggalkan dead code.
+Pastikan seluruh fitur lama tetap berjalan tanpa perubahan perilaku, hanya sumber konfigurasinya yang berpindah dari .env ke database.
+Ikuti best practice Laravel 13:
+Service Layer
+Dependency Injection
+Repository hanya jika memang diperlukan
+SOLID Principle
+Clean Architecture
+Type Hint
+Return Type
+Exception Handling
+Logging yang baik.
+Sebelum melakukan perubahan, analisis dahulu seluruh project agar mengetahui semua bagian yang akan terdampak. Setelah analisis selesai, lakukan refactoring secara bertahap sehingga tidak ada error ataupun fitur yang rusak. Jangan membuat implementasi sementara (temporary workaround), tetapi hasil akhir harus menjadi arsitektur permanen yang rapi, konsisten, dan mudah dikembangkan di masa depan.
