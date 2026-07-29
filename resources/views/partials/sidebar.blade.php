@@ -150,16 +150,51 @@
         @endif
 
         {{-- Reports --}}
-        <li class="menu-header small text-uppercase">
-            <span class="menu-header-text">Reports</span>
-        </li>
+        @if (auth()->user()?->isAdmin())
+            <li class="menu-header small text-uppercase">
+                <span class="menu-header-text">Reports</span>
+            </li>
 
-        <li class="menu-item">
-            <a href="#" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-bar-chart-alt-2"></i>
-                <div>Reports</div>
-            </a>
-        </li>
+            <li class="menu-item {{ request()->routeIs('reports.*') ? 'active open' : '' }}">
+                <a href="javascript:void(0);" class="menu-link menu-toggle">
+                    <i class="menu-icon tf-icons bx bx-bar-chart-alt-2"></i>
+                    <div>Reports</div>
+                </a>
+
+                <ul class="menu-sub">
+                    <li class="menu-item {{ request()->routeIs('reports.index') ? 'active' : '' }}">
+                        <a href="{{ route('reports.index') }}" class="menu-link">
+                            <div>Overview</div>
+                        </a>
+                    </li>
+                    <li class="menu-item {{ request()->routeIs('reports.ai-usage') ? 'active' : '' }}">
+                        <a href="{{ route('reports.ai-usage') }}" class="menu-link">
+                            <div>AI Usage &amp; Models</div>
+                        </a>
+                    </li>
+                    <li class="menu-item {{ request()->routeIs('reports.content') ? 'active' : '' }}">
+                        <a href="{{ route('reports.content') }}" class="menu-link">
+                            <div>Content Analytics</div>
+                        </a>
+                    </li>
+                    <li class="menu-item {{ request()->routeIs('reports.customers') ? 'active' : '' }}">
+                        <a href="{{ route('reports.customers') }}" class="menu-link">
+                            <div>Customer Analytics</div>
+                        </a>
+                    </li>
+                    <li class="menu-item {{ request()->routeIs('reports.gmail-accounts') ? 'active' : '' }}">
+                        <a href="{{ route('reports.gmail-accounts') }}" class="menu-link">
+                            <div>Gmail Analytics</div>
+                        </a>
+                    </li>
+                    <li class="menu-item {{ request()->routeIs('reports.timeline') ? 'active' : '' }}">
+                        <a href="{{ route('reports.timeline') }}" class="menu-link">
+                            <div>Activity Timeline</div>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+        @endif
 
         {{-- Administration --}}
         <li class="menu-header small text-uppercase">

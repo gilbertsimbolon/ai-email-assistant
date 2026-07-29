@@ -26,6 +26,13 @@ use App\Http\Controllers\GmailOAuthController;
 use App\Http\Controllers\GmailSettingsController;
 use App\Http\Controllers\InboxController;
 use App\Http\Controllers\ProfilController;
+use App\Http\Controllers\Reports\ReportsAiUsageController;
+use App\Http\Controllers\Reports\ReportsContentController;
+use App\Http\Controllers\Reports\ReportsCustomerController;
+use App\Http\Controllers\Reports\ReportsExportController;
+use App\Http\Controllers\Reports\ReportsGmailController;
+use App\Http\Controllers\Reports\ReportsOverviewController;
+use App\Http\Controllers\Reports\ReportsTimelineController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\WhatsAppController;
 use Illuminate\Support\Facades\Route;
@@ -168,5 +175,20 @@ Route::middleware('auth')->group(function () {
 
         Route::get('settings', [AiCenterSettingsController::class, 'edit'])->name('settings.edit');
         Route::put('settings', [AiCenterSettingsController::class, 'update'])->name('settings.update');
+    });
+
+    // Reports: system-wide analytics dashboard (KPIs, email/intent/AI
+    // performance charts, per-entity analytics, response time, activity
+    // timeline, export). Admin-only, per claude.txt — same gate as AI
+    // Center, since most of this data (SOPs/Workflows/AI Models/cost) is
+    // itself admin-only.
+    Route::middleware('admin')->prefix('reports')->name('reports.')->group(function () {
+        Route::get('/', [ReportsOverviewController::class, 'index'])->name('index');
+        Route::get('ai-usage', [ReportsAiUsageController::class, 'index'])->name('ai-usage');
+        Route::get('content', [ReportsContentController::class, 'index'])->name('content');
+        Route::get('customers', [ReportsCustomerController::class, 'index'])->name('customers');
+        Route::get('gmail-accounts', [ReportsGmailController::class, 'index'])->name('gmail-accounts');
+        Route::get('timeline', [ReportsTimelineController::class, 'index'])->name('timeline');
+        Route::get('{report}/export/{format}', [ReportsExportController::class, 'export'])->name('export');
     });
 });

@@ -8,6 +8,7 @@ use App\Repositories\ConversationRepository;
 use App\Repositories\MessageRepository;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Orchestrates incremental sync of one GmailAccount's inbox: full backfill
@@ -29,15 +30,33 @@ class GmailSyncService
     {
         Log::info('Gmail sync started', ['gmail_account_id' => $account->id]);
 
-        $account = $this->auth->ensureFreshToken($account);
+        try {
+            $account = $this->auth->ensureFreshToken($account);
 
-        if (blank($account->history_id)) {
-            $this->fullSync($account);
-        } else {
-            $this->incrementalSync($account);
+            if (blank($account->history_id)) {
+                $this->fullSync($account);
+            } else {
+                $this->incrementalSync($account);
+            }
+
+            $account->update([
+                'last_synced_at' => now(),
+                'status' => 'connected',
+                'last_error' => null,
+            ]);
+        } catch (Throwable $e) {
+            $account->update([
+                'status' => 'error',
+                'last_error' => $e->getMessage(),
+            ]);
+
+            Log::error('Gmail sync failed', [
+                'gmail_account_id' => $account->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
         }
-
-        $account->update(['last_synced_at' => now()]);
 
         Log::info('Gmail sync finished', ['gmail_account_id' => $account->id]);
     }

@@ -9,6 +9,7 @@ use App\Models\Conversation;
 use App\Models\Draft;
 use App\Services\AI\AiConfigurationService;
 use App\Services\AiCenter\AiCenterPipeline;
+use App\Services\AiCenter\DataTransferObjects\PipelineResult;
 
 class DraftService
 {
@@ -27,17 +28,15 @@ class DraftService
      * PromptBuilder falls back to generic instructions so this behaves
      * exactly like the old hardcoded PromptService prompts.
      */
-    public function generate(Conversation $conversation, Analysis $analysis, string $thread): string
+    public function generate(Conversation $conversation, Analysis $analysis, string $thread): PipelineResult
     {
-        $result = $this->pipeline->run(
+        return $this->pipeline->run(
             $conversation,
             $analysis,
             $thread,
             AiCenterLogSource::Production,
             auth()->id(),
         );
-
-        return $result->draftContent;
     }
 
     /**
@@ -50,23 +49,34 @@ class DraftService
     public function save(
         Conversation $conversation,
         string $content,
-        bool $asNewVersion = false
+        bool $asNewVersion = false,
+        ?int $aiLogId = null
     ): Draft {
         // Ambil nilai string dari channel conversation dengan aman
         $channelValue = $conversation->channel instanceof \BackedEnum
             ? $conversation->channel->value
             : (string) $conversation->channel;
 
+        $contentPayload = [
+            'subject' => $conversation->subject ?: 'Re: percakapan Anda',
+            'body' => $content,
+            'tone' => null,
+            'confidence' => null,
+        ];
+
         $payload = [
-            'content' => [
-                'subject' => $conversation->subject ?: 'Re: percakapan Anda',
-                'body' => $content,
-                'tone' => null,
-                'confidence' => null,
-            ],
+            'content' => $contentPayload,
             'type' => strtolower($channelValue), // Pastikan nilai berupa string backing value
             'provider' => $this->aiConfig->getProvider()->value,
         ];
+
+        // A fresh AI generation always resets the "AI baseline" used to
+        // detect agent edits (see Draft::wasEditedByAgent()) — null for
+        // manual, non-AI saves.
+        if ($aiLogId !== null) {
+            $payload['original_content'] = $contentPayload;
+            $payload['ai_log_id'] = $aiLogId;
+        }
 
         $current = $conversation->drafts()
             ->where('status', DraftStatus::Active)
@@ -94,6 +104,8 @@ class DraftService
      */
     public function generateAndSave(Conversation $conversation, Analysis $analysis, string $thread, bool $asNewVersion = false): Draft
     {
-        return $this->save($conversation, $this->generate($conversation, $analysis, $thread), $asNewVersion);
+        $result = $this->generate($conversation, $analysis, $thread);
+
+        return $this->save($conversation, $result->draftContent, $asNewVersion, $result->log->id);
     }
 }

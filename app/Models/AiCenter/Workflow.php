@@ -36,6 +36,11 @@ class Workflow extends Model
         return $this->hasMany(Sop::class);
     }
 
+    public function aiLogs(): HasMany
+    {
+        return $this->hasMany(AiLog::class);
+    }
+
     public function startNode(): ?WorkflowNode
     {
         return $this->nodes->firstWhere('type', WorkflowNodeType::Start);

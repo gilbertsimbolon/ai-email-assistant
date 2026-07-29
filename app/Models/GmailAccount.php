@@ -18,6 +18,8 @@ class GmailAccount extends Model
         'scope',
         'history_id',
         'last_synced_at',
+        'status',
+        'last_error',
     ];
 
     protected $casts = [

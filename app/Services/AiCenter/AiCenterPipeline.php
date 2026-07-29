@@ -15,6 +15,7 @@ use App\Services\AiCenter\DataTransferObjects\WorkflowRunResult;
 use App\Services\AiCenter\Engines\RuleEngine;
 use App\Services\AiCenter\Engines\SopMatchingEngine;
 use App\Services\AiCenter\Engines\WorkflowEngine;
+use App\Services\Reports\AiCostEstimator;
 use Throwable;
 
 /**
@@ -38,6 +39,7 @@ class AiCenterPipeline
         protected TemplateVariableResolver $variableResolver,
         protected PromptBuilder $promptBuilder,
         protected AiClientInterface $aiClient,
+        protected AiCostEstimator $costEstimator,
     ) {
     }
 
@@ -125,6 +127,12 @@ class AiCenterPipeline
 
         $aiModel = AiModel::default();
 
+        $cost = $this->costEstimator->estimate(
+            $aiModel?->model,
+            $response['usage']['prompt_tokens'] ?? null,
+            $response['usage']['completion_tokens'] ?? null,
+        );
+
         $log = AiLog::create([
             'source' => $source,
             'conversation_id' => $conversation->exists ? $conversation->id : null,
@@ -143,6 +151,7 @@ class AiCenterPipeline
             'completion_tokens' => $response['usage']['completion_tokens'] ?? null,
             'total_tokens' => $response['usage']['total_tokens'] ?? null,
             'latency_ms' => $latencyMs,
+            'cost' => $cost,
             'confidence_score' => $analysis?->confidence_score,
             'status' => $status,
             'error' => $error,

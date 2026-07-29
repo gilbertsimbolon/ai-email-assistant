@@ -55,6 +55,11 @@ class AiModel extends Model
         'api_key',
     ];
 
+    public function aiLogs()
+    {
+        return $this->hasMany(AiLog::class);
+    }
+
     public static function default(): ?self
     {
         return static::query()->where('is_default', true)->first();
