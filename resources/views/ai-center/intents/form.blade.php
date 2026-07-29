@@ -72,12 +72,12 @@
                                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="addRow('keywords-rows', 'keywords[]', '')">+ Tambah</button>
                             </label>
                             <div id="keywords-rows">
-                                @forelse (old('keywords', $intent->keywords->pluck('keyword')->all() ?: ['']) as $keyword)
+                                @foreach (old('keywords', $intent->keywords->pluck('keyword')->all() ?: ['']) as $keyword)
                                     <div class="input-group mb-2">
                                         <input type="text" name="keywords[]" class="form-control" value="{{ $keyword }}" placeholder="mis. refund">
                                         <button type="button" class="btn btn-outline-danger" onclick="this.closest('.input-group').remove()">&times;</button>
                                     </div>
-                                @endforelse
+                                @endforeach
                             </div>
                         </div>
 
@@ -87,12 +87,12 @@
                                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="addRow('examples-rows', 'examples[]', '')">+ Tambah</button>
                             </label>
                             <div id="examples-rows">
-                                @forelse (old('examples', $intent->examples->pluck('example_text')->all() ?: ['']) as $example)
+                                @foreach (old('examples', $intent->examples->pluck('example_text')->all() ?: ['']) as $example)
                                     <div class="input-group mb-2">
                                         <input type="text" name="examples[]" class="form-control" value="{{ $example }}" placeholder="mis. saya mau minta uang kembali">
                                         <button type="button" class="btn btn-outline-danger" onclick="this.closest('.input-group').remove()">&times;</button>
                                     </div>
-                                @endforelse
+                                @endforeach
                             </div>
                         </div>
 

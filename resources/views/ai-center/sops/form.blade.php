@@ -118,12 +118,12 @@
                                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="addTriggerRow()">+ Tambah</button>
                             </label>
                             <div id="triggers-rows">
-                                @forelse (old('triggers', $sop->relationLoaded('triggers') ? $sop->triggers->pluck('phrase')->all() : []) ?: [''] as $phrase)
+                                @foreach (old('triggers', $sop->relationLoaded('triggers') ? $sop->triggers->pluck('phrase')->all() : []) ?: [''] as $phrase)
                                     <div class="input-group mb-2">
                                         <input type="text" name="triggers[]" class="form-control" value="{{ $phrase }}" placeholder="mis. customer meminta refund">
                                         <button type="button" class="btn btn-outline-danger" onclick="this.closest('.input-group').remove()">&times;</button>
                                     </div>
-                                @endforelse
+                                @endforeach
                             </div>
                         </div>
 
