@@ -68,36 +68,86 @@
         </li>
 
         {{-- AI Center --}}
-        <li class="menu-header small text-uppercase">
-            <span class="menu-header-text">AI Center</span>
-        </li>
+        @if (auth()->user()?->isAdmin())
+            <li class="menu-header small text-uppercase">
+                <span class="menu-header-text">AI Center</span>
+            </li>
 
-        <li class="menu-item">
-            <a href="javascript:void(0);" class="menu-link menu-toggle">
-                <i class="menu-icon tf-icons bx bx-brain"></i>
-                <div>AI Center</div>
-            </a>
+            <li class="menu-item {{ request()->routeIs('ai-center.*') ? 'active open' : '' }}">
+                <a href="javascript:void(0);" class="menu-link menu-toggle">
+                    <i class="menu-icon tf-icons bx bx-brain"></i>
+                    <div>AI Center</div>
+                </a>
 
-            <ul class="menu-sub">
-                <li class="menu-item">
-                    <a href="#" class="menu-link">
-                        <div>AI Logs</div>
-                    </a>
-                </li>
-
-                <li class="menu-item">
-                    <a href="#" class="menu-link">
-                        <div>Prompt Templates</div>
-                    </a>
-                </li>
-
-                <li class="menu-item">
-                    <a href="#" class="menu-link">
-                        <div>SOP</div>
-                    </a>
-                </li>
-            </ul>
-        </li>
+                <ul class="menu-sub">
+                    <li class="menu-item {{ request()->routeIs('ai-center.dashboard') ? 'active' : '' }}">
+                        <a href="{{ route('ai-center.dashboard') }}" class="menu-link">
+                            <div>Dashboard</div>
+                        </a>
+                    </li>
+                    <li class="menu-item {{ request()->routeIs('ai-center.intents.*') ? 'active' : '' }}">
+                        <a href="{{ route('ai-center.intents.index') }}" class="menu-link">
+                            <div>Intent Builder</div>
+                        </a>
+                    </li>
+                    <li class="menu-item {{ request()->routeIs('ai-center.sops.*') ? 'active' : '' }}">
+                        <a href="{{ route('ai-center.sops.index') }}" class="menu-link">
+                            <div>SOP Builder</div>
+                        </a>
+                    </li>
+                    <li class="menu-item {{ request()->routeIs('ai-center.workflows.*') ? 'active' : '' }}">
+                        <a href="{{ route('ai-center.workflows.index') }}" class="menu-link">
+                            <div>Workflow Builder</div>
+                        </a>
+                    </li>
+                    <li class="menu-item {{ request()->routeIs('ai-center.reply-templates.*') ? 'active' : '' }}">
+                        <a href="{{ route('ai-center.reply-templates.index') }}" class="menu-link">
+                            <div>Reply Templates</div>
+                        </a>
+                    </li>
+                    <li class="menu-item {{ request()->routeIs('ai-center.knowledge-bases.*') ? 'active' : '' }}">
+                        <a href="{{ route('ai-center.knowledge-bases.index') }}" class="menu-link">
+                            <div>Knowledge Base</div>
+                        </a>
+                    </li>
+                    <li class="menu-item {{ request()->routeIs('ai-center.forbidden-actions.*') ? 'active' : '' }}">
+                        <a href="{{ route('ai-center.forbidden-actions.index') }}" class="menu-link">
+                            <div>Forbidden Actions</div>
+                        </a>
+                    </li>
+                    <li class="menu-item {{ request()->routeIs('ai-center.ai-models.*') ? 'active' : '' }}">
+                        <a href="{{ route('ai-center.ai-models.index') }}" class="menu-link">
+                            <div>AI Models</div>
+                        </a>
+                    </li>
+                    <li class="menu-item {{ request()->routeIs('ai-center.ai-parameters.*') ? 'active' : '' }}">
+                        <a href="{{ route('ai-center.ai-parameters.edit') }}" class="menu-link">
+                            <div>AI Parameters</div>
+                        </a>
+                    </li>
+                    <li class="menu-item {{ request()->routeIs('ai-center.prompt-preview.*') ? 'active' : '' }}">
+                        <a href="{{ route('ai-center.prompt-preview.index') }}" class="menu-link">
+                            <div>Prompt Preview</div>
+                        </a>
+                    </li>
+                    <li class="menu-item {{ request()->routeIs('ai-center.playground.*') ? 'active' : '' }}">
+                        <a href="{{ route('ai-center.playground.index') }}" class="menu-link">
+                            <div>Playground</div>
+                        </a>
+                    </li>
+                    <li class="menu-item {{ request()->routeIs('ai-center.ai-logs.*') ? 'active' : '' }}">
+                        <a href="{{ route('ai-center.ai-logs.index') }}" class="menu-link">
+                            <div>AI Logs</div>
+                        </a>
+                    </li>
+                    <li class="menu-item {{ request()->routeIs('ai-center.settings.*') ? 'active' : '' }}">
+                        <a href="{{ route('ai-center.settings.edit') }}" class="menu-link">
+                            <div>Settings</div>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+        @endif
 
         {{-- Reports --}}
         <li class="menu-header small text-uppercase">

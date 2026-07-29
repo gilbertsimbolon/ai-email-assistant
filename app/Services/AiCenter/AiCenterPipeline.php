@@ -11,6 +11,7 @@ use App\Models\Conversation;
 use App\Services\AI\Contracts\AiClientInterface;
 use App\Services\AiCenter\DataTransferObjects\PipelineResult;
 use App\Services\AiCenter\DataTransferObjects\PromptContext;
+use App\Services\AiCenter\DataTransferObjects\WorkflowRunResult;
 use App\Services\AiCenter\Engines\RuleEngine;
 use App\Services\AiCenter\Engines\SopMatchingEngine;
 use App\Services\AiCenter\Engines\WorkflowEngine;
@@ -40,13 +41,25 @@ class AiCenterPipeline
     ) {
     }
 
-    public function run(
-        Conversation $conversation,
-        ?Analysis $analysis,
-        string $thread,
-        AiCenterLogSource $source,
-        ?int $triggeredByUserId,
-    ): PipelineResult {
+    /**
+     * Runs every stage up to and including the Prompt Builder (SOP Matching
+     * -> Rule Engine -> Workflow Engine -> Knowledge Base Retrieval -> Reply
+     * Template Selection -> Prompt Builder) without calling the AI provider
+     * or persisting an AiLog. Shared by run() and the read-only Prompt
+     * Preview page (AiCenterPromptPreviewController), which must never
+     * spend tokens or write logs just to show an admin what the prompt
+     * would look like.
+     */
+    public function preview(Conversation $conversation, ?Analysis $analysis, string $thread): PromptContext
+    {
+        return $this->assemble($conversation, $analysis, $thread)[0];
+    }
+
+    /**
+     * @return array{0: PromptContext, 1: WorkflowRunResult}
+     */
+    protected function assemble(Conversation $conversation, ?Analysis $analysis, string $thread): array
+    {
         $intent = $analysis?->intent;
 
         $sopMatch = $this->sopMatcher->match($conversation, $intent, $thread);
@@ -72,6 +85,24 @@ class AiCenterPipeline
             templateVariables: $templateVariables,
             thread: $thread,
         );
+
+        return [$context, $workflowResult];
+    }
+
+    public function run(
+        Conversation $conversation,
+        ?Analysis $analysis,
+        string $thread,
+        AiCenterLogSource $source,
+        ?int $triggeredByUserId,
+    ): PipelineResult {
+        [$context, $workflowResult] = $this->assemble($conversation, $analysis, $thread);
+        $intent = $context->intent;
+        $sop = $context->sop;
+        $knowledgeBases = $context->knowledgeBases;
+        $replyTemplate = $context->replyTemplate;
+        $rule = $context->rule;
+        $ruleActions = $context->ruleActions;
 
         $promptResult = $this->promptBuilder->build($context);
 
@@ -103,8 +134,8 @@ class AiCenterPipeline
             'reply_template_id' => $replyTemplate?->id,
             'ai_model_id' => $aiModel?->id,
             'triggered_by' => $triggeredByUserId,
-            'matched_rule_ids' => $ruleResult->rule ? [$ruleResult->rule->id] : [],
-            'matched_action_types' => $ruleResult->actions->pluck('action_type')->map(fn ($a) => $a->value)->values()->all(),
+            'matched_rule_ids' => $rule ? [$rule->id] : [],
+            'matched_action_types' => $ruleActions->pluck('action_type')->map(fn ($a) => $a->value)->values()->all(),
             'matched_knowledge_base_ids' => $knowledgeBases->pluck('id')->values()->all(),
             'prompt' => $this->flattenMessages($promptResult->messages),
             'response' => $response['content'] ?? null,
@@ -124,8 +155,8 @@ class AiCenterPipeline
         return new PipelineResult(
             intent: $intent,
             sop: $sop,
-            rule: $ruleResult->rule,
-            ruleActions: $ruleResult->actions,
+            rule: $rule,
+            ruleActions: $ruleActions,
             workflowActions: $workflowResult->actions,
             knowledgeBases: $knowledgeBases,
             replyTemplate: $replyTemplate,
