@@ -1,1064 +1,423 @@
-# REDESIGN AI CENTER - ENTERPRISE SOP & AI ORCHESTRATION
+# REPORTS MODULE - AI EMAIL ASSISTANT
 
-## Tujuan
+## Objective
 
-Saya ingin melakukan redesign total pada menu **AI Center**.
+Bangun ulang menu **Reports** agar menjadi pusat analisis performa AI Email Assistant.
 
-AI Center bukan hanya tempat menyimpan Prompt AI, tetapi menjadi **pusat kendali seluruh perilaku AI** pada aplikasi.
+Menu Reports **bukan hanya menampilkan angka**, tetapi menjadi dashboard analitik yang membantu administrator memahami performa customer support, AI, dan email secara keseluruhan.
 
-Administrator **tidak boleh** menulis Prompt AI secara langsung.
-
-Administrator cukup mengatur aturan bisnis (Business Rules), SOP, Template, Knowledge Base, dan Workflow.
-
-Seluruh Prompt AI harus dibentuk secara otomatis oleh sistem.
+Gunakan Laravel 13, Bootstrap 5, Blade, Eloquent, dan Chart.js.
 
 ---
 
-# Filosofi
+# Tujuan
 
-AI Center adalah "Brain" dari sistem.
+Reports harus mampu menjawab pertanyaan seperti:
 
-Seluruh channel nantinya akan menggunakan AI Center yang sama.
+- Berapa email yang masuk hari ini?
+- Berapa email yang sudah dibalas?
+- Berapa draft yang dibuat AI?
+- Berapa draft AI yang langsung dipakai?
+- Berapa draft yang diedit agent?
+- Berapa email yang masih pending?
+- Intent apa yang paling sering muncul?
+- SOP mana yang paling sering dipakai?
+- Berapa token OpenAI yang digunakan?
+- Berapa estimasi biaya AI?
+- Berapa rata-rata waktu respon customer support?
+
+Reports harus mengambil data langsung dari database aplikasi.
+
+Jangan menggunakan dummy data.
+
+---
+
+# Dashboard Reports
+
+Buat halaman dashboard modern menggunakan card dan chart.
+
+## KPI Cards
+
+Tampilkan:
+
+- Total Email
+- Incoming Today
+- Outgoing Today
+- Pending Reply
+- AI Generated Draft
+- Draft Approved
+- Draft Edited
+- Draft Rejected
+- Average Response Time
+- Estimated AI Cost
+- Total Tokens
+- Connected Gmail Accounts
+
+Semua card memiliki icon.
+
+---
+
+# Email Analytics
+
+Chart jumlah email.
+
+Filter:
+
+- Hari
+- Minggu
+- Bulan
+- Tahun
+- Custom Range
+
+Chart:
+
+Incoming Email
+
+Outgoing Email
+
+Pending Email
+
+Replied Email
+
+Gunakan Line Chart.
+
+---
+
+# Intent Analytics
+
+Tampilkan:
+
+Intent
+
+Jumlah
+
+Persentase
 
 Contoh:
 
-- Gmail
-- WhatsApp
-- Instagram
-- Facebook Messenger
-- Telegram
-- Live Chat
-
-Artinya AI Center harus independen terhadap channel.
-
----
-
-# Konsep AI Engine
-
-Saya ingin AI bekerja menggunakan pipeline berikut.
-
-```
-Conversation Masuk
-        │
-        ▼
-Intent Detection
-        │
-        ▼
-Category Detection
-        │
-        ▼
-SOP Matching
-        │
-        ▼
-Rule Engine
-        │
-        ▼
-Workflow Engine
-        │
-        ▼
-Knowledge Base Retrieval
-        │
-        ▼
-Reply Template Selection
-        │
-        ▼
-Prompt Builder
-        │
-        ▼
-AI Generate Draft
-        │
-        ▼
-Human Review
-        │
-        ▼
-Send
-```
-
-Prompt AI **bukan** berasal dari textarea.
-
-Prompt dibentuk secara otomatis berdasarkan seluruh konfigurasi.
-
----
-
-# Struktur Menu AI Center
-
-```
-AI Center
-
-├── Dashboard
-├── Intent Builder
-├── SOP Builder
-├── Workflow Builder
-├── Reply Templates
-├── Knowledge Base
-├── AI Models
-├── AI Parameters
-├── Prompt Preview
-├── Playground
-├── AI Logs
-└── Settings
-```
-
----
-
-# Dashboard
-
-Dashboard menampilkan statistik AI.
-
-Contoh.
-
-AI Provider
-
-Model Aktif
-
-Total SOP
-
-Total Rule
-
-Total Workflow
-
-Total Intent
-
-Total Template
-
-Knowledge Base
-
-Total AI Request Hari Ini
-
-Total Token Hari Ini
-
-Average Response Time
-
-Estimated Cost
-
-Draft Generated
-
-Human Approval Rate
-
----
-
-# Intent Builder
-
-Ini adalah modul pertama yang dijalankan AI.
-
-Administrator dapat membuat Intent.
-
-Contoh.
-
 Refund
+
+125
+
+40%
 
 Billing
 
-Technical Support
+70
 
-Complaint
-
-Sales
-
-Subscription
-
-Account
-
-Verification
-
-Spam
-
-General Inquiry
-
-Shipping
-
-Invoice
-
-Feature Request
-
-Cancellation
-
-Bug Report
-
-Intent dapat ditambah tanpa batas.
-
----
-
-# Intent Keywords
-
-Setiap Intent mempunyai Keyword.
-
-Contoh.
-
-Refund
-
-refund
-
-money back
-
-cancel payment
-
-return
-
-cash back
-
-Billing
-
-invoice
-
-payment
-
-charged
-
-subscription
+22%
 
 Technical
 
-bug
+60
 
-error
+19%
 
-cannot login
+General
 
-crash
+30
 
-failed
+10%
 
-AI menggunakan Keyword sebagai bantuan klasifikasi.
+Others
 
-Namun keputusan akhir tetap dilakukan AI.
+25
 
----
+9%
 
-# Intent Priority
-
-Setiap Intent memiliki Priority.
-
-Critical
-
-High
-
-Medium
-
-Low
-
-Jika beberapa Intent cocok.
-
-Gunakan Priority tertinggi.
+Gunakan Doughnut Chart.
 
 ---
 
-# SOP Builder
+# AI Performance
 
-Administrator tidak membuat Prompt.
+Tampilkan:
 
-Administrator membuat SOP.
+Draft Generated
 
-Setiap SOP memiliki.
+Draft Approved
 
-Nama
+Draft Regenerated
 
-Kategori
+Draft Edited
 
-Prioritas
+Draft Deleted
 
-Status
-
-Deskripsi
-
-Channel
-
-Workflow
-
-Knowledge Base
-
-Reply Template
+Gunakan Bar Chart.
 
 ---
 
-# Trigger
+# AI Usage
 
-Administrator membuat Trigger.
+Hitung:
 
-Contoh.
+Prompt Tokens
 
-Customer meminta refund
+Completion Tokens
 
-Customer gagal login
+Total Tokens
 
-Customer meminta invoice
+Average Tokens
 
-Customer komplain
+Estimated Cost
 
-Customer bertanya harga
-
-Customer meminta upgrade
-
-Customer meminta downgrade
-
-Unlimited Trigger.
-
----
-
-# Conditions
-
-Administrator membuat Condition.
-
-Contoh.
-
-Refund > 14 Hari
-
-Refund <= 14 Hari
-
-Plan = Premium
-
-Country = Indonesia
-
-Subscription = Active
-
-Invoice Exists
-
-Customer VIP
-
-Order Completed
-
-Field
-
-Operator
-
-Value
-
----
-
-# Rule Builder
-
-Gunakan Rule Builder.
-
-Contoh.
-
-```
-IF
-
-Intent = Refund
-
-AND
-
-Purchase >14 Hari
-
-THEN
-
-Reject Refund
-
-Tone = Empathy
-
-Escalate Supervisor
-```
-
-Rule berikutnya.
-
-```
-IF
-
-Intent = Refund
-
-AND
-
-Purchase <=14 Hari
-
-THEN
-
-Approve Refund
-```
-
-Administrator dapat membuat Rule tanpa batas.
-
----
-
-# Workflow Builder
-
-Saya tidak ingin hanya Form.
-
-Saya ingin Flow Builder.
-
-Contoh.
-
-```
-Start
-
-↓
-
-Intent Detection
-
-↓
-
-Refund ?
-
-↓
-
-Ya
-
-↓
-
-Purchase >14 Hari ?
-
-↓
-
-Ya
-
-↓
-
-Reject
-
-↓
-
-Generate Reply
-
-↓
-
-End
-```
-
-Workflow digunakan sebagai representasi visual Rule Engine.
-
----
-
-# Decision Tree
-
-Selain Workflow.
-
-Tambahkan Decision Tree.
-
-Contoh.
-
-```
-IF
-
-Refund
-
-AND
-
-Purchase >14 Hari
-
-↓
-
-Reject
-
-ELSE
-
-Approve
-```
-
-Administrator dapat membuat banyak Rule.
-
----
-
-# AI Actions
-
-Administrator memilih tindakan AI.
-
-Generate Reply
-
-Reply menggunakan Template
-
-Reply menggunakan Knowledge Base
-
-Escalate
-
-Assign Human
-
-Add Internal Note
-
-Tag Conversation
-
-Close Conversation
-
-Ignore
-
-Mark Spam
-
-No Reply
-
----
-
-# Tone
-
-Friendly
-
-Professional
-
-Formal
-
-Empathetic
-
-Neutral
-
-Casual
-
-Persuasive
-
-Custom
-
----
-
-# Forbidden Actions
-
-Administrator dapat menentukan larangan.
-
-Contoh.
-
-AI tidak boleh.
-
-Menjanjikan Refund
-
-Mengubah Harga
-
-Memberikan Voucher
-
-Memberikan Informasi Rahasia
-
-Menghapus Data
-
-Mengubah Akun Customer
-
-Menebak Jawaban
-
-Memberikan Jawaban di luar SOP
-
----
-
-# Escalation
-
-Supervisor
-
-Billing Team
-
-Support Team
-
-Technical Team
-
-Human Agent
-
-Priority Queue
-
----
-
-# Knowledge Base
-
-Knowledge Base dipisahkan dari SOP.
-
-Administrator dapat membuat.
-
-FAQ
-
-Refund Policy
-
-Company Policy
-
-Terms
-
-Product Documentation
-
-Troubleshooting
-
-Internal Guide
-
-Knowledge Base dipilih oleh SOP.
-
----
-
-# Reply Templates
-
-Template dipisahkan dari SOP.
-
-Template hanya berisi format jawaban.
-
-Contoh.
-
-Refund Approved
-
-Refund Rejected
-
-Technical Support
-
-Subscription Renewal
-
-Billing
-
-Welcome
-
-Closing
-
-Follow Up
-
-Reminder
-
----
-
-# Variables
-
-Template mendukung Variable.
-
-```
-{{customer_name}}
-
-{{company}}
-
-{{email}}
-
-{{invoice_number}}
-
-{{subscription_date}}
-
-{{refund_amount}}
-
-{{today}}
-
-{{agent_name}}
-
-{{product}}
-
-{{ticket_number}}
-```
-
-AI mengganti seluruh Variable secara otomatis.
-
----
-
-# Prompt Builder
-
-Administrator tidak membuat Prompt.
-
-Prompt dibuat otomatis.
-
-Prompt dibangun dari.
-
-Intent
-
-↓
-
-SOP
-
-↓
-
-Rule
-
-↓
-
-Workflow
-
-↓
-
-Knowledge Base
-
-↓
-
-Template
-
-↓
-
-AI Parameters
-
-↓
-
-Conversation
-
-↓
-
-Prompt
-
-Administrator hanya dapat melihat hasil akhirnya.
-
-Tidak dapat mengedit langsung.
-
----
-
-# Prompt Preview
-
-Tambahkan halaman Prompt Preview.
-
-Contoh.
-
-```
-SYSTEM PROMPT
-
-====================
-
-Role
-
-...
-
-Business Rules
-
-...
-
-SOP
-
-...
-
-Knowledge
-
-...
-
-Template
-
-...
-
-Customer Conversation
-
-...
-
-Generate Draft
-```
-
-Read Only.
-
----
-
-# AI Playground
-
-Halaman Testing.
-
-Admin dapat memasukkan Email.
-
-Kemudian AI menjalankan seluruh pipeline.
-
-Hasil yang ditampilkan.
-
-Detected Intent
-
-Matched SOP
-
-Matched Rules
-
-Matched Workflow
-
-Matched Knowledge Base
-
-Matched Template
-
-Generated Prompt
-
-Generated Draft
-
-Token Usage
-
-Latency
-
-Confidence Score
-
----
-
-# Explain AI Decision
-
-Tambahkan Explain Mode.
-
-AI harus menjelaskan.
-
-Mengapa memilih Intent.
-
-Mengapa memilih SOP.
-
-Mengapa memilih Rule.
-
-Mengapa memilih Workflow.
-
-Mengapa memilih Template.
-
-Mengapa memilih Knowledge Base.
-
-Mengapa menghasilkan jawaban tersebut.
-
-Hal ini penting untuk debugging.
-
----
-
-# AI Confidence
-
-Setiap hasil AI mempunyai Confidence.
-
-Contoh.
-
-95%
-
-Intent
-
-92%
-
-Knowledge Match
-
-88%
-
-Template Match
-
-Jika Confidence rendah.
-
-AI menyarankan Human Review.
-
----
-
-# Human Approval
-
-Flow AI.
-
-Conversation
-
-↓
-
-Generate Draft
-
-↓
-
-Agent Review
-
-↓
-
-Edit
-
-↓
-
-Approve
-
-↓
-
-Send
-
-AI tidak boleh langsung mengirim email.
-
----
-
-# AI Parameters
-
-Administrator dapat mengubah.
-
-Temperature
-
-Top P
-
-Max Tokens
-
-Reasoning Effort
-
-Presence Penalty
-
-Frequency Penalty
-
-Response Format
-
-Tanpa mengubah source code.
+Jika harga model belum tersedia cukup gunakan rumus sederhana sehingga mudah diganti nanti.
 
 ---
 
 # AI Models
 
-Administrator dapat memilih.
+Tampilkan penggunaan model.
 
-OpenAI
+Contoh:
+
+GPT-5.5
+
+GPT-5.5 Mini
 
 Claude
 
 Gemini
 
-OpenRouter
+Jumlah request
 
-Ollama
+Jumlah token
 
-API Key berasal dari menu Settings.
-
-Bukan dari .env.
+Average response time
 
 ---
 
-# AI Logs
+# Knowledge Analytics
 
-Semua aktivitas AI dicatat.
+Tampilkan:
 
-Tanggal
+Knowledge paling sering dipakai
 
-Conversation
+Jumlah penggunaan
 
-Intent
-
-Matched SOP
-
-Matched Workflow
-
-Matched Rule
-
-Prompt
-
-Response
-
-Token
-
-Latency
-
-Cost
-
-Status
-
-Error
+Last Used
 
 ---
 
-# Versioning
+# SOP Analytics
+
+Tampilkan:
 
 SOP
 
-Workflow
+Jumlah digunakan
 
-Knowledge Base
+Average Success Rate
 
-Template
-
-Rule
-
-Intent
-
-Harus memiliki.
-
-Version
-
-Draft
-
-Publish
-
-Rollback
-
-History
+Last Used
 
 ---
 
-# Database Design
+# Reply Template Analytics
 
-Jangan menyimpan semuanya dalam satu kolom TEXT.
+Template
 
-Gunakan tabel terpisah.
+Digunakan
 
-Contoh.
+Diubah Agent
 
-intents
+Success Rate
 
-intent_keywords
+---
 
-intent_examples
+# Workflow Analytics
 
-sops
+Workflow
 
-sop_triggers
+Jumlah dijalankan
 
-sop_conditions
+Success
 
-sop_rules
+Failed
 
-sop_actions
+Average Duration
 
-workflows
+---
 
-workflow_nodes
+# Customer Analytics
 
-workflow_edges
+Top Customer
 
-knowledge_bases
+Jumlah email
 
-reply_templates
+Jumlah ticket
 
-template_variables
+Last Contact
 
-ai_logs
+---
 
-prompt_previews
+# Gmail Analytics
 
-workflow_versions
+Per akun Gmail:
+
+Jumlah email
+
+Sync terakhir
+
+Status
+
+History ID
+
+Last Error
+
+---
+
+# Response Time
+
+Chart:
+
+Average Response Time
+
+Median Response Time
+
+Fastest
+
+Slowest
+
+---
+
+# AI Accuracy
+
+Hitung:
+
+Draft langsung dikirim
+
+Draft diedit sedikit
+
+Draft diedit banyak
+
+Draft ditolak
+
+Gunakan Pie Chart.
+
+---
+
+# Activity Timeline
+
+Timeline aktivitas.
+
+Contoh:
+
+09:01
+
+Email diterima
+
+09:02
+
+Intent dikenali
+
+09:02
+
+Workflow dijalankan
+
+09:03
+
+AI membuat draft
+
+09:05
+
+Agent mengedit
+
+09:06
+
+Email dikirim
+
+---
+
+# Export
+
+Sediakan tombol:
+
+Export PDF
+
+Export Excel
+
+Export CSV
+
+---
+
+# Filters
+
+Semua laporan mendukung filter:
+
+Tanggal
+
+Intent
+
+Kategori
+
+Status
+
+User
+
+Gmail Account
+
+Workflow
+
+Model AI
+
+---
+
+# Database
+
+Gunakan data dari tabel yang sudah ada.
+
+Jika ada data yang belum tersedia, buat migration yang diperlukan.
+
+Jangan membuat data dummy.
 
 ---
 
 # UI
 
-Gunakan komponen bawaan Sneat.
+Gunakan Sneat Bootstrap.
 
-Bootstrap.
+Responsive.
 
-Accordion
+Modern.
 
-Stepper
+Professional.
 
-Timeline
+Card dengan icon.
 
-Tree View
+Chart menggunakan Chart.js.
 
-Sortable List
+Table menggunakan DataTables.
 
-Modal
+Pagination.
 
-Offcanvas
+Search.
 
-Dropdown
-
-Badge
-
-Progress
-
-Collapse
-
-Flow Diagram
-
-Rule Builder
-
-Node Editor sederhana (tanpa library berat bila memungkinkan)
+Sorting.
 
 ---
 
-# Clean Architecture
+# Coding Standard
 
-Gunakan.
-
-Service Layer
-
-Repository bila diperlukan
-
-Rule Engine
-
-Workflow Engine
-
-Intent Engine
-
-Prompt Builder
-
-Knowledge Resolver
-
-Blade Components
-
-Reusable Components
-
-SOLID Principle
-
-Controller hanya menangani HTTP Request.
-
-Seluruh logika AI berada di Service Layer.
+- Ikuti arsitektur project.
+- Gunakan Service jika logic kompleks.
+- Jangan menulis query di Blade.
+- Gunakan eager loading.
+- Hindari N+1 Query.
+- Gunakan Repository/Service yang sudah ada jika memungkinkan.
 
 ---
 
-# Tujuan Akhir
+# Yang Diharapkan
 
-Saya ingin AI Center terasa seperti platform enterprise.
+Hasil akhir harus menyerupai dashboard analitik profesional seperti:
 
-Administrator tidak perlu memahami Prompt Engineering.
+- Google Analytics
+- Microsoft Power BI
+- Zendesk Analytics
+- Freshdesk Analytics
+- HubSpot Reports
 
-Administrator hanya mengatur:
+Tetapi khusus untuk AI Email Assistant.
 
-- Intent
-- SOP
-- Rule
-- Workflow
-- Template
-- Knowledge Base
-- AI Model
-- AI Parameter
-
-Kemudian sistem secara otomatis menyusun Prompt AI terbaik.
-
-Arsitektur ini harus siap dikembangkan menjadi platform omnichannel berbasis AI untuk:
-
-- Gmail
-- WhatsApp
-- Instagram
-- Facebook Messenger
-- Telegram
-- Live Chat
-
-tanpa mengubah struktur AI Center di masa depan.
+Prioritaskan kode yang bersih, mudah dikembangkan, dan siap digunakan ketika nanti sistem mendukung channel lain seperti WhatsApp, Instagram, Facebook Messenger, Telegram, dan Live Chat.
