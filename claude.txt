@@ -1,423 +1,667 @@
-# REPORTS MODULE - AI EMAIL ASSISTANT
+# REDESIGN UI/UX – FULL SCREEN MODERN AI EMAIL ASSISTANT
 
-## Objective
+## OBJECTIVE
 
-Bangun ulang menu **Reports** agar menjadi pusat analisis performa AI Email Assistant.
+Redesign the entire UI of the AI Email Assistant to look like a modern SaaS application.
 
-Menu Reports **bukan hanya menampilkan angka**, tetapi menjadi dashboard analitik yang membantu administrator memahami performa customer support, AI, dan email secara keseluruhan.
+The current interface wastes a lot of screen space. There are large empty areas, inconsistent spacing, and fixed-width containers that make the application look unfinished.
 
-Gunakan Laravel 13, Bootstrap 5, Blade, Eloquent, dan Chart.js.
+The goal is to transform the application into a full-screen, professional dashboard similar to:
 
----
+- Google Workspace (Gmail)
+- Microsoft Outlook
+- Linear
+- Notion
+- Slack
+- Zendesk
+- Intercom
+- HubSpot
 
-# Tujuan
-
-Reports harus mampu menjawab pertanyaan seperti:
-
-- Berapa email yang masuk hari ini?
-- Berapa email yang sudah dibalas?
-- Berapa draft yang dibuat AI?
-- Berapa draft AI yang langsung dipakai?
-- Berapa draft yang diedit agent?
-- Berapa email yang masih pending?
-- Intent apa yang paling sering muncul?
-- SOP mana yang paling sering dipakai?
-- Berapa token OpenAI yang digunakan?
-- Berapa estimasi biaya AI?
-- Berapa rata-rata waktu respon customer support?
-
-Reports harus mengambil data langsung dari database aplikasi.
-
-Jangan menggunakan dummy data.
+Do **NOT** simply change colors.
+Redesign the layout and component structure.
 
 ---
 
-# Dashboard Reports
+# GENERAL RULES
 
-Buat halaman dashboard modern menggunakan card dan chart.
+- Use Bootstrap 5 only.
+- Continue using the Sneat Bootstrap Template.
+- Reuse existing Bootstrap utilities whenever possible.
+- Do not create unnecessary custom CSS.
+- Responsive for Desktop, Tablet, and Mobile.
+- Clean spacing.
+- Modern shadows.
+- Rounded corners consistent with Sneat.
+- No unused whitespace.
+- Every page should maximize available screen space.
 
-## KPI Cards
+---
 
-Tampilkan:
+# GLOBAL LAYOUT
 
-- Total Email
-- Incoming Today
-- Outgoing Today
-- Pending Reply
-- AI Generated Draft
-- Draft Approved
-- Draft Edited
-- Draft Rejected
-- Average Response Time
-- Estimated AI Cost
-- Total Tokens
+The application should always occupy the entire browser viewport.
+
+Layout:
+
+```
+-------------------------------------------------------------
+| Sidebar | Top Navigation                                  |
+|         |-------------------------------------------------|
+|         |                                                 |
+|         |                 Content Area                    |
+|         |                                                 |
+|         |                                                 |
+-------------------------------------------------------------
+```
+
+Requirements:
+
+- Sidebar full height (100vh)
+- Topbar full width
+- Content uses all remaining space
+- No centered container with huge margins
+- Remove unnecessary max-width wrappers
+- Use flexbox layout
+
+Example:
+
+```
+display:flex
+
+Sidebar
+    width:280px
+
+Content
+    flex:1
+    min-width:0
+```
+
+---
+
+# SIDEBAR
+
+Current sidebar looks too narrow and wastes vertical space.
+
+Improve it.
+
+Requirements:
+
+- fixed height (100vh)
+- sticky
+- independent scrolling
+- better spacing
+- active menu more visible
+- hover animation
+- smooth collapse
+- better typography
+
+Sections:
+
+Inbox
+
+- Email
+- WhatsApp (Soon)
+- Instagram (Soon)
+- Messenger (Soon)
+- Live Chat (Soon)
+
+AI Center
+
+Reports
+
+Administration
+
+Bottom area:
+
+- User profile
+- Logout button
+
+Always pinned at the bottom.
+
+---
+
+# TOP NAVIGATION
+
+Every page should have a professional topbar.
+
+Include:
+
+Left
+
+- Page title
+- Breadcrumb
+
+Center
+
+- Global Search
+
+Right
+
+- Notifications
+- Connected Gmail Account
+- User Avatar
+
+Height approximately:
+
+64px
+
+---
+
+# CONTENT AREA
+
+Remove all unused margins.
+
+Current UI only uses around 50% of available width.
+
+New UI should use around 95% of browser width.
+
+Use:
+
+```
+container-fluid
+```
+
+instead of
+
+```
+container
+```
+
+where appropriate.
+
+---
+
+# DASHBOARD
+
+Redesign dashboard completely.
+
+Cards:
+
+- Total Emails
+- Waiting Agent
+- AI Draft
+- Closed
+- Response Time
+- AI Accuracy
+- AI Usage
 - Connected Gmail Accounts
 
-Semua card memiliki icon.
+Charts:
+
+- Email Timeline
+- AI Usage
+- Intent Distribution
+- Daily Traffic
+
+Latest Activity
+
+Recent Emails
+
+Everything responsive.
 
 ---
 
-# Email Analytics
+# INBOX PAGE
 
-Chart jumlah email.
+This page is the highest priority.
 
-Filter:
+Current layout is not acceptable.
 
-- Hari
-- Minggu
-- Bulan
-- Tahun
-- Custom Range
+Redesign to become a Gmail/Intercom style interface.
 
-Chart:
+Split View Layout:
 
-Incoming Email
+```
+------------------------------------------------------------
+ Sidebar | Email List | Conversation
+------------------------------------------------------------
+```
 
-Outgoing Email
+Width:
 
-Pending Email
+Sidebar
 
-Replied Email
+280px
 
-Gunakan Line Chart.
+Email List
+
+30%
+
+Conversation
+
+70%
+
+Conversation should use all available height.
 
 ---
 
-# Intent Analytics
+## EMAIL LIST
 
-Tampilkan:
+Modern list.
 
-Intent
+Each row contains:
 
-Jumlah
+Avatar
 
-Persentase
+Customer Name
 
-Contoh:
+Subject
 
-Refund
+Preview
 
-125
+Status Badge
 
-40%
+Time
 
-Billing
+Unread Dot
 
-70
+Star
 
-22%
+Hover animation
 
-Technical
+Selected row highlight
 
-60
+Scrolling independently.
 
-19%
+---
+
+## CONVERSATION PANEL
+
+Looks like a messaging application.
+
+Header:
+
+Avatar
+
+Customer
+
+Email
+
+Subject
+
+Status
+
+Priority
+
+Assigned Agent
+
+Buttons:
+
+Reply
+
+AI Actions
+
+More
+
+Tabs:
+
+- Email
+- AI Draft
+- Customer
+- Notes
+- Timeline
+- Activity
+
+Conversation area:
+
+Speech-bubble style emails.
+
+Incoming
+
+Left
+
+Outgoing
+
+Right
+
+Timestamp
+
+Attachments
+
+Quoted reply
+
+Everything scrollable.
+
+---
+
+# REPLY SECTION
+
+Bottom fixed composer.
+
+Contains:
+
+Subject
+
+Reply textarea
+
+Buttons:
+
+Generate AI Reply
+
+Regenerate
+
+Improve
+
+Translate
+
+Summarize
+
+Clear
+
+Send
+
+Important:
+
+AI should NEVER automatically generate a reply when a new email arrives.
+
+The agent decides when AI should process the conversation.
+
+Workflow:
+
+Email arrives
+
+↓
+
+Agent reads email
+
+↓
+
+Agent clicks
+
+Generate AI Reply
+
+↓
+
+AI generates draft
+
+↓
+
+Agent edits
+
+↓
+
+Send
+
+This saves OpenAI tokens.
+
+---
+
+# AI CENTER
+
+Redesign every page.
+
+Dashboard
+
+Intent Builder
+
+SOP Builder
+
+Workflow Builder
+
+Reply Templates
+
+Knowledge Base
+
+Forbidden Actions
+
+AI Models
+
+AI Parameters
+
+Prompt Preview
+
+Playground
+
+AI Logs
+
+Settings
+
+Every page should follow the same design language.
+
+---
+
+# REPORTS
+
+Modern analytics dashboard.
+
+Cards
+
+Charts
+
+Tables
+
+Date Filters
+
+Export
+
+PDF
+
+Excel
+
+Use Bootstrap cards.
+
+---
+
+# SETTINGS
+
+Professional settings page.
+
+Group settings into sections.
+
+Examples:
 
 General
 
-30
+AI
 
-10%
+OpenAI
 
-Others
+Gmail
 
-25
-
-9%
-
-Gunakan Doughnut Chart.
-
----
-
-# AI Performance
-
-Tampilkan:
-
-Draft Generated
-
-Draft Approved
-
-Draft Regenerated
-
-Draft Edited
-
-Draft Deleted
-
-Gunakan Bar Chart.
-
----
-
-# AI Usage
-
-Hitung:
-
-Prompt Tokens
-
-Completion Tokens
-
-Total Tokens
-
-Average Tokens
-
-Estimated Cost
-
-Jika harga model belum tersedia cukup gunakan rumus sederhana sehingga mudah diganti nanti.
-
----
-
-# AI Models
-
-Tampilkan penggunaan model.
-
-Contoh:
-
-GPT-5.5
-
-GPT-5.5 Mini
-
-Claude
-
-Gemini
-
-Jumlah request
-
-Jumlah token
-
-Average response time
-
----
-
-# Knowledge Analytics
-
-Tampilkan:
-
-Knowledge paling sering dipakai
-
-Jumlah penggunaan
-
-Last Used
-
----
-
-# SOP Analytics
-
-Tampilkan:
-
-SOP
-
-Jumlah digunakan
-
-Average Success Rate
-
-Last Used
-
----
-
-# Reply Template Analytics
-
-Template
-
-Digunakan
-
-Diubah Agent
-
-Success Rate
-
----
-
-# Workflow Analytics
+Prompt
 
 Workflow
 
-Jumlah dijalankan
+Security
+
+Users
+
+System
+
+Avoid one long form.
+
+Use cards.
+
+---
+
+# TABLES
+
+Every table should:
+
+- Full width
+- Responsive
+- DataTables styling
+- Sticky header
+- Pagination
+- Search
+- Filters
+
+No empty spaces.
+
+---
+
+# FORMS
+
+Improve every form.
+
+Use:
+
+2-column layout where possible.
+
+Group related fields inside cards.
+
+Better spacing.
+
+Use:
+
+- Help text
+- Validation
+- Icons
+
+---
+
+# COLORS
+
+Keep Sneat default colors.
+
+Primary
+
+Bootstrap Primary
+
+Background
+
+#f6f6f9
 
 Success
 
-Failed
+Green
 
-Average Duration
+Danger
 
----
+Red
 
-# Customer Analytics
+Warning
 
-Top Customer
+Orange
 
-Jumlah email
+Do not redesign the color palette.
 
-Jumlah ticket
-
-Last Contact
+Only improve layout.
 
 ---
 
-# Gmail Analytics
+# TYPOGRAPHY
 
-Per akun Gmail:
+Use Sneat typography.
 
-Jumlah email
+Clear hierarchy.
 
-Sync terakhir
+Page Title
 
-Status
+Large
 
-History ID
+Section Title
 
-Last Error
+Medium
 
----
+Card Title
 
-# Response Time
+Medium
 
-Chart:
+Description
 
-Average Response Time
-
-Median Response Time
-
-Fastest
-
-Slowest
+Small
 
 ---
 
-# AI Accuracy
+# ICONS
 
-Hitung:
+Use Boxicons.
 
-Draft langsung dikirim
-
-Draft diedit sedikit
-
-Draft diedit banyak
-
-Draft ditolak
-
-Gunakan Pie Chart.
+No mixed icon libraries.
 
 ---
 
-# Activity Timeline
+# SPACING
 
-Timeline aktivitas.
+Use Bootstrap spacing utilities only.
 
-Contoh:
+Examples:
 
-09:01
+```
+p-4
 
-Email diterima
+mb-4
 
-09:02
+gap-3
 
-Intent dikenali
+gx-4
 
-09:02
+gy-4
+```
 
-Workflow dijalankan
-
-09:03
-
-AI membuat draft
-
-09:05
-
-Agent mengedit
-
-09:06
-
-Email dikirim
+Maintain consistent spacing.
 
 ---
 
-# Export
+# RESPONSIVENESS
 
-Sediakan tombol:
+Desktop
 
-Export PDF
+Full split layout.
 
-Export Excel
+Tablet
 
-Export CSV
+Sidebar collapses.
 
----
+Mobile
 
-# Filters
+Drawer sidebar.
 
-Semua laporan mendukung filter:
-
-Tanggal
-
-Intent
-
-Kategori
-
-Status
-
-User
-
-Gmail Account
-
-Workflow
-
-Model AI
+Conversation becomes full screen.
 
 ---
 
-# Database
+# PERFORMANCE
 
-Gunakan data dari tabel yang sudah ada.
+Avoid unnecessary JavaScript.
 
-Jika ada data yang belum tersedia, buat migration yang diperlukan.
+Avoid heavy animations.
 
-Jangan membuat data dummy.
-
----
-
-# UI
-
-Gunakan Sneat Bootstrap.
-
-Responsive.
-
-Modern.
-
-Professional.
-
-Card dengan icon.
-
-Chart menggunakan Chart.js.
-
-Table menggunakan DataTables.
-
-Pagination.
-
-Search.
-
-Sorting.
+Keep Bootstrap-native components.
 
 ---
 
-# Coding Standard
+# IMPORTANT
 
-- Ikuti arsitektur project.
-- Gunakan Service jika logic kompleks.
-- Jangan menulis query di Blade.
-- Gunakan eager loading.
-- Hindari N+1 Query.
-- Gunakan Repository/Service yang sudah ada jika memungkinkan.
+Do NOT only redesign the Inbox page.
+
+Redesign the ENTIRE application.
+
+Every page must follow the same UI system.
+
+Maintain existing business logic.
+
+Do not break routes.
+
+Do not change controllers.
+
+Do not change models.
+
+Only improve:
+
+- Blade Views
+- Bootstrap Layout
+- Components
+- UI/UX
+- Responsiveness
+- User Experience
 
 ---
 
-# Yang Diharapkan
+# FINAL GOAL
 
-Hasil akhir harus menyerupai dashboard analitik profesional seperti:
+The final application should look like a premium SaaS product instead of a student project.
 
-- Google Analytics
-- Microsoft Power BI
-- Zendesk Analytics
-- Freshdesk Analytics
-- HubSpot Reports
+Users should immediately feel that this is a professional AI Customer Support platform.
 
-Tetapi khusus untuk AI Email Assistant.
+The interface should be:
 
-Prioritaskan kode yang bersih, mudah dikembangkan, dan siap digunakan ketika nanti sistem mendukung channel lain seperti WhatsApp, Instagram, Facebook Messenger, Telegram, dan Live Chat.
+- Modern
+- Full Screen
+- Clean
+- Fast
+- Consistent
+- Professional
+- Easy to use
+- Similar in quality to Intercom, Zendesk, HubSpot, and Gmail.

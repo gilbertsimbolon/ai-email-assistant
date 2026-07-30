@@ -247,6 +247,40 @@
                 </li>
             </ul>
         </li>
-
     </ul>
+
+    <div class="mt-10 border-top p-3">
+
+        <a href="{{ route('profil.index') }}"
+            class="d-flex align-items-center text-decoration-none text-reset rounded p-2 mb-2">
+
+            <div class="avatar avatar-sm me-2">
+                <span class="avatar-initial rounded-circle bg-label-primary">
+                    {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                </span>
+            </div>
+
+            <div class="flex-grow-1 overflow-hidden">
+                <h6 class="mb-0 text-truncate">
+                    {{ auth()->user()->name }}
+                </h6>
+
+                <small class="text-muted text-capitalize">
+                    {{-- {{ auth()->user()->getRoleNames()->first() }} --}}
+                </small>
+            </div>
+
+            <i class="bx bx-chevron-right fs-4 text-muted"></i>
+        </a>
+
+        <form action="{{ route('logout') }}" method="POST">
+            @csrf
+
+            <button type="submit" class="btn btn-outline-danger w-100">
+                <i class="bx bx-log-out me-1"></i>
+                Keluar
+            </button>
+        </form>
+
+    </div>
 </aside>
