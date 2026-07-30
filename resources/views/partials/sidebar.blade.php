@@ -69,7 +69,7 @@
         </li>
 
         {{-- AI Center --}}
-        @if (auth()->user()?->isAdmin())
+        @canany(['manage ai center', 'manage models', 'manage prompt', 'manage workflow'])
             <li class="menu-header small text-uppercase">
                 <span class="menu-header-text">AI Center</span>
             </li>
@@ -81,77 +81,89 @@
                 </a>
 
                 <ul class="menu-sub">
-                    <li class="menu-item {{ request()->routeIs('ai-center.dashboard') ? 'active' : '' }}">
-                        <a href="{{ route('ai-center.dashboard') }}" class="menu-link">
-                            <div>Dashboard</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->routeIs('ai-center.intents.*') ? 'active' : '' }}">
-                        <a href="{{ route('ai-center.intents.index') }}" class="menu-link">
-                            <div>Intent Builder</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->routeIs('ai-center.sops.*') ? 'active' : '' }}">
-                        <a href="{{ route('ai-center.sops.index') }}" class="menu-link">
-                            <div>SOP Builder</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->routeIs('ai-center.workflows.*') ? 'active' : '' }}">
-                        <a href="{{ route('ai-center.workflows.index') }}" class="menu-link">
-                            <div>Workflow Builder</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->routeIs('ai-center.reply-templates.*') ? 'active' : '' }}">
-                        <a href="{{ route('ai-center.reply-templates.index') }}" class="menu-link">
-                            <div>Reply Templates</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->routeIs('ai-center.knowledge-bases.*') ? 'active' : '' }}">
-                        <a href="{{ route('ai-center.knowledge-bases.index') }}" class="menu-link">
-                            <div>Knowledge Base</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->routeIs('ai-center.forbidden-actions.*') ? 'active' : '' }}">
-                        <a href="{{ route('ai-center.forbidden-actions.index') }}" class="menu-link">
-                            <div>Forbidden Actions</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->routeIs('ai-center.ai-models.*') ? 'active' : '' }}">
-                        <a href="{{ route('ai-center.ai-models.index') }}" class="menu-link">
-                            <div>AI Models</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->routeIs('ai-center.ai-parameters.*') ? 'active' : '' }}">
-                        <a href="{{ route('ai-center.ai-parameters.edit') }}" class="menu-link">
-                            <div>AI Parameters</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->routeIs('ai-center.prompt-preview.*') ? 'active' : '' }}">
-                        <a href="{{ route('ai-center.prompt-preview.index') }}" class="menu-link">
-                            <div>Prompt Preview</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->routeIs('ai-center.playground.*') ? 'active' : '' }}">
-                        <a href="{{ route('ai-center.playground.index') }}" class="menu-link">
-                            <div>Playground</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->routeIs('ai-center.ai-logs.*') ? 'active' : '' }}">
-                        <a href="{{ route('ai-center.ai-logs.index') }}" class="menu-link">
-                            <div>AI Logs</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->routeIs('ai-center.settings.*') ? 'active' : '' }}">
-                        <a href="{{ route('ai-center.settings.edit') }}" class="menu-link">
-                            <div>Settings</div>
-                        </a>
-                    </li>
+                    @can('manage ai center')
+                        <li class="menu-item {{ request()->routeIs('ai-center.dashboard') ? 'active' : '' }}">
+                            <a href="{{ route('ai-center.dashboard') }}" class="menu-link">
+                                <div>Dashboard</div>
+                            </a>
+                        </li>
+                        <li class="menu-item {{ request()->routeIs('ai-center.intents.*') ? 'active' : '' }}">
+                            <a href="{{ route('ai-center.intents.index') }}" class="menu-link">
+                                <div>Intent Builder</div>
+                            </a>
+                        </li>
+                        <li class="menu-item {{ request()->routeIs('ai-center.sops.*') ? 'active' : '' }}">
+                            <a href="{{ route('ai-center.sops.index') }}" class="menu-link">
+                                <div>SOP Builder</div>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('manage workflow')
+                        <li class="menu-item {{ request()->routeIs('ai-center.workflows.*') ? 'active' : '' }}">
+                            <a href="{{ route('ai-center.workflows.index') }}" class="menu-link">
+                                <div>Workflow Builder</div>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('manage ai center')
+                        <li class="menu-item {{ request()->routeIs('ai-center.reply-templates.*') ? 'active' : '' }}">
+                            <a href="{{ route('ai-center.reply-templates.index') }}" class="menu-link">
+                                <div>Reply Templates</div>
+                            </a>
+                        </li>
+                        <li class="menu-item {{ request()->routeIs('ai-center.knowledge-bases.*') ? 'active' : '' }}">
+                            <a href="{{ route('ai-center.knowledge-bases.index') }}" class="menu-link">
+                                <div>Knowledge Base</div>
+                            </a>
+                        </li>
+                        <li class="menu-item {{ request()->routeIs('ai-center.forbidden-actions.*') ? 'active' : '' }}">
+                            <a href="{{ route('ai-center.forbidden-actions.index') }}" class="menu-link">
+                                <div>Forbidden Actions</div>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('manage models')
+                        <li class="menu-item {{ request()->routeIs('ai-center.ai-models.*') ? 'active' : '' }}">
+                            <a href="{{ route('ai-center.ai-models.index') }}" class="menu-link">
+                                <div>AI Models</div>
+                            </a>
+                        </li>
+                        <li class="menu-item {{ request()->routeIs('ai-center.ai-parameters.*') ? 'active' : '' }}">
+                            <a href="{{ route('ai-center.ai-parameters.edit') }}" class="menu-link">
+                                <div>AI Parameters</div>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('manage prompt')
+                        <li class="menu-item {{ request()->routeIs('ai-center.prompt-preview.*') ? 'active' : '' }}">
+                            <a href="{{ route('ai-center.prompt-preview.index') }}" class="menu-link">
+                                <div>Prompt Preview</div>
+                            </a>
+                        </li>
+                        <li class="menu-item {{ request()->routeIs('ai-center.playground.*') ? 'active' : '' }}">
+                            <a href="{{ route('ai-center.playground.index') }}" class="menu-link">
+                                <div>Playground</div>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('manage ai center')
+                        <li class="menu-item {{ request()->routeIs('ai-center.ai-logs.*') ? 'active' : '' }}">
+                            <a href="{{ route('ai-center.ai-logs.index') }}" class="menu-link">
+                                <div>AI Logs</div>
+                            </a>
+                        </li>
+                        <li class="menu-item {{ request()->routeIs('ai-center.settings.*') ? 'active' : '' }}">
+                            <a href="{{ route('ai-center.settings.edit') }}" class="menu-link">
+                                <div>Settings</div>
+                            </a>
+                        </li>
+                    @endcan
                 </ul>
             </li>
-        @endif
+        @endcanany
 
         {{-- Reports --}}
-        @if (auth()->user()?->isAdmin())
+        @canany(['manage reports', 'view reports'])
             <li class="menu-header small text-uppercase">
                 <span class="menu-header-text">Reports</span>
             </li>
@@ -195,7 +207,7 @@
                     </li>
                 </ul>
             </li>
-        @endif
+        @endcanany
 
         {{-- Administration --}}
         <li class="menu-header small text-uppercase">
@@ -215,25 +227,29 @@
                     </a>
                 </li>
 
-                @if (auth()->user()?->isAdmin())
+                @can('manage gmail')
                     <li class="menu-item {{ request()->routeIs('settings.gmail-config.*') ? 'active' : '' }}">
                         <a href="{{ route('settings.gmail-config.index') }}" class="menu-link">
                             <div>Gmail API Configuration</div>
                         </a>
                     </li>
+                @endcan
 
+                @can('manage models')
                     <li class="menu-item {{ request()->routeIs('settings.ai-config.*') ? 'active' : '' }}">
                         <a href="{{ route('settings.ai-config.index') }}" class="menu-link">
                             <div>AI Configuration</div>
                         </a>
                     </li>
-                @endif
+                @endcan
 
-                <li class="menu-item">
-                    <a href="#" class="menu-link">
-                        <div>Users</div>
-                    </a>
-                </li>
+                @can('manage users')
+                    <li class="menu-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
+                        <a href="{{ route('users.index') }}" class="menu-link">
+                            <div>Users</div>
+                        </a>
+                    </li>
+                @endcan
             </ul>
         </li>
     </ul>

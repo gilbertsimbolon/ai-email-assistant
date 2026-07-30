@@ -9,6 +9,7 @@ use App\Services\AI\AiClientService;
 use App\Services\AI\Contracts\AiClientInterface;
 use App\Services\Gmail\GmailConfigurationService;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -39,6 +40,25 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useBootstrapFive();
+
+        // "Can manage Everything" (claude.txt) acts as a literal Admin
+        // bypass so every @can/permission-middleware check passes for
+        // Admin without duplicating every Agent permission onto the role.
+        // Guarded because hasPermissionTo() throws if the permission row
+        // doesn't exist yet (fresh install before RolePermissionSeeder
+        // runs) — Gate::before fires on every authorization check
+        // app-wide, so that exception must never bubble up from here.
+        Gate::before(function ($user, string $ability) {
+            if (! $user) {
+                return null;
+            }
+
+            try {
+                return $user->hasPermissionTo('manage everything') ? true : null;
+            } catch (\Throwable $e) {
+                return null;
+            }
+        });
 
         // Memaksa skema URL menjadi HTTPS jika aplikasi mendeteksi menggunakan HTTPS (seperti via Ngrok)
         if (config('app.env') !== 'local' || request()->server('HTTP_X_FORWARDED_PROTO') === 'https') {

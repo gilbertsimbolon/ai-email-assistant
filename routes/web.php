@@ -24,6 +24,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DraftController;
 use App\Http\Controllers\GmailOAuthController;
 use App\Http\Controllers\GmailSettingsController;
+use App\Http\Controllers\Inbox\InboxAiToolsController;
 use App\Http\Controllers\InboxController;
 use App\Http\Controllers\ProfilController;
 use App\Http\Controllers\Reports\ReportsAiUsageController;
@@ -34,6 +35,7 @@ use App\Http\Controllers\Reports\ReportsGmailController;
 use App\Http\Controllers\Reports\ReportsOverviewController;
 use App\Http\Controllers\Reports\ReportsTimelineController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\WhatsAppController;
 use Illuminate\Support\Facades\Route;
 
@@ -69,8 +71,10 @@ Route::middleware('auth')->group(function () {
     // Route Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Rute Inbox
-    Route::prefix('inbox')->name('inbox.')->group(function () {
+    // Rute Inbox — the "inbox" permission (Admin via Gate::before, Agent
+    // explicitly, per claude.txt) gates entry to the whole workspace; a few
+    // routes below layer a more specific permission on top.
+    Route::middleware('permission:inbox')->prefix('inbox')->name('inbox.')->group(function () {
         // Daftar inbox (dengan filter status)
         Route::get('/', [InboxController::class, 'index'])->name('index');
 
@@ -99,15 +103,33 @@ Route::middleware('auth')->group(function () {
             ->name('messages.attachments.preview');
 
         // Review, approve, reject draft AI
-        Route::put('/drafts/{draft}', [DraftController::class, 'update'])->name('drafts.update');
-        Route::post('/drafts/{draft}/approve', [DraftController::class, 'approve'])->name('drafts.approve');
-        Route::post('/drafts/{draft}/reject', [DraftController::class, 'reject'])->name('drafts.reject');
+        Route::put('/drafts/{draft}', [DraftController::class, 'update'])->name('drafts.update')
+            ->middleware('permission:edit draft');
+        Route::post('/drafts/{draft}/approve', [DraftController::class, 'approve'])->name('drafts.approve')
+            ->middleware('permission:approve draft');
+        Route::post('/drafts/{draft}/reject', [DraftController::class, 'reject'])->name('drafts.reject')
+            ->middleware('permission:approve draft');
 
-        // Tombol "Generate AI Reply" — satu-satunya tempat AI dipanggil
-        Route::post('/{conversation}/drafts/generate', [DraftController::class, 'generate'])->name('drafts.generate');
+        // Tombol "Generate AI Reply" / "Regenerate" — satu-satunya tempat AI benar-benar dipanggil
+        Route::post('/{conversation}/drafts/generate', [DraftController::class, 'generate'])->name('drafts.generate')
+            ->middleware('permission:generate ai|regenerate ai');
 
         // Tombol "Send" pada composer (dengan atau tanpa draft AI)
-        Route::post('/{conversation}/drafts/send', [DraftController::class, 'send'])->name('drafts.send');
+        Route::post('/{conversation}/drafts/send', [DraftController::class, 'send'])->name('drafts.send')
+            ->middleware('permission:send email');
+
+        // Toolbar AI di atas composer: Summarize/Translate/Detect Intent/
+        // Extract Info/Sentiment — semuanya manual (klik tombol), tidak
+        // pernah otomatis, per claude.txt.
+        Route::prefix('{conversation}/ai-tools')->name('ai-tools.')->group(function () {
+            Route::post('/summarize', [InboxAiToolsController::class, 'summarize'])->name('summarize')
+                ->middleware('permission:summarize thread');
+            Route::post('/translate', [InboxAiToolsController::class, 'translate'])->name('translate')
+                ->middleware('permission:translate email');
+            Route::post('/detect-intent', [InboxAiToolsController::class, 'detectIntent'])->name('detect-intent');
+            Route::post('/extract-info', [InboxAiToolsController::class, 'extractInfo'])->name('extract-info');
+            Route::post('/sentiment', [InboxAiToolsController::class, 'sentiment'])->name('sentiment');
+        });
     });
 
     // Route Settings & koneksi Gmail (token OAuth per user)
@@ -122,7 +144,7 @@ Route::middleware('auth')->group(function () {
 
         // Global Gmail OAuth configuration (client id/secret/redirect uri),
         // admin-only: this replaces editing .env for Gmail credentials.
-        Route::middleware('admin')->prefix('gmail-config')->name('gmail-config.')->group(function () {
+        Route::middleware('permission:manage gmail')->prefix('gmail-config')->name('gmail-config.')->group(function () {
             Route::get('/', [GmailSettingsController::class, 'index'])->name('index');
             Route::put('/', [GmailSettingsController::class, 'update'])->name('update');
             Route::post('/test-connection', [GmailSettingsController::class, 'testConnection'])->name('test-connection');
@@ -131,7 +153,7 @@ Route::middleware('auth')->group(function () {
         // Global AI provider configuration (provider/api key/base url/model/
         // temperature/max tokens/timeout), admin-only: this replaces editing
         // .env and config/openai.php for AI credentials.
-        Route::middleware('admin')->prefix('ai-config')->name('ai-config.')->group(function () {
+        Route::middleware('permission:manage models')->prefix('ai-config')->name('ai-config.')->group(function () {
             Route::get('/', [AiSettingsController::class, 'index'])->name('index');
             Route::put('/', [AiSettingsController::class, 'update'])->name('update');
             Route::post('/test-connection', [AiSettingsController::class, 'testConnection'])->name('test-connection');
@@ -140,8 +162,11 @@ Route::middleware('auth')->group(function () {
 
     // AI Center: the orchestration "brain" (Intent/SOP/Rule/Workflow/
     // Knowledge Base/Reply Template/AI Models/AI Parameters/Prompt Preview/
-    // Playground/AI Logs/Dashboard/Settings). Admin-only, per claude.txt.
-    Route::middleware('admin')->prefix('ai-center')->name('ai-center.')->group(function () {
+    // Playground/AI Logs/Dashboard/Settings). Gated per sub-resource so the
+    // three named permissions from claude.txt ("manage Models"/"manage
+    // Prompt"/"manage Workflow") are meaningful, everything else falls back
+    // to the general "manage ai center" permission.
+    Route::middleware('permission:manage ai center')->prefix('ai-center')->name('ai-center.')->group(function () {
         Route::get('/', [AiCenterDashboardController::class, 'index'])->name('dashboard');
 
         Route::post('categories', [AiCenterCategoryController::class, 'store'])->name('categories.store');
@@ -154,22 +179,6 @@ Route::middleware('auth')->group(function () {
         Route::resource('sops', AiCenterSopController::class);
         Route::resource('sops.rules', AiCenterSopRuleController::class)->shallow()->except(['show']);
 
-        Route::resource('workflows', AiCenterWorkflowController::class);
-        Route::post('workflows/{workflow}/nodes', [AiCenterWorkflowNodeController::class, 'store'])->name('workflows.nodes.store');
-        Route::delete('workflows/{workflow}/nodes/{node}', [AiCenterWorkflowNodeController::class, 'destroy'])->name('workflows.nodes.destroy');
-
-        Route::resource('ai-models', AiCenterAiModelController::class);
-        Route::post('ai-models/{aiModel}/set-default', [AiCenterAiModelController::class, 'setDefault'])->name('ai-models.set-default');
-        Route::post('ai-models/{aiModel}/test-connection', [AiCenterAiModelController::class, 'testConnection'])->name('ai-models.test-connection');
-
-        Route::get('ai-parameters', [AiCenterAiParameterController::class, 'edit'])->name('ai-parameters.edit');
-        Route::put('ai-parameters', [AiCenterAiParameterController::class, 'update'])->name('ai-parameters.update');
-
-        Route::get('prompt-preview', [AiCenterPromptPreviewController::class, 'index'])->name('prompt-preview.index');
-
-        Route::get('playground', [AiCenterPlaygroundController::class, 'index'])->name('playground.index');
-        Route::post('playground', [AiCenterPlaygroundController::class, 'run'])->name('playground.run');
-
         Route::get('ai-logs', [AiCenterAiLogController::class, 'index'])->name('ai-logs.index');
         Route::get('ai-logs/{aiLog}', [AiCenterAiLogController::class, 'show'])->name('ai-logs.show');
 
@@ -177,12 +186,32 @@ Route::middleware('auth')->group(function () {
         Route::put('settings', [AiCenterSettingsController::class, 'update'])->name('settings.update');
     });
 
-    // Reports: system-wide analytics dashboard (KPIs, email/intent/AI
-    // performance charts, per-entity analytics, response time, activity
-    // timeline, export). Admin-only, per claude.txt — same gate as AI
-    // Center, since most of this data (SOPs/Workflows/AI Models/cost) is
-    // itself admin-only.
-    Route::middleware('admin')->prefix('reports')->name('reports.')->group(function () {
+    Route::middleware('permission:manage models')->prefix('ai-center')->name('ai-center.')->group(function () {
+        Route::resource('ai-models', AiCenterAiModelController::class);
+        Route::post('ai-models/{aiModel}/set-default', [AiCenterAiModelController::class, 'setDefault'])->name('ai-models.set-default');
+        Route::post('ai-models/{aiModel}/test-connection', [AiCenterAiModelController::class, 'testConnection'])->name('ai-models.test-connection');
+
+        Route::get('ai-parameters', [AiCenterAiParameterController::class, 'edit'])->name('ai-parameters.edit');
+        Route::put('ai-parameters', [AiCenterAiParameterController::class, 'update'])->name('ai-parameters.update');
+    });
+
+    Route::middleware('permission:manage prompt')->prefix('ai-center')->name('ai-center.')->group(function () {
+        Route::get('prompt-preview', [AiCenterPromptPreviewController::class, 'index'])->name('prompt-preview.index');
+
+        Route::get('playground', [AiCenterPlaygroundController::class, 'index'])->name('playground.index');
+        Route::post('playground', [AiCenterPlaygroundController::class, 'run'])->name('playground.run');
+    });
+
+    Route::middleware('permission:manage workflow')->prefix('ai-center')->name('ai-center.')->group(function () {
+        Route::resource('workflows', AiCenterWorkflowController::class);
+        Route::post('workflows/{workflow}/nodes', [AiCenterWorkflowNodeController::class, 'store'])->name('workflows.nodes.store');
+        Route::delete('workflows/{workflow}/nodes/{node}', [AiCenterWorkflowNodeController::class, 'destroy'])->name('workflows.nodes.destroy');
+    });
+
+    // Reports: system-wide analytics dashboard. Admin sees everything via
+    // "manage reports" (or the Gate::before "manage everything" bypass),
+    // Agent gets read access via its own "view reports" permission.
+    Route::middleware('permission:manage reports|view reports')->prefix('reports')->name('reports.')->group(function () {
         Route::get('/', [ReportsOverviewController::class, 'index'])->name('index');
         Route::get('ai-usage', [ReportsAiUsageController::class, 'index'])->name('ai-usage');
         Route::get('content', [ReportsContentController::class, 'index'])->name('content');
@@ -191,4 +220,9 @@ Route::middleware('auth')->group(function () {
         Route::get('timeline', [ReportsTimelineController::class, 'index'])->name('timeline');
         Route::get('{report}/export/{format}', [ReportsExportController::class, 'export'])->name('export');
     });
+
+    // Users: Admin-only management of accounts and their Admin/Agent role.
+    Route::middleware('permission:manage users')
+        ->resource('users', UserController::class)
+        ->except(['show']);
 });

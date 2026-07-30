@@ -52,5 +52,6 @@
     </div>
 
     <script src="{{ asset('js/inbox-composer.js') }}"></script>
+    <script src="{{ asset('js/inbox-toolbar.js') }}"></script>
     <script src="{{ asset('js/inbox-navigation.js') }}"></script>
 @endsection

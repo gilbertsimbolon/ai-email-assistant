@@ -16,23 +16,8 @@
               placeholder="Tulis balasan, atau klik Generate Reply untuk membuat draft AI...">{{ $activeDraft->content['body'] ?? '' }}</textarea>
 
     <div class="d-flex align-items-center flex-wrap gap-2 mt-2">
-        <button type="button" id="btn-generate" class="btn btn-sm btn-primary {{ $activeDraft ? 'd-none' : '' }}">
-            <i class="bx bx-magic-wand me-1"></i> Generate AI Reply
-        </button>
-        <button type="button" id="btn-regenerate" class="btn btn-sm btn-outline-primary {{ $activeDraft ? '' : 'd-none' }}">
-            <i class="bx bx-refresh me-1"></i> Regenerate
-        </button>
-
-        <div class="vr mx-1 d-none d-sm-block"></div>
-
         <button type="button" class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Segera hadir">
             <i class="bx bx-edit-alt me-1"></i>Improve
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Segera hadir">
-            <i class="bx bx-globe me-1"></i>Translate
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Segera hadir">
-            <i class="bx bx-collapse-vertical me-1"></i>Summarize
         </button>
         <button type="button" class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Segera hadir">
             <i class="bx bx-paperclip me-1"></i>Attachment

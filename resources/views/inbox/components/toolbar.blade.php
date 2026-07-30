@@ -53,8 +53,6 @@
                         <i class="bx bx-magic-wand me-2"></i>Generate / Regenerate Reply
                     </a>
                 </li>
-                <li><a class="dropdown-item disabled" href="javascript:void(0);"><i class="bx bx-globe me-2"></i>Translate <span class="badge bg-label-secondary ms-1">Soon</span></a></li>
-                <li><a class="dropdown-item disabled" href="javascript:void(0);"><i class="bx bx-collapse-vertical me-2"></i>Summarize <span class="badge bg-label-secondary ms-1">Soon</span></a></li>
             </ul>
         </div>
 

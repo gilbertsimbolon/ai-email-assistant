@@ -207,3 +207,25 @@
     max-height: 320px;
     overflow-y: auto;
 }
+
+/* ---------------------------------------------------------------------
+   Inbox "Print Email" toolbar action — shows only the message thread.
+   --------------------------------------------------------------------- */
+
+@media print {
+    #layout-menu,
+    .layout-navbar,
+    .content-footer,
+    #conversationListPanel,
+    #infoOffcanvas,
+    .conversation-toolbar,
+    #ai-toolbar,
+    #composer {
+        display: none !important;
+    }
+
+    #chatHistory {
+        overflow: visible !important;
+        height: auto !important;
+    }
+}

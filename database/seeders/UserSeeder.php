@@ -14,11 +14,34 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        User::create([
-            'name' => 'Bator',
-            'email' => 'gilbertttsimbolon@gmail.com',
-            'password' => Hash::make('password'),
-            'is_admin' => true,
-        ]);
+        $bator = User::query()->firstOrCreate(
+            ['email' => 'gilbertttsimbolon@gmail.com'],
+            [
+                'name' => 'Bator',
+                'password' => Hash::make('password'),
+                'is_admin' => true,
+            ]
+        );
+        $bator->assignRole('Admin');
+
+        $admin = User::query()->updateOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'name' => 'Admin',
+                'password' => Hash::make('password'),
+                'is_admin' => true,
+            ]
+        );
+        $admin->assignRole('Admin');
+
+        $agent = User::query()->updateOrCreate(
+            ['email' => 'agent@example.com'],
+            [
+                'name' => 'Agent',
+                'password' => Hash::make('password'),
+                'is_admin' => false,
+            ]
+        );
+        $agent->assignRole('Agent');
     }
 }

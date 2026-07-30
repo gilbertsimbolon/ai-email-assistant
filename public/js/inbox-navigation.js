@@ -99,6 +99,9 @@
                 if (window.initComposer) {
                     window.initComposer();
                 }
+                if (window.initAiToolbar) {
+                    window.initAiToolbar();
+                }
                 initTooltips(threadPanel);
                 initTooltips(aiPanelBody);
 

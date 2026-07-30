@@ -14,7 +14,9 @@
             @endforelse
         </div>
 
+        @include('inbox.components.ai-toolbar', ['activeConversation' => $activeConversation, 'activeDraft' => $activeDraft ?? null])
         @include('inbox.components.composer')
+        @include('inbox.components.ai-tool-modals')
     </div>
 @else
     {{-- Empty state — belum ada percakapan yang dipilih --}}
