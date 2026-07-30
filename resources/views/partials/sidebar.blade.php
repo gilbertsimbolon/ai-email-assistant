@@ -215,12 +215,6 @@
                     </a>
                 </li>
 
-                <li class="menu-item">
-                    <a href="#" class="menu-link">
-                        <div>Company</div>
-                    </a>
-                </li>
-
                 @if (auth()->user()?->isAdmin())
                     <li class="menu-item {{ request()->routeIs('settings.gmail-config.*') ? 'active' : '' }}">
                         <a href="{{ route('settings.gmail-config.index') }}" class="menu-link">
@@ -238,12 +232,6 @@
                 <li class="menu-item">
                     <a href="#" class="menu-link">
                         <div>Users</div>
-                    </a>
-                </li>
-
-                <li class="menu-item">
-                    <a href="{{ route('profil.index') }}" class="menu-link">
-                        <div>Profile</div>
                     </a>
                 </li>
             </ul>

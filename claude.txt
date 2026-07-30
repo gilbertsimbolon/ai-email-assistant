@@ -1,667 +1,639 @@
-# REDESIGN UI/UX – FULL SCREEN MODERN AI EMAIL ASSISTANT
+# TASK: Implement AI Center Seeder, Spatie Roles, and Smart Inbox Features
 
-## OBJECTIVE
+## Context
 
-Redesign the entire UI of the AI Email Assistant to look like a modern SaaS application.
+Project Name: AI Email Assistant
 
-The current interface wastes a lot of screen space. There are large empty areas, inconsistent spacing, and fixed-width containers that make the application look unfinished.
+Stack:
 
-The goal is to transform the application into a full-screen, professional dashboard similar to:
+- Laravel 13
+- PHP 8.3
+- Bootstrap 5 (Sneat)
+- Gmail API
+- OpenAI API
+- MySQL
 
-- Google Workspace (Gmail)
-- Microsoft Outlook
-- Linear
-- Notion
-- Slack
-- Zendesk
-- Intercom
-- HubSpot
+IMPORTANT:
 
-Do **NOT** simply change colors.
-Redesign the layout and component structure.
-
----
-
-# GENERAL RULES
-
-- Use Bootstrap 5 only.
-- Continue using the Sneat Bootstrap Template.
-- Reuse existing Bootstrap utilities whenever possible.
-- Do not create unnecessary custom CSS.
-- Responsive for Desktop, Tablet, and Mobile.
-- Clean spacing.
-- Modern shadows.
-- Rounded corners consistent with Sneat.
-- No unused whitespace.
-- Every page should maximize available screen space.
+- Follow existing project architecture.
+- Do NOT rewrite existing features.
+- Do NOT break existing routes.
+- Reuse existing Services whenever possible.
+- Write clean, production-ready code.
+- Follow SOLID principles.
+- Everything must integrate with the existing system.
 
 ---
 
-# GLOBAL LAYOUT
+# TASK 1
+## Create AI Center Seeder
 
-The application should always occupy the entire browser viewport.
+Create complete database seeders so a fresh installation already contains example AI data.
 
-Layout:
+Seed the following modules.
 
-```
--------------------------------------------------------------
-| Sidebar | Top Navigation                                  |
-|         |-------------------------------------------------|
-|         |                                                 |
-|         |                 Content Area                    |
-|         |                                                 |
-|         |                                                 |
--------------------------------------------------------------
-```
+---
 
-Requirements:
+### Categories
 
-- Sidebar full height (100vh)
-- Topbar full width
-- Content uses all remaining space
-- No centered container with huge margins
-- Remove unnecessary max-width wrappers
-- Use flexbox layout
+Support
+
+Billing
+
+Technical
+
+General
+
+---
+
+### SOP
+
+Create at least 5 SOPs.
 
 Example:
 
-```
-display:flex
-
-Sidebar
-    width:280px
-
-Content
-    flex:1
-    min-width:0
-```
-
----
-
-# SIDEBAR
-
-Current sidebar looks too narrow and wastes vertical space.
-
-Improve it.
-
-Requirements:
-
-- fixed height (100vh)
-- sticky
-- independent scrolling
-- better spacing
-- active menu more visible
-- hover animation
-- smooth collapse
-- better typography
-
-Sections:
-
-Inbox
-
-- Email
-- WhatsApp (Soon)
-- Instagram (Soon)
-- Messenger (Soon)
-- Live Chat (Soon)
-
-AI Center
-
-Reports
-
-Administration
-
-Bottom area:
-
-- User profile
-- Logout button
-
-Always pinned at the bottom.
-
----
-
-# TOP NAVIGATION
-
-Every page should have a professional topbar.
-
-Include:
-
-Left
-
-- Page title
-- Breadcrumb
-
-Center
-
-- Global Search
-
-Right
-
-- Notifications
-- Connected Gmail Account
-- User Avatar
-
-Height approximately:
-
-64px
-
----
-
-# CONTENT AREA
-
-Remove all unused margins.
-
-Current UI only uses around 50% of available width.
-
-New UI should use around 95% of browser width.
-
-Use:
-
-```
-container-fluid
-```
-
-instead of
-
-```
-container
-```
-
-where appropriate.
-
----
-
-# DASHBOARD
-
-Redesign dashboard completely.
-
-Cards:
-
-- Total Emails
-- Waiting Agent
-- AI Draft
-- Closed
-- Response Time
-- AI Accuracy
-- AI Usage
-- Connected Gmail Accounts
-
-Charts:
-
-- Email Timeline
-- AI Usage
-- Intent Distribution
-- Daily Traffic
-
-Latest Activity
-
-Recent Emails
-
-Everything responsive.
-
----
-
-# INBOX PAGE
-
-This page is the highest priority.
-
-Current layout is not acceptable.
-
-Redesign to become a Gmail/Intercom style interface.
-
-Split View Layout:
-
-```
-------------------------------------------------------------
- Sidebar | Email List | Conversation
-------------------------------------------------------------
-```
-
-Width:
-
-Sidebar
-
-280px
-
-Email List
-
-30%
-
-Conversation
-
-70%
-
-Conversation should use all available height.
-
----
-
-## EMAIL LIST
-
-Modern list.
-
-Each row contains:
-
-Avatar
-
-Customer Name
-
-Subject
-
-Preview
-
-Status Badge
-
-Time
-
-Unread Dot
-
-Star
-
-Hover animation
-
-Selected row highlight
-
-Scrolling independently.
-
----
-
-## CONVERSATION PANEL
-
-Looks like a messaging application.
-
-Header:
-
-Avatar
-
-Customer
-
-Email
-
-Subject
-
-Status
-
-Priority
-
-Assigned Agent
-
-Buttons:
-
-Reply
-
-AI Actions
-
-More
-
-Tabs:
-
-- Email
-- AI Draft
-- Customer
-- Notes
-- Timeline
-- Activity
-
-Conversation area:
-
-Speech-bubble style emails.
-
-Incoming
-
-Left
-
-Outgoing
-
-Right
-
-Timestamp
-
-Attachments
-
-Quoted reply
-
-Everything scrollable.
-
----
-
-# REPLY SECTION
-
-Bottom fixed composer.
+Refund Request
 
 Contains:
 
-Subject
+- purpose
+- trigger
+- workflow
+- important notes
+- escalation rule
 
-Reply textarea
+Another examples:
 
-Buttons:
+- Login Problem
+- Payment Failed
+- Account Cancellation
+- Subscription Renewal
+
+---
+
+### Knowledge Base
+
+Seed examples such as:
+
+Refund Policy
+
+Subscription Policy
+
+Billing FAQ
+
+Login Troubleshooting
+
+Password Reset
+
+Product Features
+
+Every record should contain:
+
+- title
+- type
+- content
+- status
+
+---
+
+### Intent
+
+Create realistic intents.
+
+Refund
+
+keywords
+
+refund
+
+money back
+
+cancel payment
+
+examples
+
+I want refund
+
+Please refund me
+
+I need my money back
+
+--------------------
+
+Login Issue
+
+keywords
+
+login
+
+cannot login
+
+password
+
+examples
+
+I can't login
+
+Forgot password
+
+etc.
+
+Create at least 10 intents.
+
+---
+
+### Variables
+
+Seed variables.
+
+customer_name
+
+customer_email
+
+company_name
+
+current_date
+
+ticket_id
+
+subscription_name
+
+refund_deadline
+
+agent_name
+
+etc.
+
+---
+
+### Reply Templates
+
+Create realistic templates.
+
+Examples:
+
+Refund Approved
+
+Refund Rejected
+
+Subscription Renewal
+
+Technical Support
+
+Billing Issue
+
+General Inquiry
+
+Use variables inside templates.
+
+Example:
+
+Hi {{customer_name}}
+
+Thank you for contacting {{company_name}}...
+
+---
+
+### Workflow
+
+Seed several workflow examples.
+
+Refund Flow
+
+↓
+
+Identify Intent
+
+↓
+
+Load SOP
+
+↓
+
+Load Knowledge
+
+↓
+
+Generate Draft
+
+↓
+
+Human Review
+
+↓
+
+Send Email
+
+---
+
+### AI Models
+
+Seed examples.
+
+GPT-5
+
+GPT-5 Mini
+
+Claude Sonnet
+
+Gemini 2.5 Pro
+
+DeepSeek
+
+Fields:
+
+provider
+
+model
+
+temperature
+
+max_tokens
+
+status
+
+default_model
+
+---
+
+Everything should be linked correctly using foreign keys.
+
+Seeder should be idempotent.
+
+Use updateOrCreate() whenever appropriate.
+
+---
+
+# TASK 2
+
+## Integrate Spatie Permission
+
+Install and configure Spatie Permission properly.
+
+Use exactly two roles.
+
+Admin
+
+Agent
+
+No additional roles.
+
+---
+
+Admin permissions
+
+Can manage AI Center
+
+Can manage Gmail
+
+Can manage Settings
+
+Can manage Users
+
+Can manage Reports
+
+Can manage Models
+
+Can manage Prompt
+
+Can manage Workflow
+
+Can manage Everything
+
+---
+
+Agent permissions
+
+Inbox
+
+Generate AI
+
+Regenerate AI
+
+Translate Email
+
+Summarize Thread
+
+Approve Draft
+
+Edit Draft
+
+Send Email
+
+View Reports
+
+Cannot access:
+
+Settings
+
+User Management
+
+AI Configuration
+
+Model Configuration
+
+Prompt Configuration
+
+Workflow Configuration
+
+---
+
+Protect all routes using middleware.
+
+Use middleware consistently.
+
+Update navigation sidebar automatically depending on role.
+
+Hide menus that user cannot access.
+
+Never show unauthorized menu items.
+
+Seed default users.
+
+Admin
+
+email:
+
+admin@example.com
+
+password:
+
+password
+
+Role:
+
+Admin
+
+---------------------
+
+Agent
+
+email:
+
+agent@example.com
+
+password:
+
+password
+
+Role:
+
+Agent
+
+---
+
+# TASK 3
+
+## Improve Inbox UX
+
+Redesign Inbox to become an AI-assisted email review workspace.
+
+DO NOT auto generate AI replies.
+
+Everything should be manual to reduce token usage.
+
+---
+
+Above message composer create a toolbar.
+
+Toolbar buttons:
+
+Summarize Thread
+
+Translate
 
 Generate AI Reply
 
 Regenerate
 
-Improve
+Detect Intent
 
-Translate
+Extract Customer Information
 
-Summarize
+Sentiment Analysis
 
-Clear
+Copy Email
 
-Send
+Download Email
 
-Important:
+Print Email
 
-AI should NEVER automatically generate a reply when a new email arrives.
+---
 
-The agent decides when AI should process the conversation.
+# Summarize Thread
 
-Workflow:
-
-Email arrives
+Click button
 
 ↓
 
-Agent reads email
+Open Bootstrap Modal
 
-↓
+AI summarizes entire email thread.
 
-Agent clicks
+Include:
 
-Generate AI Reply
+Conversation Summary
 
-↓
+Customer Problem
 
-AI generates draft
+Current Status
 
-↓
+Pending Questions
 
-Agent edits
+Suggested Action
 
-↓
+Risk Level
 
-Send
+Timeline
 
-This saves OpenAI tokens.
+Important Notes
 
----
+Estimated Intent
 
-# AI CENTER
-
-Redesign every page.
-
-Dashboard
-
-Intent Builder
-
-SOP Builder
-
-Workflow Builder
-
-Reply Templates
-
-Knowledge Base
-
-Forbidden Actions
-
-AI Models
-
-AI Parameters
-
-Prompt Preview
-
-Playground
-
-AI Logs
-
-Settings
-
-Every page should follow the same design language.
+Recommended Reply
 
 ---
 
-# REPORTS
+# Translate
 
-Modern analytics dashboard.
+Support:
 
-Cards
+English
 
-Charts
+Indonesia
 
-Tables
+Japanese
 
-Date Filters
+Chinese
 
-Export
+Spanish
 
-PDF
+French
 
-Excel
+German
 
-Use Bootstrap cards.
+Translation should appear inside modal.
 
----
-
-# SETTINGS
-
-Professional settings page.
-
-Group settings into sections.
-
-Examples:
-
-General
-
-AI
-
-OpenAI
-
-Gmail
-
-Prompt
-
-Workflow
-
-Security
-
-Users
-
-System
-
-Avoid one long form.
-
-Use cards.
+Original email never changes.
 
 ---
 
-# TABLES
+# Detect Intent
 
-Every table should:
+Open modal.
 
-- Full width
-- Responsive
-- DataTables styling
-- Sticky header
-- Pagination
-- Search
-- Filters
+AI predicts:
 
-No empty spaces.
+Intent
 
----
+Confidence Score
 
-# FORMS
+Matched SOP
 
-Improve every form.
+Matched Knowledge
 
-Use:
+Matched Template
 
-2-column layout where possible.
-
-Group related fields inside cards.
-
-Better spacing.
-
-Use:
-
-- Help text
-- Validation
-- Icons
+Reasoning
 
 ---
 
-# COLORS
+# Extract Information
 
-Keep Sneat default colors.
+AI extracts:
 
-Primary
+Customer Name
 
-Bootstrap Primary
+Email
 
-Background
+Order Number
 
-#f6f6f9
+Invoice Number
 
-Success
+Subscription
 
-Green
+Product
 
-Danger
+Platform
 
-Red
+Purchase Date
 
-Warning
+Refund Eligibility
 
-Orange
-
-Do not redesign the color palette.
-
-Only improve layout.
+Important Dates
 
 ---
 
-# TYPOGRAPHY
+# Sentiment Analysis
 
-Use Sneat typography.
+Show
 
-Clear hierarchy.
+Emotion
 
-Page Title
+Frustration Level
 
-Large
+Urgency
 
-Section Title
+Customer Satisfaction
 
-Medium
+Risk Score
 
-Card Title
-
-Medium
-
-Description
-
-Small
+Priority
 
 ---
 
-# ICONS
+# AI Reply
 
-Use Boxicons.
+Current behavior:
 
-No mixed icon libraries.
+User clicks Generate AI.
 
----
+AI generates draft.
 
-# SPACING
+Do NOT auto regenerate.
 
-Use Bootstrap spacing utilities only.
-
-Examples:
-
-```
-p-4
-
-mb-4
-
-gap-3
-
-gx-4
-
-gy-4
-```
-
-Maintain consistent spacing.
+Do NOT generate automatically when email syncs.
 
 ---
 
-# RESPONSIVENESS
+# Regenerate
 
-Desktop
+Generate a new draft using:
 
-Full split layout.
+Same SOP
 
-Tablet
+Same Knowledge
 
-Sidebar collapses.
-
-Mobile
-
-Drawer sidebar.
-
-Conversation becomes full screen.
+Same Intent
 
 ---
 
-# PERFORMANCE
+# Modal Requirements
 
-Avoid unnecessary JavaScript.
+Use Bootstrap Modal.
 
-Avoid heavy animations.
+Loading animation.
 
-Keep Bootstrap-native components.
+Cancel button.
 
----
+Copy Result button.
 
-# IMPORTANT
+Regenerate button (where applicable).
 
-Do NOT only redesign the Inbox page.
-
-Redesign the ENTIRE application.
-
-Every page must follow the same UI system.
-
-Maintain existing business logic.
-
-Do not break routes.
-
-Do not change controllers.
-
-Do not change models.
-
-Only improve:
-
-- Blade Views
-- Bootstrap Layout
-- Components
-- UI/UX
-- Responsiveness
-- User Experience
+Store results in cache/database if appropriate to reduce repeated OpenAI calls.
 
 ---
 
-# FINAL GOAL
+# UI
 
-The final application should look like a premium SaaS product instead of a student project.
+The inbox should feel like Gmail + ChatGPT.
 
-Users should immediately feel that this is a professional AI Customer Support platform.
+Large reading panel.
 
-The interface should be:
+Chat-style thread.
 
-- Modern
-- Full Screen
-- Clean
-- Fast
-- Consistent
-- Professional
-- Easy to use
-- Similar in quality to Intercom, Zendesk, HubSpot, and Gmail.
+Sticky toolbar.
+
+Sticky compose area.
+
+Beautiful spacing.
+
+Responsive.
+
+Professional.
+
+No custom CSS frameworks.
+
+Only Bootstrap 5.
+
+---
+
+# General Requirements
+
+Do not remove existing features.
+
+Do not break Gmail sync.
+
+Do not break AI Center.
+
+Follow existing architecture.
+
+Refactor duplicated code.
+
+Create reusable services.
+
+Create reusable Blade components.
+
+Keep controllers thin.
+
+Use Service classes.
+
+Use Form Requests.
+
+Use Policies where appropriate.
+
+Use database transactions.
+
+Add comments only where necessary.
+
+Everything should be production ready.

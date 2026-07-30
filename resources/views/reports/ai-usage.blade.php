@@ -4,19 +4,46 @@
 
 @php
     $tiles = [
-        ['label' => 'Prompt Tokens', 'value' => number_format($usage['prompt_tokens']), 'icon' => 'bx-message-square-dots'],
-        ['label' => 'Completion Tokens', 'value' => number_format($usage['completion_tokens']), 'icon' => 'bx-message-square-check'],
+        [
+            'label' => 'Prompt Tokens',
+            'value' => number_format($usage['prompt_tokens']),
+            'icon' => 'bx-message-square-dots',
+        ],
+        [
+            'label' => 'Completion Tokens',
+            'value' => number_format($usage['completion_tokens']),
+            'icon' => 'bx-message-square-check',
+        ],
         ['label' => 'Total Tokens', 'value' => number_format($usage['total_tokens']), 'icon' => 'bx-coin-stack'],
-        ['label' => 'Average Tokens / Request', 'value' => number_format($usage['average_tokens'], 1), 'icon' => 'bx-trending-up'],
-        ['label' => 'Estimated Cost', 'value' => '$'.number_format($usage['estimated_cost'], 4), 'icon' => 'bx-dollar-circle', 'color' => 'success'],
+        [
+            'label' => 'Average Tokens / Request',
+            'value' => number_format($usage['average_tokens'], 1),
+            'icon' => 'bx-trending-up',
+        ],
+        [
+            'label' => 'Estimated Cost',
+            'value' => '$' . number_format($usage['estimated_cost'], 4),
+            'icon' => 'bx-dollar-circle',
+            'color' => 'success',
+        ],
         ['label' => 'Total Requests', 'value' => number_format($usage['request_count']), 'icon' => 'bx-bolt'],
     ];
 
     $responseTiles = [
-        ['label' => 'Average Response Time', 'value' => $response_time['average'].' min', 'icon' => 'bx-time-five'],
-        ['label' => 'Median Response Time', 'value' => $response_time['median'].' min', 'icon' => 'bx-time'],
-        ['label' => 'Fastest', 'value' => $response_time['fastest'].' min', 'icon' => 'bx-rocket', 'color' => 'success'],
-        ['label' => 'Slowest', 'value' => $response_time['slowest'].' min', 'icon' => 'bx-hourglass', 'color' => 'danger'],
+        ['label' => 'Average Response Time', 'value' => $response_time['average'] . ' min', 'icon' => 'bx-time-five'],
+        ['label' => 'Median Response Time', 'value' => $response_time['median'] . ' min', 'icon' => 'bx-time'],
+        [
+            'label' => 'Fastest',
+            'value' => $response_time['fastest'] . ' min',
+            'icon' => 'bx-rocket',
+            'color' => 'success',
+        ],
+        [
+            'label' => 'Slowest',
+            'value' => $response_time['slowest'] . ' min',
+            'icon' => 'bx-hourglass',
+            'color' => 'danger',
+        ],
     ];
 @endphp
 
@@ -29,7 +56,8 @@
             <select name="ai_model_id" class="form-select form-select-sm">
                 <option value="">Semua Model</option>
                 @foreach ($aiModels as $model)
-                    <option value="{{ $model->id }}" {{ (int) $selectedAiModelId === $model->id ? 'selected' : '' }}>{{ $model->name }}</option>
+                    <option value="{{ $model->id }}" {{ (int) $selectedAiModelId === $model->id ? 'selected' : '' }}>
+                        {{ $model->name }}</option>
                 @endforeach
             </select>
         </div>
@@ -38,10 +66,10 @@
     <h6 class="mb-2">AI Usage</h6>
     <x-reports.kpi-card :tiles="$tiles" />
 
-    <h6 class="mb-2">Response Time</h6>
+    <h6 class="mb-2 mt-2">Response Time</h6>
     <x-reports.kpi-card :tiles="$responseTiles" />
 
-    <div class="card shadow-sm">
+    <div class="card shadow-sm mt-3">
         <div class="card-header bg-white">
             <h6 class="mb-0">AI Models</h6>
         </div>
@@ -57,22 +85,20 @@
                         <th>Avg Response Time</th>
                     </tr>
                 </thead>
-                <tbody>
-                    @forelse ($models as $model)
-                        <tr>
-                            <td>{{ $model['name'] }}</td>
-                            <td>{{ $model['provider'] }}</td>
-                            <td>{{ $model['model'] }}</td>
-                            <td>{{ number_format($model['requests']) }}</td>
-                            <td>{{ number_format($model['tokens']) }}</td>
-                            <td>{{ $model['avg_response_time_ms'] }} ms</td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="text-center text-muted py-4">Belum ada penggunaan model pada periode ini.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
+                @if (count($models))
+                    <tbody>
+                        @foreach ($models as $model)
+                            <tr>
+                                <td>{{ $model['name'] }}</td>
+                                <td>{{ $model['provider'] }}</td>
+                                <td>{{ $model['model'] }}</td>
+                                <td>{{ number_format($model['requests']) }}</td>
+                                <td>{{ number_format($model['tokens']) }}</td>
+                                <td>{{ $model['avg_response_time_ms'] }} ms</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                @endif
             </table>
         </div>
     </div>
@@ -83,8 +109,12 @@
     <script src="https://cdn.jsdelivr.net/npm/datatables.net@2/js/dataTables.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/datatables.net-bs5@2/js/dataTables.bootstrap5.min.js"></script>
     <script>
-        $(function () {
-            $('#aiModelsTable').DataTable({ order: [[3, 'desc']] });
+        $(function() {
+            $('#aiModelsTable').DataTable({
+                order: [
+                    [3, 'desc']
+                ]
+            });
         });
     </script>
 @endpush
