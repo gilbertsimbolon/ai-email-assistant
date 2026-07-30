@@ -3,20 +3,16 @@
 @section('title', 'AI Models | AI Center')
 
 @section('content')
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">AI Models</h5>
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center bg-white">
+            <h5 class="mb-0"><i class="bx bx-chip me-1 text-primary"></i> AI Models</h5>
             <a href="{{ route('ai-center.ai-models.create') }}" class="btn btn-primary btn-sm">
                 <i class="icon-base bx bx-plus me-1"></i> Tambah AI Model
             </a>
         </div>
         <div class="card-body">
-            @if (session('success'))
-                <div class="alert alert-success">{{ session('success') }}</div>
-            @endif
-
             <div class="table-responsive">
-                <table class="table">
+                <table class="table table-hover align-middle">
                     <thead>
                         <tr>
                             <th>Nama</th>
@@ -30,7 +26,7 @@
                     <tbody>
                         @forelse ($aiModels as $aiModel)
                             <tr>
-                                <td>{{ $aiModel->name }}</td>
+                                <td class="fw-semibold">{{ $aiModel->name }}</td>
                                 <td>{{ $aiModel->provider->label() }}</td>
                                 <td>{{ $aiModel->model }}</td>
                                 <td>
@@ -52,17 +48,24 @@
                                     @endif
                                 </td>
                                 <td class="text-end">
-                                    <a href="{{ route('ai-center.ai-models.edit', $aiModel) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                                    <form action="{{ route('ai-center.ai-models.destroy', $aiModel) }}" method="POST" class="d-inline"
-                                        onsubmit="return confirm('Hapus AI Model ini?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">Hapus</button>
-                                    </form>
+                                    <div class="d-inline-flex gap-1">
+                                        <a href="{{ route('ai-center.ai-models.edit', $aiModel) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                        <form action="{{ route('ai-center.ai-models.destroy', $aiModel) }}" method="POST" class="d-inline"
+                                            onsubmit="return confirm('Hapus AI Model ini?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Hapus</button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="text-center text-body">Belum ada AI Model.</td></tr>
+                            <tr>
+                                <td colspan="6" class="text-center text-body py-5">
+                                    <i class="bx bx-chip display-4 mb-2 d-block text-muted"></i>
+                                    Belum ada AI Model.
+                                </td>
+                            </tr>
                         @endforelse
                     </tbody>
                 </table>

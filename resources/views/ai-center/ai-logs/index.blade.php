@@ -3,8 +3,8 @@
 @section('title', 'AI Logs | AI Center')
 
 @section('content')
-    <div class="card">
-        <div class="card-header"><h5 class="mb-0">AI Logs</h5></div>
+    <div class="card shadow-sm">
+        <div class="card-header bg-white"><h5 class="mb-0"><i class="bx bx-list-ul me-1 text-primary"></i> AI Logs</h5></div>
         <div class="card-body">
             <form method="GET" class="row g-2 mb-4">
                 <div class="col-md-3">
@@ -36,7 +36,7 @@
             </form>
 
             <div class="table-responsive">
-                <table class="table">
+                <table class="table table-hover align-middle">
                     <thead>
                         <tr>
                             <th>Tanggal</th>
@@ -74,7 +74,12 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="11" class="text-center text-body">Belum ada log AI.</td></tr>
+                            <tr>
+                                <td colspan="11" class="text-center text-body py-5">
+                                    <i class="bx bx-list-ul display-4 mb-2 d-block text-muted"></i>
+                                    Belum ada log AI.
+                                </td>
+                            </tr>
                         @endforelse
                     </tbody>
                 </table>

@@ -38,7 +38,7 @@
 
     <x-reports.kpi-card :tiles="$tiles" />
 
-    <div class="row">
+    <div class="row g-4">
         <div class="col-lg-8">
             <x-reports.chart-card title="Email Analytics ({{ $period['label'] }})" id="emailAnalyticsChart" />
         </div>
@@ -47,7 +47,7 @@
         </div>
     </div>
 
-    <div class="row">
+    <div class="row g-4">
         <div class="col-lg-6">
             <x-reports.chart-card title="AI Performance" id="aiPerformanceChart" />
         </div>
@@ -56,9 +56,9 @@
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h6 class="mb-0">Activity Timeline Terbaru</h6>
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center bg-white">
+            <h6 class="mb-0"><i class="bx bx-time-five me-1 text-primary"></i> Activity Timeline Terbaru</h6>
             <a href="{{ route('reports.timeline') }}" class="btn btn-sm btn-outline-primary">Lihat Semua</a>
         </div>
         <x-reports.timeline-list :events="$timeline" />

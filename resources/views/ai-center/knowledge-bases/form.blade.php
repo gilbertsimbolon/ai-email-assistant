@@ -5,8 +5,8 @@
 @section('content')
     <div class="row">
         <div class="col-md-8">
-            <div class="card">
-                <div class="card-header"><h5 class="mb-0">{{ $knowledgeBase->exists ? 'Edit' : 'Tambah' }} Knowledge Base</h5></div>
+            <div class="card shadow-sm">
+                <div class="card-header bg-white"><h5 class="mb-0">{{ $knowledgeBase->exists ? 'Edit' : 'Tambah' }} Knowledge Base</h5></div>
                 <div class="card-body">
                     <form action="{{ $knowledgeBase->exists ? route('ai-center.knowledge-bases.update', $knowledgeBase) : route('ai-center.knowledge-bases.store') }}"
                         method="POST">

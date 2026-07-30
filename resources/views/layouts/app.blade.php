@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="layout-menu-fixed layout-navbar-fixed layout-compact">
 
 <head>
     <meta charset="UTF-8">
@@ -54,7 +54,7 @@
 
                 <div class="content-wrapper">
 
-                    <div class="container-xxl flex-grow-1 container-p-y">
+                    <div class="container-fluid flex-grow-1 d-flex flex-column @yield('content-padding', 'p-4')">
                         @yield('content')
                     </div>
 

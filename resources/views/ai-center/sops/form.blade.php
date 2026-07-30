@@ -5,13 +5,9 @@
 @section('content')
     <div class="row">
         <div class="col-md-8">
-            <div class="card mb-4">
-                <div class="card-header"><h5 class="mb-0">{{ $sop->exists ? 'Edit' : 'Tambah' }} SOP</h5></div>
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white"><h5 class="mb-0"><i class="bx bx-book-content me-1 text-primary"></i> {{ $sop->exists ? 'Edit' : 'Tambah' }} SOP</h5></div>
                 <div class="card-body">
-                    @if (session('success'))
-                        <div class="alert alert-success">{{ session('success') }}</div>
-                    @endif
-
                     <form action="{{ $sop->exists ? route('ai-center.sops.update', $sop) : route('ai-center.sops.store') }}" method="POST">
                         @csrf
                         @if ($sop->exists) @method('PUT') @endif
@@ -168,9 +164,9 @@
             </div>
 
             @if ($sop->exists)
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Rule Builder</h5>
+                <div class="card shadow-sm">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-white">
+                        <h5 class="mb-0"><i class="bx bx-git-branch me-1 text-primary"></i> Rule Builder</h5>
                         <a href="{{ route('ai-center.sops.rules.create', $sop) }}" class="btn btn-primary btn-sm">+ Tambah Rule</a>
                     </div>
                     <div class="card-body">

@@ -12,6 +12,13 @@
 @endphp
 
 <div class="border-bottom py-3 px-3 bg-white flex-shrink-0">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h5 class="mb-0 fw-bold">Inbox</h5>
+        <a href="{{ route('inbox.index', ['filter' => $filter, 'q' => $search]) }}" class="btn btn-icon btn-sm btn-outline-secondary" title="Refresh">
+            <i class="bx bx-refresh"></i>
+        </a>
+    </div>
+
     <form method="GET" action="{{ route('inbox.index') }}" class="mb-3">
         <input type="hidden" name="filter" value="{{ $filter }}">
         <div class="input-group input-group-merge">
@@ -23,14 +30,10 @@
     <div class="d-flex flex-wrap gap-1">
         @foreach ($filterOptions as $value => $label)
             <a href="{{ route('inbox.index', ['filter' => $value, 'q' => $search]) }}"
-               class="btn btn-sm {{ $filter === $value ? 'btn-primary' : 'btn-outline-secondary' }}">
+               class="btn btn-sm rounded-pill {{ $filter === $value ? 'btn-primary' : 'btn-outline-secondary' }}">
                 {{ $label }}
             </a>
         @endforeach
-
-        <a href="{{ route('inbox.index', ['filter' => $filter, 'q' => $search]) }}" class="btn btn-icon btn-sm btn-outline-secondary ms-auto" title="Refresh">
-            <i class="bx bx-refresh"></i>
-        </a>
     </div>
 </div>
 

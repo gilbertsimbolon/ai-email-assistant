@@ -5,9 +5,9 @@
 @section('content')
     <div class="row">
         <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">{{ $intent->exists ? 'Edit' : 'Tambah' }} Intent</h5>
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bx bx-target-lock me-1 text-primary"></i> {{ $intent->exists ? 'Edit' : 'Tambah' }} Intent</h5>
                 </div>
                 <div class="card-body">
                     <form action="{{ $intent->exists ? route('ai-center.intents.update', $intent) : route('ai-center.intents.store') }}"

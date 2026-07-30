@@ -41,8 +41,8 @@
     <h6 class="mb-2">Response Time</h6>
     <x-reports.kpi-card :tiles="$responseTiles" />
 
-    <div class="card">
-        <div class="card-header">
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
             <h6 class="mb-0">AI Models</h6>
         </div>
         <div class="table-responsive">

@@ -5,7 +5,7 @@
 @section('content')
     <h4 class="mb-4">Customer Analytics</h4>
 
-    <div class="card mb-4">
+    <div class="card shadow-sm mb-4">
         <div class="card-body">
             <form method="GET" class="row g-2 align-items-end">
                 <div class="col-auto flex-grow-1">
@@ -27,8 +27,8 @@
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header">
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
             <h6 class="mb-0">Top Customer</h6>
         </div>
         <div class="table-responsive">

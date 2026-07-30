@@ -11,12 +11,12 @@
         <div class="authentication-wrapper authentication-basic container-p-y">
             <div class="authentication-inner">
                 <!-- Forgot Password -->
-                <div class="card px-sm-6 px-0">
+                <div class="card shadow-sm px-sm-6 px-0">
                     <div class="card-body">
                         <div class="app-brand justify-content-center">
-                            <a href="#" class="app-brand-link gap-2">
-                                <img src="{{ asset('img/logo.jpeg') }}" alt="Logo UNIMA" style="width: 40px; height: 40px;">
-                                <span class="app-brand-text demo text-heading fw-bold">bkngftsl</span>
+                            <a href="{{ route('login.index') }}" class="app-brand-link gap-2">
+                                <img src="{{ asset('img/logo.jpeg') }}" alt="Logo" class="rounded" style="width: 40px; height: 40px; object-fit: cover;">
+                                <span class="app-brand-text demo text-heading fw-bold">AI Email Assistant</span>
                             </a>
                         </div>
                         <h4 class="mb-1 mt-3 text-center">Buat Password Baru</h4>

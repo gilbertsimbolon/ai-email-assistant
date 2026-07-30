@@ -9,13 +9,13 @@
         <div class="authentication-wrapper authentication-basic container-p-y">
             <div class="authentication-inner">
                 <!-- Register -->
-                <div class="card px-sm-6 px-0">
+                <div class="card shadow-sm px-sm-6 px-0">
                     <div class="card-body">
                         <!-- Logo -->
                         <div class="app-brand justify-content-center">
-                            <a href="index.html" class="app-brand-link gap-2">
-                                <img src="{{ asset('img/logo.jpeg') }}" alt="Logo UNIMA" style="width: 40px; height: 40px;">
-                                <span class="app-brand-text demo text-heading fw-bold">Katalisdotcom</span>
+                            <a href="{{ route('login.index') }}" class="app-brand-link gap-2">
+                                <img src="{{ asset('img/logo.jpeg') }}" alt="Logo" class="rounded" style="width: 40px; height: 40px; object-fit: cover;">
+                                <span class="app-brand-text demo text-heading fw-bold">AI Email Assistant</span>
                             </a>
                         </div>
                         <!-- /Logo -->
@@ -35,8 +35,9 @@
                                     <input type="password" id="password" class="form-control" name="password"
                                         placeholder="&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;"
                                         aria-describedby="password" />
-                                    <span class="input-group-text cursor-pointer"><i
-                                            class="icon-base bx bx-hide"></i></span>
+                                    <span class="input-group-text cursor-pointer" onclick="togglePasswordVisibility()">
+                                        <i class="icon-base bx bx-hide" id="password_toggle_icon"></i>
+                                    </span>
                                 </div>
                             </div>
                             <div class="mb-1">
@@ -56,4 +57,15 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function togglePasswordVisibility() {
+            const input = document.getElementById('password');
+            const icon = document.getElementById('password_toggle_icon');
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            icon.classList.toggle('bx-hide', !isPassword);
+            icon.classList.toggle('bx-show', isPassword);
+        }
+    </script>
 @endsection

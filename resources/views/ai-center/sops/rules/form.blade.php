@@ -5,9 +5,9 @@
 @section('content')
     <div class="row">
         <div class="col-md-9">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">{{ $rule->exists ? 'Edit' : 'Tambah' }} Rule — SOP: {{ $sop->name }}</h5>
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bx bx-git-branch me-1 text-primary"></i> {{ $rule->exists ? 'Edit' : 'Tambah' }} Rule — SOP: {{ $sop->name }}</h5>
                 </div>
                 <div class="card-body">
                     @if ($errors->any())

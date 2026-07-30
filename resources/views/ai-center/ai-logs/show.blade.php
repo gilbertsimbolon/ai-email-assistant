@@ -10,8 +10,8 @@
 
     <div class="row">
         <div class="col-md-5">
-            <div class="card mb-4">
-                <div class="card-header"><h6 class="mb-0">Ringkasan</h6></div>
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white"><h6 class="mb-0">Ringkasan</h6></div>
                 <div class="card-body">
                     <table class="table table-sm mb-0">
                         <tbody>
@@ -51,15 +51,15 @@
         </div>
 
         <div class="col-md-7">
-            <div class="card mb-4">
-                <div class="card-header"><h6 class="mb-0">Prompt</h6></div>
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white"><h6 class="mb-0">Prompt</h6></div>
                 <div class="card-body">
                     <pre class="p-4 rounded bg-body-secondary" style="white-space: pre-wrap;">{{ $aiLog->prompt }}</pre>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header"><h6 class="mb-0">Response</h6></div>
+            <div class="card shadow-sm">
+                <div class="card-header bg-white"><h6 class="mb-0">Response</h6></div>
                 <div class="card-body">
                     <pre class="p-4 rounded bg-body-secondary" style="white-space: pre-wrap;">{{ $aiLog->response }}</pre>
                 </div>

@@ -13,7 +13,7 @@
         </div>
     </div>
 
-    <div class="card">
+    <div class="card shadow-sm">
         <x-reports.timeline-list :events="$events" />
         <div class="card-body">
             {{ $events->links() }}

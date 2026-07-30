@@ -22,10 +22,10 @@
 @endphp
 
 @section('content')
-    <div class="row">
+    <div class="row g-4">
         @foreach ($tiles as $tile)
-            <div class="col-md-3 col-sm-6 mb-4">
-                <div class="card h-100">
+            <div class="col-md-3 col-sm-6">
+                <div class="card shadow-sm h-100">
                     <div class="card-body d-flex align-items-center">
                         <div class="avatar avatar-lg flex-shrink-0 me-3">
                             <span class="avatar-initial rounded bg-label-primary">

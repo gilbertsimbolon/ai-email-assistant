@@ -3,7 +3,7 @@
 @section('title', 'WhatsApp | AI Email Assistant')
 
 @section('content')
-<div class="card">
+<div class="card shadow-sm">
     <div class="card-body d-flex flex-column align-items-center justify-content-center text-center py-5" style="min-height: 60vh;">
 
         <div class="mb-4">

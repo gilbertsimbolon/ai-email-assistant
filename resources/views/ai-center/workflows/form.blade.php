@@ -5,12 +5,9 @@
 @section('content')
     <div class="row">
         <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header"><h5 class="mb-0">{{ $workflow->exists ? 'Edit' : 'Tambah' }} Workflow</h5></div>
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white"><h5 class="mb-0"><i class="bx bx-sitemap me-1 text-primary"></i> {{ $workflow->exists ? 'Edit' : 'Tambah' }} Workflow</h5></div>
                 <div class="card-body">
-                    @if (session('success'))
-                        <div class="alert alert-success">{{ session('success') }}</div>
-                    @endif
                     @if ($errors->any())
                         <div class="alert alert-danger">
                             <ul class="mb-0">
@@ -58,8 +55,8 @@
             </div>
 
             @if ($workflow->exists)
-                <div class="card">
-                    <div class="card-header"><h5 class="mb-0">Tambah Step</h5></div>
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white"><h5 class="mb-0">Tambah Step</h5></div>
                     <div class="card-body">
                         <form action="{{ route('ai-center.workflows.nodes.store', $workflow) }}" method="POST">
                             @csrf
@@ -136,8 +133,8 @@
 
         @if ($workflow->exists)
             <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header"><h5 class="mb-0">Alur Workflow</h5></div>
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white"><h5 class="mb-0">Alur Workflow</h5></div>
                     <div class="card-body">
                         <ul class="list-group">
                             @foreach ($workflow->nodes as $node)

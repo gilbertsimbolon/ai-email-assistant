@@ -139,6 +139,18 @@
             }
         }
 
+        if (event.target.closest('#btn-toolbar-generate')) {
+            // Delegates to whichever of the composer's Generate/Regenerate
+            // buttons is currently visible — the toolbar shortcut never
+            // triggers its own AI call, it just reuses the composer's.
+            const regenerateBtn = document.getElementById('btn-regenerate');
+            const generateBtn = document.getElementById('btn-generate');
+            const target = (regenerateBtn && !regenerateBtn.classList.contains('d-none')) ? regenerateBtn : generateBtn;
+            if (target) {
+                target.click();
+            }
+        }
+
         if (event.target.closest('#btn-toggle-ai-panel')) {
             if (aiPanelWrapper) {
                 const collapsed = aiPanelWrapper.classList.toggle('ai-panel-collapsed');

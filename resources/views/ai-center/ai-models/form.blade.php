@@ -5,8 +5,8 @@
 @section('content')
     <div class="row">
         <div class="col-md-8">
-            <div class="card">
-                <div class="card-header"><h5 class="mb-0">{{ $aiModel->exists ? 'Edit' : 'Tambah' }} AI Model</h5></div>
+            <div class="card shadow-sm">
+                <div class="card-header bg-white"><h5 class="mb-0"><i class="bx bx-chip me-1 text-primary"></i> {{ $aiModel->exists ? 'Edit' : 'Tambah' }} AI Model</h5></div>
                 <div class="card-body">
                     @if ($errors->any())
                         <div class="alert alert-danger">

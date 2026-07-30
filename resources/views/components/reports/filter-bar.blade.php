@@ -1,6 +1,6 @@
 @props(['period', 'exportReport' => null])
 
-<div class="card mb-4">
+<div class="card shadow-sm mb-4">
     <div class="card-body">
         <form method="GET" class="row g-2 align-items-end">
             <div class="col-auto">

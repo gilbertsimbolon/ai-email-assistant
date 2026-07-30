@@ -5,8 +5,8 @@
 @section('content')
     <div class="row">
         <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header"><h5 class="mb-0">AI Playground</h5></div>
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white"><h5 class="mb-0">AI Playground</h5></div>
                 <div class="card-body">
                     <p class="text-body">Tempel email/pesan pelanggan untuk menjalankan seluruh pipeline AI Center secara langsung (testing/debugging).</p>
 
@@ -68,8 +68,8 @@
 
         <div class="col-md-6">
             @if ($result)
-                <div class="card mb-4">
-                    <div class="card-header"><h5 class="mb-0">Hasil Pipeline</h5></div>
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white"><h5 class="mb-0">Hasil Pipeline</h5></div>
                     <div class="card-body">
                         <table class="table table-sm">
                             <tbody>
@@ -105,21 +105,21 @@
                     </div>
                 </div>
 
-                <div class="card mb-4">
-                    <div class="card-header"><h5 class="mb-0">Generated Prompt</h5></div>
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white"><h5 class="mb-0">Generated Prompt</h5></div>
                     <div class="card-body">
                         <pre class="p-4 rounded bg-body-secondary" style="white-space: pre-wrap;">{{ collect($result->prompt->messages)->map(fn ($m) => strtoupper($m['role']).":\n".$m['content'])->implode("\n\n---\n\n") }}</pre>
                     </div>
                 </div>
 
-                <div class="card">
-                    <div class="card-header"><h5 class="mb-0">Generated Draft</h5></div>
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white"><h5 class="mb-0">Generated Draft</h5></div>
                     <div class="card-body">
                         <pre class="p-4 rounded bg-body-secondary" style="white-space: pre-wrap;">{{ $result->draftContent }}</pre>
                     </div>
                 </div>
             @else
-                <div class="card">
+                <div class="card shadow-sm">
                     <div class="card-body text-body">
                         Hasil pipeline akan tampil di sini setelah dijalankan.
                     </div>

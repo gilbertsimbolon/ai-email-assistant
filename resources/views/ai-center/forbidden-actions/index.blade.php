@@ -3,15 +3,11 @@
 @section('title', 'Forbidden Actions | AI Center')
 
 @section('content')
-    <div class="row">
+    <div class="row g-4">
         <div class="col-md-5">
-            <div class="card">
-                <div class="card-header"><h5 class="mb-0">Tambah Forbidden Action</h5></div>
+            <div class="card shadow-sm">
+                <div class="card-header bg-white"><h5 class="mb-0"><i class="bx bx-block me-1 text-danger"></i> Tambah Forbidden Action</h5></div>
                 <div class="card-body">
-                    @if (session('success'))
-                        <div class="alert alert-success">{{ session('success') }}</div>
-                    @endif
-
                     <form action="{{ route('ai-center.forbidden-actions.store') }}" method="POST">
                         @csrf
                         <div class="mb-4">
@@ -31,12 +27,12 @@
         </div>
 
         <div class="col-md-7">
-            <div class="card">
-                <div class="card-header"><h5 class="mb-0">Daftar Forbidden Actions</h5></div>
-                <div class="card-body">
-                    <ul class="list-group">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white"><h5 class="mb-0">Daftar Forbidden Actions</h5></div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
                         @forelse ($forbiddenActions as $forbidden)
-                            <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <li class="list-group-item d-flex justify-content-between align-items-start px-4 py-3">
                                 <div>
                                     <div class="fw-semibold">{{ $forbidden->label }}</div>
                                     @if ($forbidden->description)
@@ -51,7 +47,10 @@
                                 </form>
                             </li>
                         @empty
-                            <li class="list-group-item text-body">Belum ada Forbidden Action.</li>
+                            <li class="list-group-item text-body text-center py-5">
+                                <i class="bx bx-block display-4 mb-2 d-block text-muted"></i>
+                                Belum ada Forbidden Action.
+                            </li>
                         @endforelse
                     </ul>
                 </div>

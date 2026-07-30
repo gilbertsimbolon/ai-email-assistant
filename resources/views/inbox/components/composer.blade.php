@@ -2,7 +2,7 @@
     $defaultSubject = $activeConversation->subject ? 'Re: '.$activeConversation->subject : 'Re: percakapan Anda';
 @endphp
 <div id="composer"
-     class="border-top bg-white p-3 flex-shrink-0"
+     class="border-top bg-white p-3 flex-shrink-0 shadow-sm"
      data-conversation-id="{{ $activeConversation->id }}"
      data-generate-url="{{ route('inbox.drafts.generate', $activeConversation) }}"
      data-send-url="{{ route('inbox.drafts.send', $activeConversation) }}"
@@ -17,29 +17,32 @@
 
     <div class="d-flex align-items-center flex-wrap gap-2 mt-2">
         <button type="button" id="btn-generate" class="btn btn-sm btn-primary {{ $activeDraft ? 'd-none' : '' }}">
-            ✨ Generate Reply
+            <i class="bx bx-magic-wand me-1"></i> Generate AI Reply
         </button>
         <button type="button" id="btn-regenerate" class="btn btn-sm btn-outline-primary {{ $activeDraft ? '' : 'd-none' }}">
-            🔄 Regenerate
+            <i class="bx bx-refresh me-1"></i> Regenerate
         </button>
 
         <div class="vr mx-1 d-none d-sm-block"></div>
 
         <button type="button" class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Segera hadir">
-            <i class="bx bx-magic-wand me-1"></i>Improve
+            <i class="bx bx-edit-alt me-1"></i>Improve
         </button>
         <button type="button" class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Segera hadir">
             <i class="bx bx-globe me-1"></i>Translate
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Segera hadir">
+            <i class="bx bx-collapse-vertical me-1"></i>Summarize
         </button>
         <button type="button" class="btn btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Segera hadir">
             <i class="bx bx-paperclip me-1"></i>Attachment
         </button>
 
         <button type="button" id="btn-clear" class="btn btn-sm btn-outline-secondary">
-            🧹 Clear
+            <i class="bx bx-eraser me-1"></i> Clear
         </button>
         <button type="button" id="btn-copy" class="btn btn-sm btn-outline-secondary">
-            📋 Copy
+            <i class="bx bx-copy me-1"></i> Copy
         </button>
 
         <span id="ai-thinking" class="text-muted small ms-1 d-none">

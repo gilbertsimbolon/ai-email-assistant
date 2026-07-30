@@ -13,10 +13,16 @@
 
     <div class="p-3 overflow-auto flex-grow-1">
 
-        <div class="mb-3">
-            <label class="form-label text-muted small fw-bold mb-0">CUSTOMER</label>
-            <p class="mb-0">{{ $activeConversation->contact_name ?? '-' }}</p>
-            <p class="mb-0 text-muted small">{{ $activeConversation->contact_email ?? '-' }}</p>
+        <div class="d-flex align-items-center mb-3">
+            <div class="avatar avatar-sm me-2">
+                <span class="avatar-initial rounded-circle bg-label-primary">
+                    {{ strtoupper(substr($activeConversation->contact_name ?? $activeConversation->contact_email ?? 'P', 0, 1)) }}
+                </span>
+            </div>
+            <div class="overflow-hidden">
+                <p class="mb-0 fw-semibold text-truncate">{{ $activeConversation->contact_name ?? '-' }}</p>
+                <p class="mb-0 text-muted small text-truncate">{{ $activeConversation->contact_email ?? '-' }}</p>
+            </div>
         </div>
 
         @if ($labels->isNotEmpty())
@@ -30,11 +36,13 @@
             </div>
         @endif
 
-        <div class="border-top pt-3 mb-3">
-            <h6 class="fw-bold text-primary mb-2"><i class="bx bx-brain me-1"></i> AI Analysis</h6>
+        <div class="card bg-label-primary border-0 mb-3">
+            <div class="card-body p-3">
+                <h6 class="fw-bold text-primary mb-2"><i class="bx bx-brain me-1"></i> AI Analysis</h6>
 
-            <div id="ai-analysis-card">
-                @include('inbox.components.analysis-card', ['analysis' => $activeConversation->analysis])
+                <div id="ai-analysis-card">
+                    @include('inbox.components.analysis-card', ['analysis' => $activeConversation->analysis])
+                </div>
             </div>
         </div>
 

@@ -3,8 +3,8 @@
 @section('title', 'Prompt Preview | AI Center')
 
 @section('content')
-    <div class="card mb-4">
-        <div class="card-header"><h5 class="mb-0">Prompt Preview</h5></div>
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white"><h5 class="mb-0">Prompt Preview</h5></div>
         <div class="card-body">
             <p class="text-body">
                 Pilih percakapan untuk melihat hasil akhir Prompt AI yang dibentuk otomatis oleh sistem
@@ -32,8 +32,8 @@
     </div>
 
     @if ($sections)
-        <div class="card">
-            <div class="card-header"><h5 class="mb-0">System Prompt</h5></div>
+        <div class="card shadow-sm">
+            <div class="card-header bg-white"><h5 class="mb-0">System Prompt</h5></div>
             <div class="card-body">
                 <pre class="p-4 rounded bg-body-secondary" style="white-space: pre-wrap;">{{ collect([
                     $sections['role'],
@@ -46,8 +46,8 @@
             </div>
         </div>
 
-        <div class="card mt-4">
-            <div class="card-header"><h5 class="mb-0">Customer Conversation (User Message)</h5></div>
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-white"><h5 class="mb-0">Customer Conversation (User Message)</h5></div>
             <div class="card-body">
                 <pre class="p-4 rounded bg-body-secondary" style="white-space: pre-wrap;">{{ $sections['customer_conversation'] }}</pre>
             </div>

@@ -5,9 +5,9 @@
 @section('content')
     <div class="row">
         <div class="col-md-8">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Konfigurasi AI Provider</h5>
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center bg-white">
+                    <h5 class="mb-0"><i class="bx bx-cog me-1 text-primary"></i> Konfigurasi AI Provider</h5>
                 </div>
                 <div class="card-body">
                     <form id="ai-config-form" action="{{ route('settings.ai-config.update') }}" method="POST">

@@ -5,18 +5,12 @@
 @section('content')
     <div class="row">
         <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">AI Parameters</h5>
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bx bx-slider-alt me-1 text-primary"></i> AI Parameters</h5>
                     <small class="text-body">Mengatur parameter dari AI Model default: <strong>{{ $aiModel?->name ?? '-' }}</strong></small>
                 </div>
                 <div class="card-body">
-                    @if (session('success'))
-                        <div class="alert alert-success">{{ session('success') }}</div>
-                    @endif
-                    @if (session('error'))
-                        <div class="alert alert-danger">{{ session('error') }}</div>
-                    @endif
                     @if ($errors->any())
                         <div class="alert alert-danger">
                             <ul class="mb-0">

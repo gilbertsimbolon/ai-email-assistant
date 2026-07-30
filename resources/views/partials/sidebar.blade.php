@@ -1,12 +1,13 @@
 <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
-    <div class="app-brand demo d-flex justify-content-center">
-        <a href="{{ route('dashboard') }}" class="app-brand-link gap-1">
-            <span class="app-brand-text demo text-heading text-center fw-bold fs-5">
+    <div class="app-brand demo d-flex align-items-center px-4 py-3">
+        <a href="{{ route('dashboard') }}" class="app-brand-link gap-2 d-flex align-items-center text-decoration-none">
+            <img src="{{ asset('img/logo.jpeg') }}" class="rounded" style="width:32px;height:32px;object-fit:cover;flex-shrink:0;">
+            <span class="app-brand-text demo text-heading fw-bold fs-5 text-truncate">
                 AI Email Assistant
             </span>
         </a>
 
-        <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto">
+        <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto p-0">
             <i class="bx bx-chevron-left d-block d-xl-none align-middle"></i>
         </a>
     </div>
@@ -15,7 +16,7 @@
 
     <div class="menu-inner-shadow"></div>
 
-    <ul class="menu-inner py-1">
+    <ul class="menu-inner py-2">
 
         {{-- Dashboard --}}
         <li class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
@@ -249,10 +250,10 @@
         </li>
     </ul>
 
-    <div class="mt-10 border-top p-3">
+    <div class="menu-inner-bottom border-top p-3 mt-auto">
 
         <a href="{{ route('profil.index') }}"
-            class="d-flex align-items-center text-decoration-none text-reset rounded p-2 mb-2">
+            class="d-flex align-items-center text-decoration-none text-reset rounded p-2 mb-2 sidebar-profile-link">
 
             <div class="avatar avatar-sm me-2">
                 <span class="avatar-initial rounded-circle bg-label-primary">
@@ -265,8 +266,8 @@
                     {{ auth()->user()->name }}
                 </h6>
 
-                <small class="text-muted text-capitalize">
-                    {{-- {{ auth()->user()->getRoleNames()->first() }} --}}
+                <small class="text-muted text-truncate d-block">
+                    {{ auth()->user()->email }}
                 </small>
             </div>
 

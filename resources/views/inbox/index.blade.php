@@ -2,10 +2,12 @@
 
 @section('title', 'Inbox Email | AI Email Assistant')
 
+@section('content-padding', 'p-0')
+
 @section('content')
 
     @unless ($hasGmailAccount)
-        <div class="alert alert-warning d-flex justify-content-between align-items-center">
+        <div class="alert alert-warning d-flex justify-content-between align-items-center rounded-0 mb-0 flex-shrink-0">
             <span>Belum ada akun Gmail yang terhubung, jadi belum ada data untuk ditampilkan di sini.</span>
             <a href="{{ route('settings.index') }}" class="btn btn-sm btn-warning">Hubungkan Gmail</a>
         </div>
@@ -13,7 +15,7 @@
 
     {{-- Layout 3 panel murni flexbox (bukan Bootstrap Card) supaya mengisi tinggi
      layar dan scroll hanya terjadi di panel yang membutuhkan (list & thread). --}}
-    <div id="inboxApp" class="inbox-app d-flex overflow-hidden"
+    <div id="inboxApp" class="inbox-app d-flex overflow-hidden flex-grow-1"
         data-star-url-template="{{ route('inbox.star', ['conversation' => '__ID__']) }}"
         data-read-url-template="{{ route('inbox.read.toggle', ['conversation' => '__ID__']) }}">
 

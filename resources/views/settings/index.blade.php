@@ -5,9 +5,9 @@
 @section('content')
     <div class="row">
         <div class="col-md-8">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Koneksi Gmail</h5>
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center bg-white">
+                    <h5 class="mb-0"><i class="bx bxl-google me-1 text-primary"></i> Koneksi Gmail</h5>
                     <small class="text-body float-end">Sumber data inbox berasal dari akun Gmail yang terhubung.</small>
                 </div>
                 <div class="card-body">

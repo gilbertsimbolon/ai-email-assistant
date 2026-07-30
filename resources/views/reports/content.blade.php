@@ -7,8 +7,8 @@
 
     <x-reports.filter-bar :period="$period" />
 
-    <div class="card">
-        <div class="card-header">
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
             <ul class="nav nav-tabs card-header-tabs" id="contentTabs" role="tablist">
                 <li class="nav-item">
                     <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-sops" data-tab-key="sops" type="button">SOP</button>

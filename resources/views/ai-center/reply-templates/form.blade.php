@@ -5,10 +5,10 @@
 @section('content')
 <div class="row">
     <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
                 <h5 class="mb-0">
-                    {{ $replyTemplate->exists ? 'Edit' : 'Tambah' }} Reply Template
+                    <i class="bx bx-file me-1 text-primary"></i> {{ $replyTemplate->exists ? 'Edit' : 'Tambah' }} Reply Template
                 </h5>
             </div>
 

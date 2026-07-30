@@ -13,7 +13,7 @@
         </div>
     </div>
 
-    <div class="card">
+    <div class="card shadow-sm">
         <div class="table-responsive">
             <table class="table table-hover" id="gmailAccountsTable">
                 <thead>

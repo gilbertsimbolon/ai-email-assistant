@@ -57,5 +57,13 @@ class AppServiceProvider extends ServiceProvider
 
             $view->with('emailUnreadCount', $emailUnreadCount);
         });
+
+        // Topbar shows the currently connected Gmail account, if any.
+        View::composer('partials.navbar', function ($view) {
+            $view->with(
+                'navbarGmailAccount',
+                auth()->check() ? auth()->user()->gmailAccounts()->first() : null
+            );
+        });
     }
 }
