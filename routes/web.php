@@ -43,7 +43,6 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [LoginController::class, 'index'])->name('login.index');
 // Alias so the framework's default `auth` middleware (which redirects guests
 // to the route named "login") has somewhere valid to send them.
-Route::get('/', [LoginController::class, 'index'])->name('login');
 Route::post('/login', [LoginController::class, 'store'])->name('login.store');
 
 // Route Lupa Password

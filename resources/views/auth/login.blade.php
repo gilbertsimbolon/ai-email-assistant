@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.auth')
 
 @section('title', 'Login | Katalisdotcom')
 @php
@@ -6,15 +6,14 @@
 @endphp
 @section('content')
     <div class="min-vh-100 container d-flex justify-content-center align-items-center">
-        <div class="authentication-wrapper authentication-basic container-p-y">
+        <div class="authentication-wrapper authentication-basic">
             <div class="authentication-inner">
-                <!-- Register -->
+                <!-- Login -->
                 <div class="card shadow-sm px-sm-6 px-0">
                     <div class="card-body">
                         <!-- Logo -->
                         <div class="app-brand justify-content-center">
                             <a href="{{ route('login.index') }}" class="app-brand-link gap-2">
-                                <img src="{{ asset('img/logo.jpeg') }}" alt="Logo" class="rounded" style="width: 40px; height: 40px; object-fit: cover;">
                                 <span class="app-brand-text demo text-heading fw-bold">AI Email Assistant</span>
                             </a>
                         </div>
@@ -40,14 +39,7 @@
                                     </span>
                                 </div>
                             </div>
-                            <div class="mb-1">
-                                <div class="d-flex justify-content-end">
-                                    <a href="{{ route('lupa-password.index') }}">
-                                        <span>Lupa Password?</span>
-                                    </a>
-                                </div>
-                            </div>
-                            <div class="mb-1">
+                            <div class="mb-1 mt-2">
                                 <button class="btn btn-primary d-grid w-100" type="submit">Login</button>
                             </div>
                         </form>

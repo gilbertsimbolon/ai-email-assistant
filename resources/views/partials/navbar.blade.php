@@ -57,10 +57,6 @@
         </a>
     </div>
 
-    <a href="{{ route('dashboard') }}" class="app-brand-link d-flex d-xl-none align-items-center gap-2 text-decoration-none me-3">
-        <img src="{{ asset('img/logo.jpeg') }}" style="width:32px;height:32px;object-fit:cover;border-radius:.5rem;">
-    </a>
-
     <div class="navbar-nav-right d-flex align-items-center w-100" id="navbar-collapse">
 
         {{-- Left: title / breadcrumb --}}

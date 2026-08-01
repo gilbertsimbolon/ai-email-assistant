@@ -6,7 +6,7 @@
                 <script>
                     document.write(new Date().getFullYear());
                 </script>
-                <a href="https://instagram.com/bolonsite" target="_blank" class="footer-link text-black" style="text-decoration: none;">bolonsite.</a>
+                <a href="https://instagram.com/gilbertsmbln" target="_blank" class="footer-link text-black" style="text-decoration: none;">bolonsite.</a>
             </div>
         </div>
     </div>

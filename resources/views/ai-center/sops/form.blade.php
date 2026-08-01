@@ -199,8 +199,8 @@
                                                 <p class="mb-2"><strong>Escalate:</strong> {{ $rule->escalation_target->label() }}</p>
                                             @endif
 
-                                            <a href="{{ route('ai-center.sops.rules.edit', $rule) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                                            <form action="{{ route('ai-center.sops.rules.destroy', $rule) }}" method="POST" class="d-inline"
+                                            <a href="{{ route('ai-center.rules.edit', $rule) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                            <form action="{{ route('ai-center.rules.destroy', $rule) }}" method="POST" class="d-inline"
                                                 onsubmit="return confirm('Hapus rule ini?');">
                                                 @csrf
                                                 @method('DELETE')
