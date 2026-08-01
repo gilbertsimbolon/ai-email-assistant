@@ -97,6 +97,22 @@ class GoHighLevelApiService
     }
 
     /**
+     * Fetch a single conversation's current state directly (not via
+     * /conversations/search). Used for a live per-conversation refresh — e.g.
+     * after sending a message, or when a local-only filter (starred/status)
+     * needs to know a specific conversation's current GHL data without
+     * paging through the whole search endpoint.
+     */
+    public function getConversation(string $conversationId): array
+    {
+        return $this->request(
+            'getConversation',
+            fn () => $this->client()->get($this->baseUrl."/conversations/{$conversationId}"),
+            ['conversation_id' => $conversationId]
+        );
+    }
+
+    /**
      * @param  array<string, mixed>  $params  Extra query params, e.g. pagination
      *                                         cursor (`lastMessageId`) or `limit`.
      */
@@ -134,18 +150,6 @@ class GoHighLevelApiService
             fn () => $this->client()->post($this->baseUrl.'/conversations/messages', $payload),
             ['conversation_id' => $payload['conversationId'] ?? null]
         );
-    }
-
-    public function sendEmailMessage(string $conversationId, ?string $contactId, string $subject, string $html, string $text): array
-    {
-        return $this->sendMessage([
-            'type' => 'Email',
-            'conversationId' => $conversationId,
-            'contactId' => $contactId,
-            'subject' => $subject,
-            'html' => $html,
-            'message' => $text,
-        ]);
     }
 
     /**

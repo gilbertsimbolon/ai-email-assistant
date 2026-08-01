@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\ChannelType;
 use App\Enums\ConversationStatus;
 use App\Models\AiCenter\AiLog;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -33,7 +32,9 @@ class Conversation extends Model
 
     protected $casts = [
         'status' => ConversationStatus::class,
-        'channel' => ChannelType::class,
+        // Not cast to ChannelType — GHL conversations can be SMS/FB/IG/GMB/
+        // live chat/etc, not just email/whatsapp (claude.txt section 16),
+        // so `channel` stays a plain string. Use channelLabel() for display.
         'is_read' => 'boolean',
         'is_starred' => 'boolean',
         'last_message_at' => 'datetime',
@@ -44,6 +45,17 @@ class Conversation extends Model
     public function gmailAccount()
     {
         return $this->belongsTo(GmailAccount::class);
+    }
+
+    /**
+     * `channel` is a plain string (claude.txt section 16 — GHL channels
+     * aren't limited to email/whatsapp), but some callers still pass a
+     * ChannelType enum instance around (e.g. the AI Center Playground's
+     * unsaved Conversation) — normalize either shape to its backing string.
+     */
+    public function channelValue(): ?string
+    {
+        return $this->channel instanceof \BackedEnum ? $this->channel->value : $this->channel;
     }
 
     public function messages()

@@ -52,7 +52,7 @@ class PromptBuilder
 
     protected function buildRoleSection(PromptContext $context): string
     {
-        $isWhatsApp = $context->conversation->channel === ChannelType::WhatsApp;
+        $isWhatsApp = $context->conversation->channelValue() === ChannelType::WhatsApp->value;
 
         return $isWhatsApp
             ? "Role\n\nYou are an expert customer support agent writing WhatsApp replies."
@@ -149,7 +149,7 @@ class PromptBuilder
 
     protected function buildGenerateDraftSection(PromptContext $context): string
     {
-        $isWhatsApp = $context->conversation->channel === ChannelType::WhatsApp;
+        $isWhatsApp = $context->conversation->channelValue() === ChannelType::WhatsApp->value;
 
         if ($isWhatsApp) {
             return <<<PROMPT

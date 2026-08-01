@@ -27,12 +27,4 @@ return [
     // Only disable TLS verification for local dev behind a proxy/self-signed cert.
     // Must stay true in production.
     'verify_ssl' => env('GHL_VERIFY_SSL', true),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Sync
-    |--------------------------------------------------------------------------
-    */
-
-    'sync_interval_seconds' => env('GHL_SYNC_INTERVAL_SECONDS', 30),
 ];

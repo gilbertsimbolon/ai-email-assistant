@@ -2,83 +2,180 @@
 
 namespace App\Http\Controllers;
 
+use App\DataTransferObjects\GhlConversationListItem;
 use App\DataTransferObjects\ParsedGhlContactData;
+use App\DataTransferObjects\ParsedGhlConversationData;
 use App\Enums\ConversationStatus;
 use App\Enums\DraftStatus;
 use App\Http\Controllers\Concerns\AuthorizesConversationAccess;
 use App\Http\Requests\Inbox\UpdateConversationStatusRequest;
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Services\Ghl\GhlConversationAnchorService;
 use App\Services\Ghl\GhlParserService;
+use App\Services\Ghl\GhlThreadLoader;
 use App\Services\Ghl\GoHighLevelApiService;
-use App\Services\Gmail\GmailApiService;
-use App\Services\Gmail\GmailAuthService;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
+/**
+ * The Inbox is 100% GHL now (claude.txt) — conversations/messages/contacts
+ * are always fetched live from GoHighLevelApiService, never read from
+ * MySQL. The only local writes are the anchor Conversation row (lazily
+ * created — see GhlConversationAnchorService) and the workflow-only
+ * is_read/is_starred/status columns on it. Legacy Gmail conversations live
+ * at GmailInboxController/gmail-inbox.* instead (see claude.txt: this
+ * migration only covers GHL).
+ */
 class InboxController extends Controller
 {
     use AuthorizesConversationAccess;
 
     /**
-     * Menampilkan halaman Inbox Email (dua panel: daftar percakapan di kiri,
-     * pratinjau percakapan yang dipilih — via ?conversation= — di kanan).
+     * How many conversations to request per GHL page. "Load more" cursors
+     * forward through GHL's own /conversations/search pagination
+     * (startAfterDate/startAfter) — never fetched all at once.
      */
-    public function index(Request $request, GoHighLevelApiService $ghlApi, GhlParserService $ghlParser)
+    protected const PAGE_SIZE = 20;
+
+    /**
+     * Local-only concepts (starred/workflow status/AI draft presence) that
+     * GHL has no server-side filter for. These filters can only surface
+     * conversations an agent has already opened at least once (i.e. that
+     * have a local anchor row) — there's no local mirror of every GHL
+     * conversation to search through instead.
+     */
+    protected const LOCAL_ONLY_FILTERS = ['recent', 'starred', 'waiting_agent', 'waiting_customer', 'ai_draft', 'closed'];
+
+    public function __construct(
+        protected GoHighLevelApiService $ghlApi,
+        protected GhlParserService $ghlParser,
+        protected GhlConversationAnchorService $anchors,
+        protected GhlThreadLoader $threadLoader,
+    ) {
+    }
+
+    /**
+     * Menampilkan halaman Inbox GHL (3 kolom: list, thread, contact
+     * details). Klik conversation di list & polling realtime dilakukan
+     * lewat AJAX (lihat inbox-navigation.js & inbox-polling.js) — hanya
+     * navigasi filter/search/"load more" yang full page load.
+     */
+    public function index(Request $request)
     {
         $filter = $request->get('filter', 'all');
         $search = $request->string('q')->toString();
 
-        $conversations = $this->conversationsByFilter($request, $filter)
-            ->appends(['filter' => $filter, 'q' => $search]);
-
-        $ghlConfigured = filled(config('ghl.api_key')) && filled(config('ghl.location_id'));
+        $list = $this->conversationsByFilter($request, $filter, $search);
 
         [$activeConversation, $activeDraft] = $this->resolveActiveConversation($request);
 
-        $contactDetails = $this->loadContactDetails($activeConversation, $ghlApi, $ghlParser);
+        $contactDetails = $this->loadContactDetails($activeConversation);
 
-        // Klik conversation di list dilakukan lewat AJAX (lihat inbox-navigation.js)
-        // agar tidak perlu reload seluruh halaman — cukup kirim balik markup thread
-        // & AI panel yang sudah dirender, JS yang menukar innerHTML-nya. Navigasi
-        // filter/search/pagination tetap full page load seperti biasa.
+        $ghlConfigured = filled(config('ghl.api_key')) && filled(config('ghl.location_id'));
+
+        // Polling list (no ?conversation=): each row is pre-rendered server
+        // side (same partial the initial page load uses) so the browser
+        // only needs to patch/append <li> elements it doesn't already have
+        // — never a full page reload (claude.txt section 11-12).
+        if ($request->wantsJson() && ! $request->filled('conversation')) {
+            return response()->json([
+                'items' => $list['items']->map(fn (GhlConversationListItem $item) => [
+                    'id' => $item->ghlConversationId,
+                    'is_read' => $item->isRead,
+                    'html' => view('inbox.components.conversation-item', [
+                        'item' => $item,
+                        'filter' => $filter,
+                        'search' => $search,
+                        'isActive' => false,
+                    ])->render(),
+                ])->values(),
+            ]);
+        }
+
         if ($request->wantsJson()) {
             return response()->json([
                 'thread_html' => view('inbox.components.conversation-thread', compact('activeConversation', 'activeDraft'))->render(),
                 'ai_panel_html' => view('inbox.components.ai-panel', compact('activeConversation', 'contactDetails'))->render(),
-                'conversation_id' => $activeConversation?->id,
+                'conversation_id' => $activeConversation?->ghl_conversation_id,
                 'is_read' => $activeConversation?->is_read,
             ]);
         }
 
-        return view('inbox.index', compact(
-            'conversations',
-            'filter',
-            'search',
-            'ghlConfigured',
-            'activeConversation',
-            'activeDraft',
-            'contactDetails',
-        ));
+        return view('inbox.index', [
+            'conversations' => $list['items'],
+            'nextCursor' => $list['nextCursor'],
+            'localPaginator' => $list['localPaginator'],
+            'filter' => $filter,
+            'search' => $search,
+            'ghlConfigured' => $ghlConfigured,
+            'ghlError' => $list['error'] ?? false,
+            'activeConversation' => $activeConversation,
+            'activeDraft' => $activeDraft,
+            'contactDetails' => $contactDetails,
+        ]);
     }
 
     /**
-     * Permalink lama ke detail percakapan — sekarang detailnya tampil sebagai
-     * panel kanan pada halaman Inbox, jadi cukup arahkan ke sana.
+     * Permalink lama ke detail percakapan. `/inbox/{id}` sekarang cukup
+     * jadi passthrough ke panel kanan halaman index — kecuali id tersebut
+     * ternyata conversation Gmail lama (bookmark dari sebelum migrasi),
+     * yang diarahkan ke gmail-inbox.
      */
-    public function show(Request $request, Conversation $conversation)
+    public function show(Request $request, string $conversation)
     {
-        $this->authorizeConversation($request, $conversation);
+        if (ctype_digit($conversation)) {
+            $gmailConversation = Conversation::whereKey($conversation)->whereNotNull('gmail_account_id')->first();
 
-        return redirect()->route('inbox.index', ['conversation' => $conversation->id]);
+            if ($gmailConversation) {
+                $this->authorizeConversation($request, $gmailConversation);
+
+                return redirect()->route('gmail-inbox.index', ['conversation' => $gmailConversation->id]);
+            }
+        }
+
+        return redirect()->route('inbox.index', ['conversation' => $conversation]);
+    }
+
+    /**
+     * Polling thread aktif (claude.txt section 13-14): mengembalikan bubble
+     * HTML setiap message saat ini dari GHL beserta id-nya, biar JS bisa
+     * append hanya yang belum ada di DOM (dedup by data-message-id) —
+     * bukan render ulang seluruh thread.
+     */
+    public function messages(string $conversation)
+    {
+        try {
+            $messages = $this->threadLoader->messages($conversation);
+        } catch (Throwable $e) {
+            Log::error('Failed to poll GHL conversation messages', [
+                'ghl_conversation_id' => $conversation,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json(['success' => false, 'message' => 'Unable to load messages from GHL.'], 502);
+        }
+
+        $activeConversation = $this->anchors->find($conversation) ?? new Conversation();
+
+        return response()->json([
+            'success' => true,
+            'messages' => $messages->map(fn (Message $message) => [
+                'id' => $message->ghl_message_id,
+                'html' => view('inbox.components.message-bubble', [
+                    'message' => $message,
+                    'activeConversation' => $activeConversation,
+                ])->render(),
+            ])->values(),
+        ]);
     }
 
     /**
      * Mengubah status percakapan (pending_review / replied / closed) dari
-     * dropdown pada halaman detail.
+     * dropdown pada halaman detail. Selalu terhadap anchor lokal — anchor
+     * dijamin sudah ada karena hanya bisa diakses lewat thread yang terbuka.
      */
     public function updateStatus(UpdateConversationStatusRequest $request, Conversation $conversation)
     {
@@ -90,7 +187,7 @@ class InboxController extends Controller
     }
 
     /**
-     * Toggle bintang (starred) pada percakapan dari daftar Inbox.
+     * Toggle bintang (starred) — lokal saja, GHL tidak punya konsep ini.
      */
     public function toggleStar(Request $request, Conversation $conversation)
     {
@@ -102,9 +199,9 @@ class InboxController extends Controller
     }
 
     /**
-     * Toggle status baca (dipakai tombol "Mark Read" di toolbar untuk menandai
-     * balik sebagai belum dibaca — membuka percakapan sudah otomatis menandai
-     * terbaca lewat resolveActiveConversation()).
+     * Toggle status baca — dipakai tombol "Mark Read" di toolbar untuk
+     * menandai balik sebagai belum dibaca (membuka percakapan otomatis
+     * menandai terbaca lewat resolveActiveConversation()).
      */
     public function toggleRead(Request $request, Conversation $conversation)
     {
@@ -116,111 +213,147 @@ class InboxController extends Controller
     }
 
     /**
-     * Unduh satu attachment sesuai permintaan (fetch on-demand dari Gmail
-     * API) — isi file tidak disimpan saat sync, hanya metadata-nya.
+     * @return array{items: \Illuminate\Support\Collection<int, GhlConversationListItem>, nextCursor: ?array, localPaginator: ?\Illuminate\Pagination\LengthAwarePaginator, error?: bool}
      */
-    public function downloadAttachment(
-        Request $request,
-        Message $message,
-        string $attachmentId,
-        GmailApiService $gmailApi,
-        GmailAuthService $gmailAuth,
-    ): Response {
-        [$attachment, $bytes] = $this->fetchAttachment($request, $message, $attachmentId, $gmailApi, $gmailAuth);
-
-        return response($bytes, 200, [
-            'Content-Type' => $attachment['mime_type'] ?? 'application/octet-stream',
-            'Content-Disposition' => 'attachment; filename="'.$attachment['filename'].'"',
-        ]);
-    }
-
-    /**
-     * Tampilkan satu attachment inline (thumbnail gambar / preview PDF di
-     * bubble chat), sama seperti downloadAttachment tapi tanpa memaksa
-     * unduhan.
-     */
-    public function previewAttachment(
-        Request $request,
-        Message $message,
-        string $attachmentId,
-        GmailApiService $gmailApi,
-        GmailAuthService $gmailAuth,
-    ): Response {
-        [$attachment, $bytes] = $this->fetchAttachment($request, $message, $attachmentId, $gmailApi, $gmailAuth);
-
-        return response($bytes, 200, [
-            'Content-Type' => $attachment['mime_type'] ?? 'application/octet-stream',
-            'Content-Disposition' => 'inline; filename="'.$attachment['filename'].'"',
-        ]);
-    }
-
-    /**
-     * @return array{0: array, 1: string} [attachment metadata, raw file bytes]
-     */
-    protected function fetchAttachment(
-        Request $request,
-        Message $message,
-        string $attachmentId,
-        GmailApiService $gmailApi,
-        GmailAuthService $gmailAuth,
-    ): array {
-        $this->authorizeConversation($request, $message->conversation);
-
-        $attachment = collect($message->attachments)->firstWhere('id', $attachmentId);
-
-        abort_unless($attachment, 404);
-
-        $account = $message->conversation->gmailAccount;
-
-        abort_unless($account, 404);
-
-        $account = $gmailAuth->ensureFreshToken($account);
-
-        $data = $gmailApi->getAttachment($account->access_token, $message->gmail_message_id, $attachmentId);
-        $bytes = base64_decode(strtr($data['data'] ?? '', '-_', '+/'));
-
-        return [$attachment, $bytes];
-    }
-
-    protected function conversationsByFilter(Request $request, ?string $filter, int $page = 1)
+    protected function conversationsByFilter(Request $request, string $filter, string $search): array
     {
-        // Ambil percakapan beserta analisis dan pesan TERAKHIR saja (bukan
-        // seluruh thread — daftar hanya butuh satu baris pratinjau per item).
-        // Satu inbox unified untuk semua channel (tidak difilter per
-        // channel) — GHL conversations are a shared inbox (one Private
-        // Integration per location, visible to every agent); legacy
-        // Gmail-synced conversations stay scoped to the account owner.
-        return Conversation::with(['analysis', 'latestMessage'])
-            ->withExists(['drafts as has_draft' => fn ($query) => $query->whereIn('status', [DraftStatus::Active, DraftStatus::Regenerated])])
-            ->where(fn ($query) => $query->whereNotNull('ghl_conversation_id')
-                ->orWhereHas('gmailAccount', fn ($q) => $q->where('user_id', $request->user()->id)))
-            ->when($filter === 'unread', fn ($query) => $query->where('is_read', false))
-            ->when($filter === 'starred', fn ($query) => $query->where('is_starred', true))
-            ->when($filter === 'recent', fn ($query) => $query->where('last_message_at', '>=', now()->subDay()))
-            // "Waiting Agent" / "Waiting Customer" tidak ada di skema DB — di-mapping
-            // ke ConversationStatus yang sudah ada: pending_review = customer baru
-            // kirim & agent belum balas, replied = agent sudah balas & menunggu
-            // customer.
-            ->when($filter === 'waiting_agent', fn ($query) => $query->where('status', ConversationStatus::PendingReview))
-            ->when($filter === 'waiting_customer', fn ($query) => $query->where('status', ConversationStatus::Replied))
-            ->when($filter === 'ai_draft', fn ($query) => $query->whereHas('drafts', fn ($q) => $q->whereIn('status', [DraftStatus::Active, DraftStatus::Regenerated])))
-            ->when($filter === 'closed', fn ($query) => $query->where('status', ConversationStatus::Closed))
-            ->when($request->filled('q'), function ($query) use ($request) {
-                $term = '%'.$request->string('q').'%';
+        if (in_array($filter, self::LOCAL_ONLY_FILTERS, true)) {
+            return $this->conversationsFromLocalAnchors($filter);
+        }
 
-                $query->where(fn ($q) => $q->where('contact_name', 'like', $term)
-                    ->orWhere('contact_email', 'like', $term)
-                    ->orWhere('contact_phone', 'like', $term)
-                    ->orWhere('subject', 'like', $term)
-                    ->orWhereHas('latestMessage', fn ($mq) => $mq->where('body', 'like', $term)));
-            })
-            ->latest('last_message_at')
-            ->paginate(15, page: $page);
+        return $this->conversationsFromGhl($request, $filter, $search);
     }
 
     /**
-     * Muat percakapan yang sedang dipilih (?conversation=) untuk panel kanan,
-     * lalu tandai sudah dibaca begitu dibuka.
+     * The default/fast path: "all", "unread" and search all go straight to
+     * GHL's /conversations/search — no local database involved at all
+     * (claude.txt section 7, 32).
+     */
+    protected function conversationsFromGhl(Request $request, string $filter, string $search): array
+    {
+        $params = ['limit' => self::PAGE_SIZE];
+
+        if ($search !== '') {
+            $params['query'] = $search;
+        }
+
+        if ($request->filled('startAfterDate') && $request->filled('startAfter')) {
+            $params['startAfterDate'] = $request->get('startAfterDate');
+            $params['startAfter'] = $request->get('startAfter');
+        }
+
+        try {
+            $result = $this->ghlApi->getConversations($params);
+        } catch (Throwable $e) {
+            Log::error('Failed to load GHL conversations', ['error' => $e->getMessage()]);
+
+            return ['items' => collect(), 'nextCursor' => null, 'localPaginator' => null, 'error' => true];
+        }
+
+        $raw = $result['conversations'] ?? [];
+
+        $parsed = collect($raw)->map(fn (array $r) => $this->ghlParser->conversationFromSearchApi($r));
+
+        if ($filter === 'unread') {
+            $parsed = $parsed->filter(fn (ParsedGhlConversationData $p) => $p->isUnread())->values();
+        }
+
+        $anchors = Conversation::whereIn('ghl_conversation_id', $parsed->pluck('ghlConversationId'))
+            ->withExists(['drafts as has_draft' => fn ($q) => $q->whereIn('status', [DraftStatus::Active, DraftStatus::Regenerated])])
+            ->get()
+            ->keyBy('ghl_conversation_id');
+
+        $items = $parsed->map(fn (ParsedGhlConversationData $p) => $this->buildListItem($p, $anchors->get($p->ghlConversationId)))
+            ->values();
+
+        $nextCursor = null;
+
+        if (count($raw) >= self::PAGE_SIZE) {
+            $last = end($raw);
+
+            if ($last) {
+                $nextCursor = [
+                    'startAfterDate' => $last['dateUpdated'] ?? null,
+                    'startAfter' => $last['id'] ?? null,
+                ];
+            }
+        }
+
+        return ['items' => $items, 'nextCursor' => $nextCursor, 'localPaginator' => null];
+    }
+
+    /**
+     * Local-only filters (starred/workflow status/AI draft/recent) only
+     * make sense for conversations an agent already opened — paginate the
+     * local anchor table for candidates, then live-refresh each one's
+     * display data from GHL so nothing shown is stale (claude.txt section 9).
+     */
+    protected function conversationsFromLocalAnchors(string $filter): array
+    {
+        $query = Conversation::whereNotNull('ghl_conversation_id')
+            ->withExists(['drafts as has_draft' => fn ($q) => $q->whereIn('status', [DraftStatus::Active, DraftStatus::Regenerated])]);
+
+        match ($filter) {
+            'recent' => $query->where('updated_at', '>=', now()->subDay()),
+            'starred' => $query->where('is_starred', true),
+            'waiting_agent' => $query->where('status', ConversationStatus::PendingReview),
+            'waiting_customer' => $query->where('status', ConversationStatus::Replied),
+            'ai_draft' => $query->whereHas('drafts', fn ($q) => $q->whereIn('status', [DraftStatus::Active, DraftStatus::Regenerated])),
+            'closed' => $query->where('status', ConversationStatus::Closed),
+            default => null,
+        };
+
+        $paginator = $query->latest('updated_at')->paginate(15);
+
+        $items = collect($paginator->items())->map(function (Conversation $anchor) {
+            $live = $this->fetchLiveSummary($anchor->ghl_conversation_id);
+
+            return $this->buildListItem($live, $anchor);
+        });
+
+        return ['items' => $items, 'nextCursor' => null, 'localPaginator' => $paginator];
+    }
+
+    protected function buildListItem(?ParsedGhlConversationData $live, ?Conversation $anchor): GhlConversationListItem
+    {
+        return new GhlConversationListItem(
+            ghlConversationId: $live?->ghlConversationId ?? $anchor?->ghl_conversation_id,
+            contactName: $live?->contactName ?? $anchor?->contact_name,
+            contactEmail: $live?->contactEmail ?? $anchor?->contact_email,
+            contactPhone: $live?->contactPhone ?? $anchor?->contact_phone,
+            channelLabel: $live?->channelLabel() ?? 'Conversation',
+            preview: $live?->subject,
+            lastActivityAt: $live?->lastActivityAt,
+            isRead: $anchor ? $anchor->is_read : ! ($live?->isUnread() ?? false),
+            isStarred: $anchor?->is_starred ?? false,
+            status: $anchor?->status ?? ConversationStatus::PendingReview,
+            hasDraft: (bool) ($anchor?->has_draft ?? false),
+        );
+    }
+
+    protected function fetchLiveSummary(string $ghlConversationId): ?ParsedGhlConversationData
+    {
+        try {
+            $response = $this->ghlApi->getConversation($ghlConversationId);
+            $raw = data_get($response, 'conversation', $response);
+            $raw['id'] = $raw['id'] ?? $ghlConversationId;
+
+            return $this->ghlParser->conversationFromSearchApi($raw);
+        } catch (Throwable $e) {
+            Log::warning('Failed to live-refresh a GHL conversation for a local filter', [
+                'ghl_conversation_id' => $ghlConversationId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Muat percakapan yang sedang dipilih (?conversation=<ghlConversationId>)
+     * untuk panel tengah/kanan — selalu dari GHL, tidak pernah dari mirror
+     * lokal. Anchor lokal baru dibuat di sini (agent benar-benar membuka
+     * percakapan ini), bukan proaktif untuk seluruh list.
      */
     protected function resolveActiveConversation(Request $request): array
     {
@@ -228,30 +361,35 @@ class InboxController extends Controller
             return [null, null];
         }
 
-        $activeConversation = Conversation::with([
-                'analysis',
-                'drafts',
-                'messages' => fn ($query) => $query->orderBy('sent_at'),
-            ])
-            ->where(fn ($query) => $query->whereNotNull('ghl_conversation_id')
-                ->orWhereHas('gmailAccount', fn ($q) => $q->where('user_id', $request->user()->id)))
-            ->find($request->get('conversation'));
+        $ghlConversationId = $request->string('conversation')->toString();
 
-        if (! $activeConversation) {
+        try {
+            $response = $this->ghlApi->getConversation($ghlConversationId);
+        } catch (Throwable $e) {
+            Log::error('Failed to load active GHL conversation', [
+                'ghl_conversation_id' => $ghlConversationId,
+                'error' => $e->getMessage(),
+            ]);
+
             return [null, null];
         }
 
-        if (! $activeConversation->is_read) {
-            $activeConversation->update(['is_read' => true]);
+        $raw = data_get($response, 'conversation', $response);
+        $raw['id'] = $raw['id'] ?? $ghlConversationId;
+
+        $parsed = $this->ghlParser->conversationFromSearchApi($raw);
+        $anchor = $this->anchors->findOrCreate($parsed);
+
+        if (! $anchor->is_read) {
+            $anchor->update(['is_read' => true]);
         }
 
-        // Tepat satu draft berstatus Active per percakapan (lihat
-        // DraftService::save) — draft lama otomatis jadi Regenerated saat
-        // versi baru dibuat, jadi tidak perlu sortBy di sini.
-        $activeDraft = $activeConversation->drafts
-            ->firstWhere('status', DraftStatus::Active);
+        $anchor->setRelation('messages', $this->threadLoader->messages($ghlConversationId));
+        $anchor->load('drafts');
 
-        return [$activeConversation, $activeDraft];
+        $activeDraft = $anchor->drafts->firstWhere('status', DraftStatus::Active);
+
+        return [$anchor, $activeDraft];
     }
 
     /**
@@ -259,14 +397,10 @@ class InboxController extends Controller
      * untuk panel Contact Details — bukan disimpan lokal, di-cache singkat
      * per contact supaya tidak memanggil GHL berulang kali saat agent
      * bolak-balik membuka percakapan yang sama. Gagal fetch (mis. GHL down,
-     * contact_id kosong) tidak boleh menjatuhkan halaman — panel jatuh
-     * kembali ke data lokal (contact_name/email/phone) saja.
+     * contact_id kosong) tidak boleh menjatuhkan halaman.
      */
-    protected function loadContactDetails(
-        ?Conversation $conversation,
-        GoHighLevelApiService $ghlApi,
-        GhlParserService $ghlParser,
-    ): ?ParsedGhlContactData {
+    protected function loadContactDetails(?Conversation $conversation): ?ParsedGhlContactData
+    {
         if (! $conversation || blank($conversation->contact_id)) {
             return null;
         }
@@ -275,10 +409,10 @@ class InboxController extends Controller
             return Cache::remember(
                 "ghl_contact_{$conversation->contact_id}",
                 300,
-                function () use ($conversation, $ghlApi, $ghlParser) {
-                    $response = $ghlApi->getContact($conversation->contact_id);
+                function () use ($conversation) {
+                    $response = $this->ghlApi->getContact($conversation->contact_id);
 
-                    return $ghlParser->contactFromApi($response['contact'] ?? $response);
+                    return $this->ghlParser->contactFromApi($response['contact'] ?? $response);
                 }
             );
         } catch (Throwable $e) {

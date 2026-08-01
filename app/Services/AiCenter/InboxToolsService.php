@@ -11,6 +11,7 @@ use App\Services\AiCenter\Engines\IntentDetectionEngine;
 use App\Services\AiCenter\Engines\SopMatchingEngine;
 use App\Services\AiCenter\Support\ConversationThreadFormatter;
 use App\Services\AiCenter\Support\InboxToolPromptFactory;
+use App\Services\Ghl\GhlThreadLoader;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -41,6 +42,7 @@ class InboxToolsService
         protected IntentDetectionEngine $intentDetectionEngine,
         protected SopMatchingEngine $sopMatchingEngine,
         protected KnowledgeResolver $knowledgeResolver,
+        protected GhlThreadLoader $ghlThreadLoader,
     ) {
     }
 
@@ -137,9 +139,7 @@ class InboxToolsService
      */
     protected function remember(string $tool, Conversation $conversation, bool $forceRefresh, \Closure $compute): array
     {
-        $thread = $this->threadFormatter->format(
-            $conversation->messages()->orderBy('sent_at')->get()
-        );
+        $thread = $this->threadFormatter->format($this->messagesFor($conversation));
 
         $key = 'inbox-tool:'.$tool.':'.$conversation->id.':'.md5($thread);
 
@@ -152,6 +152,22 @@ class InboxToolsService
         Cache::put($key, $result, now()->addMinutes(self::CACHE_TTL_MINUTES));
 
         return $result;
+    }
+
+    /**
+     * GHL-sourced conversations are never mirrored into the messages table
+     * (claude.txt) — their thread is fetched live on every call. Gmail-
+     * sourced ones keep reading the real, persisted relation.
+     *
+     * @return \Illuminate\Support\Collection<int, \App\Models\Message>
+     */
+    protected function messagesFor(Conversation $conversation)
+    {
+        if (filled($conversation->ghl_conversation_id)) {
+            return $this->ghlThreadLoader->messages($conversation->ghl_conversation_id);
+        }
+
+        return $conversation->messages()->orderBy('sent_at')->get();
     }
 
     /**

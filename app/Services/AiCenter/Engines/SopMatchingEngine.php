@@ -56,7 +56,7 @@ class SopMatchingEngine
             return true;
         }
 
-        $channel = $conversation->channel?->value;
+        $channel = $conversation->channelValue();
 
         return $channel !== null && in_array($channel, $sop->channels, true);
     }

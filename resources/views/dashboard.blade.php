@@ -4,8 +4,8 @@
 
 @php
     $tiles = [
-        ['label' => 'Pending Review', 'value' => $counts['pending_review'], 'icon' => 'bx-time-five', 'color' => 'warning', 'status' => 'pending_review'],
-        ['label' => 'Replied', 'value' => $counts['replied'], 'icon' => 'bx-check-double', 'color' => 'success', 'status' => 'replied'],
+        ['label' => 'Pending Review', 'value' => $counts['pending_review'], 'icon' => 'bx-time-five', 'color' => 'warning', 'status' => 'waiting_agent'],
+        ['label' => 'Replied', 'value' => $counts['replied'], 'icon' => 'bx-check-double', 'color' => 'success', 'status' => 'waiting_customer'],
         ['label' => 'Closed', 'value' => $counts['closed'], 'icon' => 'bx-archive', 'color' => 'secondary', 'status' => 'closed'],
     ];
 @endphp
@@ -14,20 +14,14 @@
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
             <h4 class="mb-0 fw-bold">Dashboard</h4>
-            <small class="text-muted">Ringkasan aktivitas inbox Anda</small>
+            <small class="text-muted">Ringkasan aktivitas Gmail Inbox Anda. Untuk Conversations (GHL), lihat halaman Conversations — datanya selalu live dari GHL sehingga tidak diringkas di sini.</small>
         </div>
     </div>
-
-    @unless ($ghlConfigured)
-        <div class="alert alert-warning">
-            <span>GoHighLevel Private Integration belum dikonfigurasi, jadi belum ada data conversation untuk ditampilkan. Hubungi admin untuk mengatur GHL_API_KEY &amp; GHL_LOCATION_ID.</span>
-        </div>
-    @endunless
 
     <div class="row g-4 mb-4">
         @foreach ($tiles as $tile)
             <div class="col-md-4">
-                <a href="{{ route('inbox.index', ['status' => $tile['status']]) }}" class="text-decoration-none">
+                <a href="{{ route('gmail-inbox.index', ['filter' => $tile['status']]) }}" class="text-decoration-none">
                     <div class="card shadow-sm h-100">
                         <div class="card-body d-flex align-items-center">
                             <div class="avatar avatar-lg flex-shrink-0 me-3">
@@ -48,13 +42,13 @@
 
     <div class="card shadow-sm">
         <div class="card-header d-flex align-items-center justify-content-between bg-white">
-            <h6 class="mb-0 fw-bold">Percakapan Terbaru</h6>
-            <a href="{{ route('inbox.index') }}" class="btn btn-sm btn-outline-primary">Lihat Semua Inbox</a>
+            <h6 class="mb-0 fw-bold">Percakapan Gmail Terbaru</h6>
+            <a href="{{ route('gmail-inbox.index') }}" class="btn btn-sm btn-outline-primary">Lihat Semua Gmail Inbox</a>
         </div>
         <div class="card-body p-0">
             <div class="list-group list-group-flush">
                 @forelse($recentConversations as $item)
-                    <a href="{{ route('inbox.show', $item->id) }}" class="list-group-item list-group-item-action d-flex align-items-center px-4 py-3">
+                    <a href="{{ route('gmail-inbox.show', $item->id) }}" class="list-group-item list-group-item-action d-flex align-items-center px-4 py-3">
                         <div class="avatar avatar-sm me-3 flex-shrink-0">
                             <span class="avatar-initial rounded-circle bg-label-primary">
                                 {{ strtoupper(substr($item->contact_name ?? $item->contact_email ?? 'P', 0, 1)) }}

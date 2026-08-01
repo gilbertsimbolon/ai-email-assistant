@@ -10,12 +10,14 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        // GHL conversations are a shared inbox (one Private Integration per
-        // location, visible to every agent); legacy Gmail-synced ones stay
-        // scoped to the account owner — same OR pattern as InboxController.
-        $visibleToCurrentUser = fn ($query) => $query->where(
-            fn ($q) => $q->whereNotNull('ghl_conversation_id')
-                ->orWhereHas('gmailAccount', fn ($gq) => $gq->where('user_id', $request->user()->id))
+        // GHL conversations are never mirrored locally anymore (claude.txt),
+        // so there's no cheap accurate count/recent-list for them without an
+        // extra GHL API call per tile — this dashboard widget only covers
+        // the still-DB-backed Gmail Inbox. GHL's own numbers live on the
+        // Conversations page itself, which always reads GHL live.
+        $visibleToCurrentUser = fn ($query) => $query->whereHas(
+            'gmailAccount',
+            fn ($gq) => $gq->where('user_id', $request->user()->id)
         );
 
         $counts = [
@@ -30,8 +32,6 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        $ghlConfigured = filled(config('ghl.api_key')) && filled(config('ghl.location_id'));
-
-        return view('dashboard', compact('counts', 'recentConversations', 'ghlConfigured'));
+        return view('dashboard', compact('counts', 'recentConversations'));
     }
 }

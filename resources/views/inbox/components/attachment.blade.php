@@ -6,7 +6,7 @@
     $isGhlAttachment = !isset($attachment['id']) && isset($attachment['url']);
     $downloadUrl = $isGhlAttachment
         ? $attachment['url']
-        : route('inbox.messages.attachments.download', [$message->id, $attachment['id']]);
+        : route('gmail-inbox.messages.attachments.download', [$message->id, $attachment['id']]);
 @endphp
 
 @if ($isGhlAttachment)
@@ -16,7 +16,7 @@
     </a>
 @elseif (str_starts_with($mime, 'image/'))
     <a href="{{ $downloadUrl }}" target="_blank" title="{{ $attachment['filename'] ?? 'attachment' }}">
-        <img data-src="{{ route('inbox.messages.attachments.preview', [$message->id, $attachment['id']]) }}"
+        <img data-src="{{ route('gmail-inbox.messages.attachments.preview', [$message->id, $attachment['id']]) }}"
              class="chat-attachment-thumb lazy-thumb" alt="{{ $attachment['filename'] ?? 'attachment' }}">
     </a>
 @elseif ($mime === 'application/pdf')

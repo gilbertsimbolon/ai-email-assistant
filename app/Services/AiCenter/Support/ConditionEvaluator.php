@@ -46,7 +46,7 @@ class ConditionEvaluator
             ConditionField::CustomerStatus => $analysis?->customer_status?->value,
             ConditionField::RefundRequested => $analysis?->refund_requested,
             ConditionField::EscalationRequired => $analysis?->escalation_required,
-            ConditionField::Channel => $conversation->channel?->value,
+            ConditionField::Channel => $conversation->channelValue(),
             ConditionField::ConfidenceScore => $analysis?->confidence_score,
             default => null,
         };

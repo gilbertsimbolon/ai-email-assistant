@@ -8,15 +8,17 @@ use App\DataTransferObjects\ParsedGhlMessageData;
 use Carbon\Carbon;
 
 /**
- * Normalizes the raw shape returned by GHL's /conversations/search and
- * /conversations/{id}/messages endpoints into DTOs, so downstream code
- * (ConversationRepository, GhlSyncService) doesn't need to know GHL's field
- * names directly.
+ * Normalizes the raw shape returned by GHL's /conversations/search,
+ * /conversations/{id} and /conversations/{id}/messages endpoints into DTOs,
+ * so downstream code (InboxController, GhlThreadLoader, GhlSendService)
+ * doesn't need to know GHL's field names directly.
  */
 class GhlParserService
 {
     public function conversationFromSearchApi(array $raw): ParsedGhlConversationData
     {
+        $lastActivity = $raw['dateUpdated'] ?? $raw['lastMessageDate'] ?? $raw['dateAdded'] ?? null;
+
         return new ParsedGhlConversationData(
             ghlConversationId: (string) $raw['id'],
             ghlLocationId: $raw['locationId'] ?? null,
@@ -25,6 +27,9 @@ class GhlParserService
             contactEmail: $raw['email'] ?? null,
             contactPhone: $raw['phone'] ?? null,
             subject: $raw['lastMessageBody'] ?? null,
+            channel: $raw['lastMessageType'] ?? $raw['type'] ?? null,
+            unreadCount: (int) ($raw['unreadCount'] ?? 0),
+            lastActivityAt: $lastActivity ? Carbon::parse($lastActivity) : null,
         );
     }
 

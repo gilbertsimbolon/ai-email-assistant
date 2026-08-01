@@ -64,20 +64,21 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
-        // Sidebar is included on every authenticated page, so it needs its
-        // own composer to know the Conversations unread badge count. GHL
-        // conversations are shared (no gmail_account_id owner), legacy
-        // Gmail-synced ones stay scoped to the account owner — same OR
-        // pattern as InboxController's queries.
+        // Sidebar is included on every authenticated page. GHL conversations
+        // are never mirrored locally anymore (claude.txt), so there's no
+        // cheap accurate unread count for the Conversations nav item without
+        // an extra GHL API call on every single page load — that's not worth
+        // it just for a badge, so the GHL nav item shows no count rather
+        // than a stale/undercounted one. Gmail Inbox stays DB-backed, so its
+        // badge is still accurate.
         View::composer('partials.sidebar', function ($view) {
-            $conversationsUnreadCount = auth()->check()
-                ? Conversation::where(fn ($query) => $query->whereNotNull('ghl_conversation_id')
-                        ->orWhereHas('gmailAccount', fn ($q) => $q->where('user_id', auth()->id())))
+            $gmailUnreadCount = auth()->check()
+                ? Conversation::whereHas('gmailAccount', fn ($q) => $q->where('user_id', auth()->id()))
                     ->where('is_read', false)
                     ->count()
                 : 0;
 
-            $view->with('conversationsUnreadCount', $conversationsUnreadCount);
+            $view->with('gmailUnreadCount', $gmailUnreadCount);
         });
     }
 }

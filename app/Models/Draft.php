@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\DraftStatus;
-use App\Enums\MessageType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -24,7 +23,9 @@ class Draft extends Model
 
     protected $casts = [
         'status' => DraftStatus::class,
-        'type' => MessageType::class,
+        // Not cast to MessageType — a GHL-sourced draft's channel can be
+        // anything GHL supports (SMS/FB/IG/etc), not just email/whatsapp
+        // (claude.txt section 16), so `type` stays a plain string.
         'content' => 'array',
         'original_content' => 'array',
         'version' => 'integer',

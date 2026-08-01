@@ -1,5 +1,6 @@
 @php $isAgent = $message->sender_type !== \App\Enums\SenderType::Customer; @endphp
-<div class="d-flex mb-3 {{ $isAgent ? 'justify-content-end' : 'justify-content-start' }}">
+<div class="d-flex mb-3 {{ $isAgent ? 'justify-content-end' : 'justify-content-start' }}"
+     data-message-id="{{ $message->ghl_message_id ?? $message->gmail_message_id ?? $message->id }}">
     <div class="chat-bubble {{ $isAgent ? 'chat-bubble-agent' : 'chat-bubble-customer' }}">
         <div class="chat-bubble-meta small {{ $isAgent ? 'text-white-50' : 'text-muted' }}">
             {{ $isAgent ? 'Anda' : ($activeConversation->contact_name ?? 'Pelanggan') }}

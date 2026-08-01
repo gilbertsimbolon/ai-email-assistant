@@ -34,8 +34,14 @@
         <li class="menu-item {{ request()->routeIs('inbox.*') ? 'active' : '' }}">
             <a href="{{ route('inbox.index') }}" class="menu-link d-flex align-items-center justify-content-between">
                 <div><i class="menu-icon tf-icons bx bx-conversation"></i> Conversations</div>
-                @if (($conversationsUnreadCount ?? 0) > 0)
-                    <span class="badge bg-primary rounded-pill">{{ $conversationsUnreadCount }}</span>
+            </a>
+        </li>
+
+        <li class="menu-item {{ request()->routeIs('gmail-inbox.*') ? 'active' : '' }}">
+            <a href="{{ route('gmail-inbox.index') }}" class="menu-link d-flex align-items-center justify-content-between">
+                <div><i class="menu-icon tf-icons bx bx-envelope"></i> Gmail Inbox</div>
+                @if (($gmailUnreadCount ?? 0) > 0)
+                    <span class="badge bg-primary rounded-pill">{{ $gmailUnreadCount }}</span>
                 @endif
             </a>
         </li>

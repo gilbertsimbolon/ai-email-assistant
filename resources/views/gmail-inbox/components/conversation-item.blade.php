@@ -1,53 +1,57 @@
 <li class="email-item conversation-item border-bottom d-flex align-items-center px-4 py-3 position-relative {{ $isActive ? 'bg-label-primary' : 'bg-white' }}"
-    data-conversation-id="{{ $item->ghlConversationId }}">
+    data-conversation-id="{{ $item->id }}">
 
-    {{-- Star: read-only di list (tidak ada anchor lokal untuk percakapan
-     yang belum pernah dibuka agent) — toggle bintang dilakukan dari dalam
-     thread yang terbuka (lihat toolbar.blade.php). --}}
+    {{-- Star --}}
     <div class="d-flex align-items-center me-3">
-        <i class="bx {{ $item->isStarred ? 'bxs-star text-warning' : 'bx-star text-muted' }}"
-           title="{{ $item->isStarred ? 'Dibintangi' : '' }}"></i>
+        <a href="javascript:void(0);" class="text-muted" onclick="toggleStar(event, this, {{ $item->id }})">
+            <i class="bx {{ $item->is_starred ? 'bxs-star text-warning' : 'bx-star' }}"></i>
+        </a>
     </div>
 
     {{-- Informasi Pengirim & Isi Pesan --}}
-    <a href="{{ route('inbox.index', ['conversation' => $item->ghlConversationId, 'filter' => $filter, 'q' => $search ?? null]) }}"
+    <a href="{{ route('gmail-inbox.index', ['conversation' => $item->id, 'filter' => $filter, 'q' => $search ?? null]) }}"
        class="email-list-item-content js-conversation-link d-flex align-items-center flex-grow-1 overflow-hidden text-decoration-none text-reset">
 
         {{-- Avatar / Inisial Nama --}}
         <div class="avatar avatar-sm me-3 flex-shrink-0">
             <span class="avatar-initial rounded-circle bg-label-primary text-primary fw-bold">
-                {{ strtoupper(substr($item->contactName ?? $item->contactEmail ?? 'P', 0, 2)) }}
+                {{ strtoupper(substr($item->contact_name ?? $item->contact_email ?? 'P', 0, 2)) }}
             </span>
         </div>
 
-        {{-- Nama, Channel, Status & Preview Ringkas --}}
+        {{-- Nama, Subjek & Preview Ringkas --}}
         <div class="email-details flex-grow-1 overflow-hidden me-3">
             <div class="d-flex align-items-center mb-0">
-                @unless ($item->isRead)
+                @unless ($item->is_read)
                     <span class="bg-primary rounded-circle me-2 flex-shrink-0" style="width: 8px; height: 8px;" title="Belum dibaca"></span>
                 @endunless
-                <h6 class="email-list-item-username mb-0 me-2 {{ $item->isRead ? 'fw-normal' : 'fw-bold' }} text-dark text-truncate" style="max-width: 140px;">
-                    {{ $item->contactName ?? ($item->contactEmail ?? 'Pelanggan') }}
+                <h6 class="email-list-item-username mb-0 me-2 {{ $item->is_read ? 'fw-normal' : 'fw-bold' }} text-dark text-truncate" style="max-width: 140px;">
+                    {{ $item->contact_name ?? ($item->contact_email ?? 'Pelanggan') }}
                 </h6>
-                <span class="badge bg-label-secondary rounded-pill me-1" title="Channel">{{ $item->channelLabel }}</span>
                 @if ($item->status === \App\Enums\ConversationStatus::Replied)
                     <span class="badge bg-label-success rounded-pill" title="Sudah dibalas"><i class="bx bx-check"></i></span>
-                @elseif ($item->status === \App\Enums\ConversationStatus::PendingReview && ! $item->hasDraft)
+                @elseif ($item->status === \App\Enums\ConversationStatus::PendingReview && ! $item->has_draft)
                     <span class="badge bg-label-warning rounded-pill" title="Menunggu balasan agent">Waiting</span>
                 @endif
-                @if ($item->hasDraft)
+                @if ($item->has_draft)
                     <span class="badge bg-label-primary rounded-pill ms-1" title="Draft AI tersedia">✨</span>
                 @endif
+                @if (!empty($item->latestMessage?->attachments))
+                    <i class="bx bx-paperclip text-muted ms-1" title="Ada lampiran"></i>
+                @endif
             </div>
+            <p class="email-list-item-subject mb-0 text-truncate text-secondary small fw-semibold">
+                {{ $item->subject ?: '(Tanpa subjek)' }}
+            </p>
             <p class="mb-0 text-truncate text-muted small">
-                {{ Str::limit($item->preview ?? 'Tidak ada pesan.', 60) }}
+                {{ Str::limit($item->latestMessage?->body ?? 'Tidak ada pesan.', 60) }}
             </p>
         </div>
     </a>
 
     {{-- Waktu --}}
     <div class="email-list-item-meta d-flex flex-column align-items-end flex-shrink-0">
-        <small class="text-muted">{{ $item->lastActivityAt?->diffForHumans(null, true) }}</small>
+        <small class="text-muted">{{ $item->last_message_at ? $item->last_message_at->diffForHumans(null, true) : '' }}</small>
     </div>
 
 </li>

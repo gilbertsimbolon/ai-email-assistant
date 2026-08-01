@@ -145,9 +145,7 @@ class DraftController extends Controller
                 'content' => array_merge($draft->content ?? [], $validated),
             ]);
         } else {
-            $channelValue = $conversation->channel instanceof \BackedEnum
-                ? $conversation->channel->value
-                : (string) $conversation->channel;
+            $channelValue = (string) $conversation->channelValue();
 
             $draft = Draft::create([
                 'conversation_id' => $conversation->id,

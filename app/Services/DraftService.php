@@ -52,10 +52,7 @@ class DraftService
         bool $asNewVersion = false,
         ?int $aiLogId = null
     ): Draft {
-        // Ambil nilai string dari channel conversation dengan aman
-        $channelValue = $conversation->channel instanceof \BackedEnum
-            ? $conversation->channel->value
-            : (string) $conversation->channel;
+        $channelValue = (string) $conversation->channelValue();
 
         $contentPayload = [
             'subject' => $conversation->subject ?: 'Re: percakapan Anda',

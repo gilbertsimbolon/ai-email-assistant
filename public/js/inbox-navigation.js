@@ -92,6 +92,10 @@
                     aiPanelBody.innerHTML = data.ai_panel_html;
                 }
 
+                if (inboxApp) {
+                    inboxApp.dataset.activeConversationId = data.conversation_id || '';
+                }
+
                 if (data.conversation_id) {
                     markActiveInList(data.conversation_id);
                 }

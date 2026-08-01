@@ -1,8 +1,4 @@
-{{-- Panel Kiri: toolbar (search & filter) + daftar percakapan — selalu dari
- GHL secara live (claude.txt). "all"/"unread"/search datang langsung dari
- GHL /conversations/search (cursor pagination, "Load more"); filter lokal
- (starred/workflow status/AI draft/recent) hanya bisa menampilkan
- percakapan yang sudah pernah dibuka agent (lihat InboxController). --}}
+{{-- Panel Kiri: toolbar (search & filter) + daftar percakapan Gmail --}}
 @php
     $filterOptions = [
         'all' => 'All',
@@ -14,47 +10,39 @@
         'ai_draft' => 'AI Draft',
         'closed' => 'Closed',
     ];
-    $localOnlyFilters = ['recent', 'starred', 'waiting_agent', 'waiting_customer', 'ai_draft', 'closed'];
 @endphp
 
 <div class="border-bottom py-3 px-3 bg-white flex-shrink-0">
     <div class="d-flex align-items-center justify-content-between mb-3">
-        <h5 class="mb-0 fw-bold">Conversations</h5>
-        <a href="{{ route('inbox.index', ['filter' => $filter, 'q' => $search]) }}" class="btn btn-icon btn-sm btn-outline-secondary" title="Refresh">
+        <h5 class="mb-0 fw-bold">Gmail Inbox</h5>
+        <a href="{{ route('gmail-inbox.index', ['filter' => $filter, 'q' => $search]) }}" class="btn btn-icon btn-sm btn-outline-secondary" title="Refresh">
             <i class="bx bx-refresh"></i>
         </a>
     </div>
 
-    <form method="GET" action="{{ route('inbox.index') }}" class="mb-3">
+    <form method="GET" action="{{ route('gmail-inbox.index') }}" class="mb-3">
         <input type="hidden" name="filter" value="{{ $filter }}">
         <div class="input-group input-group-merge">
             <span class="input-group-text bg-transparent border-end-0"><i class="bx bx-search"></i></span>
-            <input type="text" name="q" value="{{ $search }}" class="form-control border-start-0 ps-0" placeholder="Cari nama, email, atau nomor telepon...">
+            <input type="text" name="q" value="{{ $search }}" class="form-control border-start-0 ps-0" placeholder="Cari nama, email, atau subjek...">
         </div>
     </form>
 
     <div class="d-flex flex-wrap gap-1">
         @foreach ($filterOptions as $value => $label)
-            <a href="{{ route('inbox.index', ['filter' => $value, 'q' => $search]) }}"
-               class="btn btn-sm rounded-pill {{ $filter === $value ? 'btn-primary' : 'btn-outline-secondary' }}"
-               @if (in_array($value, $localOnlyFilters, true)) title="Hanya menampilkan percakapan yang sudah pernah dibuka" @endif>
+            <a href="{{ route('gmail-inbox.index', ['filter' => $value, 'q' => $search]) }}"
+               class="btn btn-sm rounded-pill {{ $filter === $value ? 'btn-primary' : 'btn-outline-secondary' }}">
                 {{ $label }}
             </a>
         @endforeach
     </div>
 </div>
 
-@if ($ghlError ?? false)
-    <div class="alert alert-danger rounded-0 mb-0 flex-shrink-0" role="alert">
-        Unable to load conversations from GHL. Please try again.
-    </div>
-@endif
-
-{{-- List Percakapan --}}
+{{-- List Email --}}
 <div class="email-list flex-grow-1 overflow-auto">
     <ul class="list-unstyled m-0" id="conversationList">
         @forelse($conversations as $item)
-            @include('inbox.components.conversation-item', ['item' => $item, 'filter' => $filter, 'isActive' => $activeConversation && $activeConversation->ghl_conversation_id === $item->ghlConversationId])
+            @include('gmail-inbox.components.conversation-item', ['item' => $item, 'filter' => $filter, 'isActive' => $activeConversation && $activeConversation->id === $item->id])
         @empty
             <li class="text-center p-5 text-muted bg-white">
                 <i class="bx bx-folder-open display-4 mb-2"></i>
@@ -74,7 +62,7 @@
                     @elseif ($filter === 'closed')
                         Tidak ada percakapan yang ditutup.
                     @else
-                        Tidak ada percakapan.
+                        Tidak ada percakapan email.
                     @endif
                 </p>
             </li>
@@ -82,17 +70,9 @@
     </ul>
 </div>
 
-{{-- Pagination Footer: cursor "Load more" untuk list live GHL, halaman
- nomor biasa untuk filter lokal (yang memang berbasis paginate() lokal). --}}
-@if ($localPaginator && $localPaginator->hasPages())
+{{-- Pagination Footer --}}
+@if ($conversations->hasPages())
     <div class="card-footer bg-white py-2 px-4 d-flex justify-content-center border-top flex-shrink-0">
-        {{ $localPaginator->links() }}
-    </div>
-@elseif ($nextCursor ?? null)
-    <div class="card-footer bg-white py-2 px-4 d-flex justify-content-center border-top flex-shrink-0">
-        <a href="{{ route('inbox.index', array_merge(['filter' => $filter, 'q' => $search], $nextCursor)) }}"
-           class="btn btn-sm btn-outline-secondary">
-            Load more
-        </a>
+        {{ $conversations->links() }}
     </div>
 @endif

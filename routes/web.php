@@ -22,6 +22,7 @@ use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\LupaPasswordController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DraftController;
+use App\Http\Controllers\GmailInboxController;
 use App\Http\Controllers\GmailOAuthController;
 use App\Http\Controllers\GmailSettingsController;
 use App\Http\Controllers\Inbox\InboxAiToolsController;
@@ -69,12 +70,20 @@ Route::middleware('auth')->group(function () {
     // Route Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Rute Inbox — the "inbox" permission (Admin via Gate::before, Agent
-    // explicitly, per claude.txt) gates entry to the whole workspace; a few
-    // routes below layer a more specific permission on top.
+    // Rute Inbox (GHL — claude.txt) — the "inbox" permission (Admin via
+    // Gate::before, Agent explicitly) gates entry to the whole workspace; a
+    // few routes below layer a more specific permission on top. Everything
+    // here reads/writes GHL live, never MySQL, except the status/star/read
+    // toggle and draft/AI-tool routes, which operate on the local anchor
+    // Conversation row (see GhlConversationAnchorService) — that anchor is
+    // shared with the legacy Gmail Inbox too (gmail-inbox.*), so those
+    // routes stay generic and are not duplicated per source.
     Route::middleware('permission:inbox')->prefix('inbox')->name('inbox.')->group(function () {
-        // Daftar inbox (dengan filter status)
+        // Daftar inbox (dengan filter status) — live dari GHL
         Route::get('/', [InboxController::class, 'index'])->name('index');
+
+        // Polling thread aktif (claude.txt section 13-14)
+        Route::get('/{conversation}/messages', [InboxController::class, 'messages'])->name('messages');
 
         // Detail thread percakapan (permalink lama, redirect ke panel kanan Inbox)
         Route::get('/{conversation}', [InboxController::class, 'show'])->name('show');
@@ -87,14 +96,6 @@ Route::middleware('auth')->group(function () {
 
         // Toggle status baca (tombol "Mark Read" di toolbar)
         Route::put('/{conversation}/read', [InboxController::class, 'toggleRead'])->name('read.toggle');
-
-        // Unduh attachment (fetch on-demand dari Gmail API)
-        Route::get('/messages/{message}/attachments/{attachmentId}', [InboxController::class, 'downloadAttachment'])
-            ->name('messages.attachments.download');
-
-        // Preview attachment inline (thumbnail gambar di bubble chat)
-        Route::get('/messages/{message}/attachments/{attachmentId}/preview', [InboxController::class, 'previewAttachment'])
-            ->name('messages.attachments.preview');
 
         // Review, approve, reject draft AI
         Route::put('/drafts/{draft}', [DraftController::class, 'update'])->name('drafts.update')
@@ -124,6 +125,20 @@ Route::middleware('auth')->group(function () {
             Route::post('/extract-info', [InboxAiToolsController::class, 'extractInfo'])->name('extract-info');
             Route::post('/sentiment', [InboxAiToolsController::class, 'sentiment'])->name('sentiment');
         });
+    });
+
+    // Rute Gmail Inbox — split out of the (now GHL-only) /inbox per
+    // claude.txt, which only covers the GHL migration. Unchanged DB-backed
+    // behavior, just relocated. Status/star/read/drafts/ai-tools stay on
+    // the shared inbox.* routes above (same local Conversation row).
+    Route::middleware('permission:inbox')->prefix('gmail-inbox')->name('gmail-inbox.')->group(function () {
+        Route::get('/', [GmailInboxController::class, 'index'])->name('index');
+        Route::get('/{conversation}', [GmailInboxController::class, 'show'])->name('show');
+
+        Route::get('/messages/{message}/attachments/{attachmentId}', [GmailInboxController::class, 'downloadAttachment'])
+            ->name('messages.attachments.download');
+        Route::get('/messages/{message}/attachments/{attachmentId}/preview', [GmailInboxController::class, 'previewAttachment'])
+            ->name('messages.attachments.preview');
     });
 
     // Route Settings & koneksi Gmail (token OAuth per user)

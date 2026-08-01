@@ -67,7 +67,7 @@ function makeConversationWithDraft(): array
 test('inbox detail page renders without error and shows the active draft', function () {
     [$conversation, , $user] = makeConversationWithDraft();
 
-    $response = $this->actingAs($user)->get(route('inbox.show', $conversation));
+    $response = $this->actingAs($user)->get(route('gmail-inbox.show', $conversation));
 
     $response->assertOk();
     $response->assertSee('Halo, berikut informasi tagihan Anda.');
