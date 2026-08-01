@@ -34,8 +34,7 @@ class GhlSyncService
         protected GhlParserService $parser,
         protected ConversationRepository $conversations,
         protected MessageRepository $messages,
-    ) {
-    }
+    ) {}
 
     public function sync(): void
     {
@@ -48,8 +47,18 @@ class GhlSyncService
         $cursor = [];
 
         do {
-            $result = $this->api->getConversations(array_merge(['limit' => self::PAGE_SIZE], $cursor));
+            // $result = $this->api->getConversations(array_merge(['limit' => self::PAGE_SIZE], $cursor));
+            // $rawConversations = $result['conversations'] ?? [];
+            $result = $this->api->getConversations(
+                array_merge(['limit' => self::PAGE_SIZE], $cursor)
+            );
+
             $rawConversations = $result['conversations'] ?? [];
+
+            Log::info('GHL conversations response', [
+                'count' => count($rawConversations),
+                'first_conversation' => $rawConversations[0] ?? null,
+            ]);
 
             if (empty($rawConversations)) {
                 break;
@@ -58,7 +67,19 @@ class GhlSyncService
             $reachedSynced = false;
 
             foreach ($rawConversations as $raw) {
-                if (!isset($raw['id']) || !Str::contains(strtolower($raw['type'] ?? $raw['lastMessageType'] ?? ''), 'email')) {
+
+                Log::info('GHL RAW CONVERSATION', [
+                    'id' => $raw['id'] ?? null,
+                    'type' => $raw['type'] ?? null,
+                    'lastMessageType' => $raw['lastMessageType'] ?? null,
+                    'channel' => $raw['channel'] ?? null,
+                    'contactId' => $raw['contactId'] ?? null,
+                    'contactName' => $raw['contactName'] ?? null,
+                    'email' => $raw['email'] ?? null,
+                    'dateUpdated' => $raw['dateUpdated'] ?? null,
+                ]);
+
+                if (!isset($raw['id'])) {
                     continue;
                 }
 

@@ -1,845 +1,754 @@
-# PROMPT CLAUDE — MIGRASI INBOX GMAIL → GHL API (SEND DARI WEB)
+PROMPT --- Refactor Inbox menjadi Conversations GHL 3 Kolom
 
-## TUJUAN
+Tujuan
 
-Migrasikan **hanya fitur Inbox** dari Gmail menjadi menggunakan **GoHighLevel (GHL) sebagai sumber data/API**.
+Perbaiki hanya bagian Inbox/Conversations pada project Laravel agarsumber data dan pengalaman pengguna mengikuti konsep Inbox GHLberdasarkan screenshot referensi yang diberikan.
 
-Namun ada satu aturan penting:
+Jangan mengubah fitur lain yang tidak berhubungan langsung denganInbox/Conversations.
 
-> **GHL hanya digunakan sebagai API/data source. Agent tetap membaca dan mengirim pesan langsung dari website Laravel ini.**
+1. Sidebar
 
-Jadi website Laravel adalah workspace utama agent.
+Hapus pemisahan inbox berdasarkan channel:
 
-### TARGET
+Email
 
-```text
-GHL
-  ↓
-API
-  ↓
-Laravel Inbox
-  ↓
-Agent membaca conversation
-  ↓
-Agent menulis reply di website
-  ↓
-Laravel mengirim reply melalui GHL API
-  ↓
-Pesan masuk ke conversation/contact tujuan di GHL
-```
+WhatsApp
 
-Agent **tidak perlu membuka GHL untuk mengirim pesan.**
+Instagram
 
----
+Messenger
 
-# 1. SCOPE SANGAT TERBATAS
+Live Chat
 
-Kerjakan **HANYA Inbox migration**.
+channel lainnya
 
-Jangan menyentuh:
+Ubah menjadi satu menu utama:
 
-- AI Center
-- SOP
-- Reply Template
-- Knowledge Base
-- Reports
-- Authentication
-- Spatie / Role
-- Dashboard
-- Settings yang tidak berhubungan dengan Inbox
-- OpenAI configuration
-- AI prompt yang sudah ada
-- Workflow
-- Automation
-- Payment
-- fitur aplikasi lain
+Conversations
 
-Jika file shared digunakan fitur lain, jangan mengubah bagian yang tidak berhubungan dengan Inbox.
+Menu lain seperti AI Center, Reports, dan Settings tetap dipertahankan.
 
----
+Jangan menghapus AI Center, Reports, Settings, authentication, ataufitur lain.
 
-# 2. ARSITEKTUR YANG DIINGINKAN
+2. Navbar
 
-## SEBELUM
+Hapus seluruh elemen Gmail dari navbar/header Conversations, termasuk:
 
-```text
-Gmail API
-   ↓
-Laravel
-   ↓
-Inbox
-   ↓
-Agent
-```
+Hubungkan Gmail
 
-## SESUDAH
+Connect Gmail
 
-```text
-GHL Private Integration API
-   ↓
-Laravel
-   ↓
-Inbox
-   ↓
-Agent
-   ↓
-Send dari Laravel
-   ↓
-GHL API
-```
+Gmail status
 
-GHL adalah **backend communication provider**, bukan UI yang harus dibuka agent.
+Gmail account
 
----
+Gmail sync indicator
 
-# 3. GHL SEBAGAI API SAJA
+CTA Gmail lainnya
 
-Laravel mengambil dari GHL:
+Navbar harus fokus pada Conversations.
 
-- conversations
-- messages
-- contacts
-- contact details
-- channel
-- timestamps
-- unread/status jika tersedia
-- assigned user jika tersedia
-- metadata yang relevan dengan Inbox
+3. Settings
 
-Laravel juga menggunakan GHL API untuk:
+Hapus hanya UI/configuration yang khusus Gmail:
 
-- mengirim reply;
-- melakukan action conversation yang memang dibutuhkan Inbox.
+Gmail Configuration
 
-Tetapi:
+Gmail Account
 
-**Semua aktivitas agent dilakukan dari website Laravel.**
+Gmail OAuth
 
-Jangan membuat agent diarahkan ke GHL.
+Google OAuth
 
-Jangan membuka GHL dalam iframe.
+Gmail Sync
 
-Jangan membuat tombol:
+Gmail connection
 
-```text
-Open in GHL
-```
+Gmail credentials
 
-Tidak diperlukan.
+Connect Gmail
 
----
+Jangan menghapus Settings secara keseluruhan.
 
-# 4. SEND MESSAGE — SANGAT PENTING
+Jika route/menu yang benar-benar khusus Gmail sudah tidak digunakanarsitektur baru, boleh dihapus setelah dipastikan tidak dipakai fiturlain.
 
-Saat agent menulis:
+4. Dashboard
 
-```text
-Halo, bagaimana saya bisa membantu?
-```
+Hapus semua widget/card/configuration yang hanya berkaitan denganEmail/Gmail:
 
-lalu klik:
+Gmail connection status
 
-```text
-Send
-```
+Email account configuration
 
-alur harus:
+Gmail sync status
 
-```text
-Laravel Inbox
+Gmail statistics
+
+Gmail-specific card
+
+Gmail-specific CTA
+
+Jika dashboard menampilkan statistik conversation, gunakan data lokalhasil sync GHL.
+
+5. Conversations sebagai Inbox utama
+
+Gunakan satu halaman Conversations sebagai inbox utama.
+
+Jangan lagi membuat UI terpisah:
+
+Inbox Email
+
+Inbox WhatsApp
+
+Inbox Instagram
+
+Inbox Messenger
+
+Inbox Live Chat
+
+Semua conversation ditampilkan dalam satu inbox.
+
+Arsitektur:
+
+GHL Private Integration
+        ↓
+GoHighLevelApiService
+        ↓
+GhlSyncService
+        ↓
+Local Conversation + Messages
+        ↓
+Conversations UI
+
+Untuk mengirim pesan:
+
+Laravel Conversations UI
+        ↓
+GoHighLevelApiService
+        ↓
+GHL Conversations API
+        ↓
+Customer
+
+User harus bisa membalas langsung dari website Laravel, bukandiarahkan kembali ke GHL.
+
+6. Layout 3 Kolom
+
+Buat Conversations menyerupai Inbox GHL pada screenshot.
+
+┌──────────────────┬──────────────────────────────────┬──────────────────────┐
+│ Column 1         │ Column 2                         │ Column 3             │
+│ Conversation List│ Conversation Thread              │ Contact Details      │
+└──────────────────┴──────────────────────────────────┴──────────────────────┘
+
+Column 1 --- Conversation List
+
+Tampilkan:
+
+Unread
+
+All
+
+Recent
+
+Starred
+
+Search
+
+daftar conversation
+
+Setiap conversation minimal:
+
+avatar/inisial
+
+nama contact
+
+preview pesan terakhir
+
+waktu pesan terakhir
+
+unread count jika tersedia
+
+indikator unread
+
+star jika tersedia
+
+status conversation
+
+Search minimal dapat mencari:
+
+nama
+
+email
+
+nomor telepon
+
+preview/isi pesan jika memungkinkan
+
+7. Column 2 --- Conversation Thread
+
+Header:
+
+avatar
+
+nama contact
+
+channel/icon dari GHL jika tersedia
+
+action buttons
+
+Message thread:
+
+chronological
+
+grouping berdasarkan tanggal
+
+sender
+
+timestamp
+
+body
+
+attachment jika tersedia
+
+inbound/outbound distinction
+
+channel jika tersedia
+
+Gunakan struktur message/thread yang menyerupai GHL, bukan sekadarbubble chat sederhana.
+
+8. Reply Composer
+
+Di bagian bawah thread buat composer seperti GHL:
+
+┌─────────────────────────────────────────────────────────┐
+│ Type a message                                      ➤  │
+└─────────────────────────────────────────────────────────┘
+
+Pengiriman harus langsung:
+
+Laravel → GHL Conversations API → Customer
+
+Gunakan GoHighLevelApiService yang sudah ada jika memungkinkan.
+
+Jangan membuat integrasi baru tanpa alasan.
+
+9. Column 3 --- Contact Details
+
+Buat panel kanan seperti Contact Details GHL.
+
+Minimal:
+
+Contact
+
+First Name
+
+Last Name
+
+Email
+
+Phone
+
+Date of Birth jika tersedia
+
+Contact ID jika relevan
+
+Tags
+
+Tampilkan semua tag yang tersedia dari GHL.
+
+Contoh:
+
+Tags (5)
+
+purchase - c360 lifetime
+purchase - viral scraper
+purchase - bv bootcamp 47
+purchase - ai cloning 47
+quickcut webby - register
+
+Jangan hardcode.
+
+Data tambahan jika tersedia
+
+DND
+
+custom fields
+
+company
+
+address
+
+city
+
+state
+
+postal code
+
+country
+
+website
+
+timezone
+
+source
+
+assigned user
+
+date added
+
+date updated
+
+Gunakan grouping seperti:
+
+Contact Details
+
+Tags
+[ tag ] [ tag ]
+
+All fields | DND | Actions
+
+Search fields and folders
+
+Contact
+  First name
+  Corinne
+
+  Last name
+  Mastronardi
+
+  Email
+  example@email.com
+
+  Phone
+  +1 xxx xxx xxxx
+
+Jika backend belum mendukung action tertentu, jangan membuat fakefunctionality.
+
+10. AI Tools
+
+Di bawah thread sediakan:
+
+Generate AI Reply
+Summarize Thread
+Translate
+Detect Intent
+Extract Info
+Sentiment
+
+Generate AI Reply
+
+Generate draft berdasarkan seluruh thread aktif.
+
+AI tidak boleh otomatis berjalan ketika GHL sync.
+
+Hanya ketika agent menekan button.
+
+Summarize Thread
+
+Ringkas thread dan tampilkan poin penting sebagai informasi internal.
+
+Jangan otomatis mengirim hasil ke customer.
+
+Translate
+
+Sediakan pilihan bahasa jika backend sudah mendukung.
+
+Translation tidak boleh mengubah message asli secara permanen.
+
+Detect Intent
+
+Deteksi intent seperti:
+
+Refund Request
+
+Purchase
+
+Technical Issue
+
+Account Access
+
+Cancellation
+
+General Question
+
+Gunakan hasil dari AI/backend yang sudah ada jika tersedia.
+
+Extract Info
+
+Ekstrak:
+
+Customer Name
+
+Order ID
+
+Product
+
+Problem
+
+Requested Action
+
+Important Dates
+
+Tampilkan terstruktur.
+
+Sentiment
+
+Minimal:
+
+Positive
+
+Neutral
+
+Negative
+
+Jika tersedia, tampilkan confidence/score.
+
+11. AI tetap On-Demand
+
+Jangan mengubah prinsip AI yang sudah ada.
+
+Sync harus:
+
+GHL Sync
     ↓
-InboxController
+Save Conversation
     ↓
-GHL Service
+Save Messages
     ↓
-GHL API
-    ↓
-Conversation/contact
-    ↓
-Message terkirim
-```
+STOP
 
 Bukan:
 
-```text
-Laravel
- ↓
-redirect ke GHL
- ↓
-agent kirim dari GHL
-```
+GHL Sync
+    ↓
+OpenAI
+    ↓
+Generate AI
 
-dan bukan:
+AI hanya berjalan saat agent menekan tombol.
 
-```text
-Laravel
- ↓
-Gmail API
-```
+12. Data harus berasal dari GHL
 
-### Agent harus bisa melakukan semuanya dari Laravel.
+Jangan membuat data dummy/hardcoded untuk:
 
-Setelah message berhasil:
+nama
 
-1. tampilkan message di conversation;
-2. update conversation state;
-3. clear textarea;
-4. tampilkan status sukses;
-5. handle error jika gagal;
-6. jangan duplicate message.
+email
 
----
+phone
 
-# 5. JANGAN MENGARANG API GHL
+tags
 
-Audit dokumentasi/API yang sudah digunakan project terlebih dahulu.
+custom fields
 
-Jangan menebak:
+messages
 
-- endpoint;
-- HTTP method;
-- request body;
-- response format;
-- field;
-- scope.
+timestamp
 
-Jika project sudah memiliki:
+DND
 
-```text
-GoHighLevelApiService
-```
+contact data
 
-gunakan dan extend service tersebut bila memungkinkan.
+Gunakan data GHL yang sudah disimpan/tersedia melalui backend.
 
-Jangan membuat service duplikat.
+13. Database
 
-Jika endpoint Send Message membutuhkan endpoint/permission tertentu, gunakan implementasi GHL yang valid.
+Conversation GHL sudah berhasil masuk database.
 
-Jika menemukan:
+Jangan melakukan migration besar-besaran.
 
-```text
-401
-403
-404
-422
-429
-5xx
-```
+Pertahankan model/table yang sudah ada sebisa mungkin.
 
-diagnosis dengan benar dan jangan membuat workaround palsu.
+Jika field tambahan benar-benar diperlukan untuk Contact Details GHL,baru buat migration minimal.
 
----
+Jangan menghapus conversation/message existing.
 
-# 6. KONFIGURASI GHL
+14. Jangan merusak AI Center
 
-Gunakan Private Integration yang sudah dibuat.
+Pertahankan:
 
-Konfigurasi minimal:
+SOP
 
-```env
-GHL_API_KEY=
-GHL_LOCATION_ID=
-GHL_BASE_URL=
-```
+Rules
 
-Jika project sudah mempunyai sistem Settings untuk konfigurasi GHL, gunakan sistem tersebut.
+Templates
 
-Jangan membuat konfigurasi baru jika tidak diperlukan.
+Intent
 
-API key:
+AI Configuration
 
-- jangan hardcode;
-- jangan expose ke frontend;
-- jangan dikirim ke JavaScript;
-- jangan tampilkan di Blade;
-- jangan log token.
+fitur AI Center lainnya
 
-Frontend Laravel hanya memanggil endpoint Laravel sendiri.
+Perubahan AI hanya yang diperlukan untuk button AI di Conversations.
 
-Contoh:
+15. Scope perubahan
 
-```text
-Browser
-  ↓
-POST /inbox/{conversation}/messages
-  ↓
-Laravel
-  ↓
-GHL API
-```
+BOLEH DIUBAH
 
-Browser **tidak boleh langsung memanggil GHL API menggunakan Private Integration token.**
+Sidebar Inbox
 
----
+Conversations UI
 
-# 7. INBOX UI
+Conversation list
 
-Pertahankan atau sesuaikan Inbox agar terasa seperti GHL Conversations.
-
-Gunakan 3-column workspace:
-
-```text
-┌──────────────────────────────────────────────────────────────────┐
-│ Search | Filter | Sort | Refresh                                 │
-├──────────────────────┬──────────────────────────┬────────────────┤
-│ CONVERSATIONS        │ CONVERSATION             │ CONTACT        │
-│                      │                          │                │
-│ John Doe             │ John Doe                 │ Name           │
-│ Refund request       │ Channel / Status         │ Email          │
-│ 2 min ago            │                          │ Phone          │
-│                      │ Customer message         │ Tags           │
-│ Jane Doe             │                          │ Assigned       │
-│ Payment issue        │ Agent message            │ Custom fields  │
-│                      │                          │                │
-│ ...                  │ Reply composer           │                │
-│                      │ [textarea] [Send]        │                │
-└──────────────────────┴──────────────────────────┴────────────────┘
-```
+Conversation thread
 
-### Kolom kiri
+Contact Details
 
-- search;
-- filter;
-- conversation list;
-- unread indicator;
-- channel;
-- last message;
-- timestamp.
+Reply composer
 
-### Kolom tengah
+AI buttons di Conversations
 
-- conversation header;
-- message timeline;
-- customer message;
-- agent message;
-- timestamp;
-- attachment jika tersedia;
-- reply composer;
-- Send button.
+Gmail UI yang masih muncul
 
-### Kolom kanan
+Gmail-specific dashboard widget
 
-Ambil dari GHL jika tersedia:
+Gmail-specific navbar element
 
-- contact name;
-- email;
-- phone;
-- tags;
-- assigned user;
-- custom fields;
-- relevant contact metadata.
+Gmail-specific Settings UI
 
----
+JANGAN DIUBAH
 
-# 8. GHL DATA → LARAVEL INBOX
+AI Center selain integrasi button Conversations
 
-Mapping secara konseptual:
+SOP
 
-```text
-GHL Conversation
-        ↓
-Laravel Conversation View
+Rules
 
-GHL Message
-        ↓
-Laravel Message View
+Templates
 
-GHL Contact
-        ↓
-Laravel Contact Sidebar
-```
+Authentication
 
-Jangan membuat data dummy.
+User management
 
-Jika GHL tidak menyediakan field tertentu, tampilkan:
+Reports kecuali Gmail-specific widget
 
-```text
--
-```
+Database yang tidak berhubungan
 
-atau sembunyikan field tersebut.
+GHL sync backend yang sudah berjalan, kecuali benar-benar diperlukanuntuk UI
 
-Jangan mengarang data.
+fitur aplikasi lainnya
 
----
+16. UI/UX
 
-# 9. THREAD / MESSAGE
+Gunakan screenshot Inbox GHL yang diberikan sebagai referensi visual.
 
-Saat agent membuka conversation:
+Target:
 
-```text
-Laravel
- ↓
-GHL API
- ↓
-ambil conversation
- ↓
-ambil message/thread
- ↓
-render di Inbox
-```
+LEFT
+Conversation List
 
-Jangan hanya mengambil pesan terakhir jika API menyediakan history/thread.
+CENTER
+Conversation Thread
 
-Tampilkan sebanyak yang memang tersedia dari GHL.
-
-Perhatikan:
-
-- pagination;
-- ordering;
-- timestamp;
-- direction;
-- sender;
-- recipient;
-- channel.
-
----
-
-# 10. SEND MESSAGE DARI WEBSITE
-
-Buat/pertahankan endpoint Laravel untuk Send.
-
-Contoh:
-
-```text
-POST /inbox/{conversation}/messages
-```
-
-Request:
-
-```text
-message
-conversation_id
-```
-
-Jika channel membutuhkan field tambahan, gunakan field yang memang diwajibkan GHL.
-
-Controller:
-
-```text
-InboxController
-      ↓
-GoHighLevelApiService
-      ↓
-GHL API
-```
-
-Jangan menaruh HTTP request GHL langsung di Blade/JavaScript.
-
----
-
-# 11. SECURITY
-
-Jangan pernah melakukan ini:
-
-```javascript
-fetch(GHL_URL, {
-    headers: {
-        Authorization: 'Bearer pit-xxxxxxxx'
-    }
-})
-```
-
-API key hanya boleh berada di backend Laravel.
-
-Yang boleh:
-
-```text
-Browser
- ↓
-Laravel endpoint
- ↓
-GHL API
-```
-
----
-
-# 12. EXISTING AI FEATURES
-
-Jika Inbox saat ini sudah memiliki:
-
-- AI Process
-- AI Summary
-- Translate
-- Improve Reply
-- Draft
-- Recommendation
-
-**jangan hapus.**
-
-Pertahankan.
-
-Yang berubah hanya sumber conversation:
-
-```text
-Gmail conversation
-        ↓
-GHL conversation
-```
-
-AI tetap berjalan melalui architecture yang sudah ada.
-
-Jangan redesign AI Center.
-
-Jangan mengubah prompt AI tanpa kebutuhan migrasi.
-
----
-
-# 13. AI PROCESS TETAP ON-DEMAND
-
-Jangan otomatis memproses setiap conversation.
-
-Tetap gunakan:
-
-```text
-[AI Process]
-```
-
-Agent menekan tombol jika membutuhkan:
-
-```text
-GHL conversation
-      ↓
-Laravel
-      ↓
-AI Processing
-      ↓
-Summary / Intent / Recommendation / Draft
-```
-
-Tujuannya menghemat token.
-
----
-
-# 14. HAPUS GMAIL KHUSUS INBOX
-
-Audit codebase untuk:
-
-```text
-Gmail
-GmailAccount
-GmailApiService
-GmailSyncService
-GmailSyncJob
-Gmail webhook
-Gmail history
-Gmail polling
-gmail_thread
-gmail_message
-gmail_history
-```
-
-Cari dependency-nya terlebih dahulu.
-
-Jika kode tersebut:
-
-- hanya digunakan Inbox;
-- tidak digunakan fitur lain;
-- sudah digantikan GHL;
-
-maka boleh dihapus/refactor.
-
-### Jangan menghapus Gmail secara membabi buta.
-
-Jika masih digunakan fitur lain:
-
-**JANGAN HAPUS.**
-
----
-
-# 15. DATABASE
-
-Jangan membuat migration besar.
-
-Audit terlebih dahulu.
-
-Jika ada field seperti:
-
-```text
-gmail_message_id
-gmail_thread_id
-gmail_history_id
-```
-
-jangan langsung hapus.
-
-Cari seluruh penggunaan.
-
-Jika hanya untuk Inbox, refactor ke identifier GHL yang benar-benar dibutuhkan.
-
-Contoh kandidat:
-
-```text
-ghl_contact_id
-ghl_conversation_id
-ghl_message_id
-```
-
-Gunakan hanya jika memang dibutuhkan.
-
----
-
-# 16. FRONTEND SEND FLOW
-
-Gunakan AJAX/fetch atau mekanisme existing project.
-
-Contoh:
-
-```text
-Agent mengetik
-      ↓
-Klik Send
-      ↓
-button disabled
-      ↓
-POST ke Laravel
-      ↓
-Laravel call GHL API
-      ↓
-Success
-      ↓
-message tampil di thread
-      ↓
-textarea kosong
-      ↓
-button aktif
-```
-
-Saat gagal:
-
-```text
-Send failed
-[Retry]
-```
-
-Jangan reload seluruh halaman jika tidak diperlukan.
-
----
-
-# 17. LOADING / EMPTY / ERROR
-
-Conversation loading:
-
-```text
-Loading conversations...
-```
-
-Message loading:
-
-```text
-Loading messages...
-```
-
-Send:
-
-```text
-Sending...
-```
-
-Empty:
-
-```text
-Belum ada conversation.
-```
-
-Error:
-
-```text
-Conversation gagal dimuat.
-[Try Again]
-```
-
----
-
-# 18. PAGINATION & API EFFICIENCY
-
-Jangan mengambil seluruh database GHL sekaligus.
+RIGHT
+Contact Details
 
 Gunakan:
 
-- pagination;
-- search;
-- filter;
-- limit;
-- lazy loading jika sesuai.
+3 kolom
 
-Tujuan:
+border antar kolom
 
-```text
-lebih cepat
-lebih hemat API request
-lebih stabil
-```
+sticky header
 
-Jangan membuat polling agresif.
+sticky composer
 
-Jika project sudah memiliki refresh/sync mechanism, pertahankan hanya yang diperlukan Inbox.
+independent scrolling per column
 
----
+search
 
-# 19. ROUTES
+tabs/filter
 
-Audit route Inbox yang sudah ada.
+unread indicator
 
-Target konsep:
+avatar
 
-```text
-GET  /inbox
-GET  /inbox/{conversation}
-POST /inbox/{conversation}/messages
-POST /inbox/{conversation}/ai-process
-```
+timestamp
 
-Sesuaikan dengan route existing.
+tags
 
-Jangan mengubah route fitur lain.
+contact fields
 
----
+action buttons
 
-# 20. CONTROLLER
+Prioritas desktop, tetapi tetap responsive.
 
-Controller tetap tipis.
+17. Audit sebelum coding
 
-Contoh:
+Sebelum mengubah kode, audit:
 
-```text
-InboxController
-      ↓
-GHL Conversation Service
-      ↓
+route Conversations
+
+Conversations Controller
+
+Blade/View Conversations
+
+Conversation model
+
+Message model
+
+GHL DTO
+
+GhlParserService
+
+GhlSyncService
+
 GoHighLevelApiService
-      ↓
-GHL API
-```
 
-Jangan menaruh seluruh logic API di Controller.
+Repository/service terkait
 
----
+Setelah audit, implementasikan perubahan hanya pada bagian yangdiperlukan.
 
-# 21. ACCEPTANCE CRITERIA
+Jangan membuat arsitektur baru jika komponen yang ada masih bisadigunakan.
 
-Migrasi dianggap selesai jika:
+18. Acceptance Criteria
 
-- [ ] Inbox tidak lagi mengambil data dari Gmail.
-- [ ] Conversation diambil dari GHL API.
-- [ ] Message/thread diambil dari GHL API.
-- [ ] Contact information diambil dari GHL API.
-- [ ] Agent dapat membaca conversation dari Laravel.
-- [ ] Agent dapat mengetik reply di Laravel.
-- [ ] Agent dapat menekan Send dari Laravel.
-- [ ] Laravel mengirim message melalui GHL API.
-- [ ] Agent TIDAK perlu membuka GHL untuk mengirim.
-- [ ] GHL Private Integration token hanya berada di backend.
-- [ ] Tidak ada GHL token di frontend.
-- [ ] Message berhasil muncul kembali di Inbox setelah dikirim.
-- [ ] Existing AI Process tetap bekerja.
-- [ ] Existing AI Summary/Translate/Draft tetap bekerja jika sudah ada.
-- [ ] Gmail-specific Inbox dependency sudah dihapus jika memang tidak digunakan lagi.
-- [ ] Fitur di luar Inbox tidak berubah.
+Sidebar
 
----
+Tidak ada Email
 
-# 22. PROSES WAJIB SEBELUM CODING
+Tidak ada WhatsApp
 
-Jangan langsung mengubah banyak file.
+Tidak ada Instagram
 
-Pertama audit:
+Tidak ada Messenger
 
-```text
-1. Cari seluruh Inbox controller.
-2. Cari Inbox service.
-3. Cari Conversation model/service.
-4. Cari Message model/service.
-5. Cari Gmail dependency Inbox.
-6. Cari GoHighLevelApiService yang sudah ada.
-7. Cari route Inbox.
-8. Cari Blade Inbox.
-9. Cari JavaScript Inbox.
-10. Cari database field yang terkait Gmail.
-```
+Tidak ada Live Chat
 
-Kemudian berikan laporan SINGKAT:
+Ada Conversations
 
-```text
-INBOX AUDIT
+Navbar
 
-CURRENT GMAIL FLOW:
-...
+Tidak ada Hubungkan Gmail
 
-GHL SERVICE YANG SUDAH ADA:
-...
+Tidak ada Gmail connection indicator
 
-FILES TO MODIFY:
-...
+Settings
 
-FILES TO REMOVE:
-...
+Tidak ada Gmail Configuration
 
-GHL API ENDPOINTS NEEDED:
-...
+Tidak ada Gmail OAuth UI
 
-POTENTIAL ISSUES:
-...
-```
+Tidak ada Gmail Account UI
 
-Setelah itu langsung implementasikan.
+Dashboard
 
-Jangan membuat laporan panjang.
+Tidak ada Gmail widget
 
----
+Tidak ada Gmail connection status
 
-# 23. BATASAN KERAS
+Tidak ada Gmail configuration
 
-JANGAN:
+Conversations
 
-- redesign seluruh aplikasi;
-- mengubah AI Center;
-- mengubah Reports;
-- mengubah SOP;
-- mengubah Reply Template;
-- mengubah Knowledge Base;
-- mengubah Authentication;
-- mengubah Spatie;
-- membuat workflow baru;
-- membuat automation baru;
-- membuat payment integration;
-- membuat WhatsApp integration;
-- membuat Instagram integration;
-- membuat Facebook integration;
-- membuat CRM lengkap;
-- membuat GHL dashboard lengkap;
-- membuat transaction module;
-- membuat opportunity module;
-- membuat fitur GHL lain yang tidak diperlukan Inbox.
+3 kolom
 
-**Hanya Inbox.**
+Column 1 = conversation list
 
----
+Column 2 = thread
 
-# FINAL INSTRUCTION
+Column 3 = contact details
 
-Fokus pada satu pekerjaan:
+Data berasal dari GHL
 
-> **Migrasikan Inbox dari Gmail ke GHL API, tetapi agent tetap membaca dan mengirim seluruh pesan langsung dari website Laravel.**
+Thread chronological
 
-GHL hanya menjadi:
+Search berfungsi
 
-```text
-DATA SOURCE
-+
-MESSAGE API
-```
+Unread indicator berfungsi
 
-Website Laravel tetap menjadi:
+Reply composer berfungsi
 
-```text
-AGENT WORKSPACE
-```
+Pesan dapat dikirim dari Laravel melalui GHL API
 
-Jangan arahkan agent ke GHL.
+Tidak perlu membuka GHL untuk membalas
 
-Jangan expose API key ke browser.
+Contact Details
 
-Jangan menyentuh fitur lain.
+Nama
 
-Jika tidak yakin, audit codebase terlebih dahulu daripada menebak.
+Email
+
+Phone
+
+Tags
+
+Custom fields jika tersedia
+
+DND jika tersedia
+
+Actions jika tersedia
+
+AI
+
+Generate AI Reply
+
+Summarize Thread
+
+Translate
+
+Detect Intent
+
+Extract Info
+
+Sentiment
+
+Semua AI on-demand
+
+Tidak ada automatic AI processing saat sync
+
+19. Instruksi penting untuk Claude
+
+Kerjakan bertahap.
+
+Sebelum coding, tampilkan:
+
+1. Files yang akan diubah
+2. Files yang akan dihapus
+3. Routes yang akan diubah
+4. Controllers yang akan diubah
+5. Blade yang akan diubah
+6. Services yang perlu disentuh
+7. Apakah migration diperlukan
+
+Kemudian implementasikan.
+
+Prioritas:
+
+1. Bersihkan Gmail UI
+2. Ubah Sidebar menjadi Conversations
+3. Buat layout 3 kolom
+4. Tampilkan conversation GHL
+5. Tampilkan thread GHL
+6. Tampilkan Contact Details GHL
+7. Buat reply composer
+8. Hubungkan AI buttons
+9. Test seluruh flow
+
+Jangan melakukan refactor besar-besaran.
+
+Jangan menghapus fitur yang tidak berkaitan denganGmail/Conversations.
+
+Jangan mengubah GHL sync yang sudah berhasil tanpa alasan teknis yangjelas.
+
+Hasil akhir
+
+Laravel menjadi workspace agent dengan tampilan Conversations yangsangat mirip Inbox GHL:
+
+conversation list di kiri
+
+thread di tengah
+
+contact details di kanan
+
+data berasal dari GHL
+
+agent dapat membalas langsung melalui Laravel
+
+contact/tags/details dapat dilihat
+
+AI tools tersedia secara on-demand
+
+tidak ada lagi ketergantungan UI terhadapGmail/WhatsApp/channel-specific inbox.
