@@ -18,10 +18,9 @@
         </div>
     </div>
 
-    @unless ($hasGmailAccount)
-        <div class="alert alert-warning d-flex justify-content-between align-items-center">
-            <span>Belum ada akun Gmail yang terhubung. Inbox tidak akan menampilkan data apa pun.</span>
-            <a href="{{ route('settings.index') }}" class="btn btn-sm btn-warning">Hubungkan Gmail</a>
+    @unless ($ghlConfigured)
+        <div class="alert alert-warning">
+            <span>GoHighLevel Private Integration belum dikonfigurasi, jadi belum ada data conversation untuk ditampilkan. Hubungi admin untuk mengatur GHL_API_KEY &amp; GHL_LOCATION_ID.</span>
         </div>
     @endunless
 

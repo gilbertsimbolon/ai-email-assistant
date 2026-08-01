@@ -36,7 +36,6 @@ use App\Http\Controllers\Reports\ReportsOverviewController;
 use App\Http\Controllers\Reports\ReportsTimelineController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\WhatsAppController;
 use Illuminate\Support\Facades\Route;
 
 // Route Login
@@ -76,10 +75,6 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:inbox')->prefix('inbox')->name('inbox.')->group(function () {
         // Daftar inbox (dengan filter status)
         Route::get('/', [InboxController::class, 'index'])->name('index');
-
-        // Sub-menu channel WhatsApp (belum terintegrasi, halaman "coming soon").
-        // Harus didaftarkan sebelum /{conversation} agar tidak tertangkap wildcard.
-        Route::get('/whatsapp', [WhatsAppController::class, 'index'])->name('whatsapp');
 
         // Detail thread percakapan (permalink lama, redirect ke panel kanan Inbox)
         Route::get('/{conversation}', [InboxController::class, 'show'])->name('show');

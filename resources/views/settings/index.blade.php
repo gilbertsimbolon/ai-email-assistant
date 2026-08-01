@@ -1,14 +1,17 @@
 @extends('layouts.app')
 
-@section('title', 'Settings | AI Email Assistant')
+@section('title', 'Email Connection | AI Email Assistant')
 
 @section('content')
     <div class="row">
         <div class="col-md-8">
+            <div class="alert alert-secondary small">
+                Integrasi legacy untuk conversation email lama yang belum bersumber dari GoHighLevel. Data Conversations utama sekarang disinkronkan dari GHL, bukan dari akun ini.
+            </div>
             <div class="card shadow-sm">
                 <div class="card-header d-flex justify-content-between align-items-center bg-white">
-                    <h5 class="mb-0"><i class="bx bxl-google me-1 text-primary"></i> Koneksi Gmail</h5>
-                    <small class="text-body float-end">Sumber data inbox berasal dari akun Gmail yang terhubung.</small>
+                    <h5 class="mb-0"><i class="bx bxl-google me-1 text-primary"></i> Email Connection (Legacy Gmail)</h5>
+                    <small class="text-body float-end">Diperlukan agar balasan pada conversation lama tetap bisa terkirim.</small>
                 </div>
                 <div class="card-body">
                     @forelse ($gmailAccounts as $account)
@@ -33,18 +36,17 @@
                         </div>
                     @empty
                         <div class="alert alert-warning mb-3">
-                            Belum ada akun Gmail yang terhubung. Inbox tidak akan menampilkan data apa pun sampai
-                            Anda menghubungkan minimal satu akun Gmail.
+                            Belum ada akun Gmail legacy yang terhubung. Ini tidak memengaruhi Conversations dari GHL.
                         </div>
                     @endforelse
 
                     <a href="{{ route('settings.gmail.connect') }}" class="btn btn-primary">
-                        <i class="icon-base bx bxl-google me-1"></i> Hubungkan Akun Gmail
+                        <i class="icon-base bx bxl-google me-1"></i> Hubungkan Akun Email
                     </a>
 
                     @if (auth()->user()?->isAdmin())
                         <a href="{{ route('settings.gmail-config.index') }}" class="btn btn-outline-secondary ms-2">
-                            <i class="icon-base bx bx-cog me-1"></i> Konfigurasi Gmail OAuth
+                            <i class="icon-base bx bx-cog me-1"></i> Email API Configuration
                         </a>
                     @endif
                 </div>

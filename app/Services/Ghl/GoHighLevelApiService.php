@@ -112,6 +112,21 @@ class GoHighLevelApiService
         );
     }
 
+    /**
+     * Fetch a single contact's full details (tags, custom fields, DND,
+     * address, etc.) for the Conversations "Contact Details" panel. Not
+     * used during sync — called on-demand when an agent opens a
+     * conversation, per claude.txt's on-demand-only principle.
+     */
+    public function getContact(string $contactId): array
+    {
+        return $this->request(
+            'getContact',
+            fn () => $this->client()->get($this->baseUrl."/contacts/{$contactId}"),
+            ['contact_id' => $contactId]
+        );
+    }
+
     public function sendMessage(array $payload): array
     {
         return $this->request(

@@ -3,6 +3,7 @@
     $filterOptions = [
         'all' => 'All',
         'unread' => 'Unread',
+        'recent' => 'Recent',
         'starred' => 'Starred',
         'waiting_agent' => 'Waiting Agent',
         'waiting_customer' => 'Waiting Customer',
@@ -13,7 +14,7 @@
 
 <div class="border-bottom py-3 px-3 bg-white flex-shrink-0">
     <div class="d-flex align-items-center justify-content-between mb-3">
-        <h5 class="mb-0 fw-bold">Inbox</h5>
+        <h5 class="mb-0 fw-bold">Conversations</h5>
         <a href="{{ route('inbox.index', ['filter' => $filter, 'q' => $search]) }}" class="btn btn-icon btn-sm btn-outline-secondary" title="Refresh">
             <i class="bx bx-refresh"></i>
         </a>
@@ -48,6 +49,8 @@
                 <p class="mb-0">
                     @if ($filter === 'unread')
                         Tidak ada pesan yang belum dibaca.
+                    @elseif ($filter === 'recent')
+                        Tidak ada percakapan dalam 24 jam terakhir.
                     @elseif ($filter === 'starred')
                         Belum ada percakapan yang dibintangi.
                     @elseif ($filter === 'waiting_agent')

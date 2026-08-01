@@ -26,45 +26,17 @@
             </a>
         </li>
 
-        {{-- Inbox --}}
+        {{-- Conversations --}}
         <li class="menu-header small text-uppercase">
-            <span class="menu-header-text">Inbox</span>
+            <span class="menu-header-text">Conversations</span>
         </li>
 
-        <li class="menu-item {{ request()->routeIs('inbox.index') ? 'active' : '' }}">
+        <li class="menu-item {{ request()->routeIs('inbox.*') ? 'active' : '' }}">
             <a href="{{ route('inbox.index') }}" class="menu-link d-flex align-items-center justify-content-between">
-                <div><i class="menu-icon tf-icons bx bx-envelope"></i> Email</div>
-                @if (($emailUnreadCount ?? 0) > 0)
-                    <span class="badge bg-primary rounded-pill">{{ $emailUnreadCount }}</span>
+                <div><i class="menu-icon tf-icons bx bx-conversation"></i> Conversations</div>
+                @if (($conversationsUnreadCount ?? 0) > 0)
+                    <span class="badge bg-primary rounded-pill">{{ $conversationsUnreadCount }}</span>
                 @endif
-            </a>
-        </li>
-
-        <li class="menu-item {{ request()->routeIs('inbox.whatsapp') ? 'active' : '' }}">
-            <a href="{{ route('inbox.whatsapp') }}" class="menu-link d-flex align-items-center justify-content-between">
-                <div><i class="menu-icon tf-icons bx bxl-whatsapp"></i> WhatsApp</div>
-                <span class="badge bg-label-secondary rounded-pill">Soon</span>
-            </a>
-        </li>
-
-        <li class="menu-item">
-            <a href="javascript:void(0);" class="menu-link d-flex align-items-center justify-content-between disabled" aria-disabled="true">
-                <div><i class="menu-icon tf-icons bx bxl-instagram"></i> Instagram</div>
-                <span class="badge bg-label-secondary rounded-pill">Soon</span>
-            </a>
-        </li>
-
-        <li class="menu-item">
-            <a href="javascript:void(0);" class="menu-link d-flex align-items-center justify-content-between disabled" aria-disabled="true">
-                <div><i class="menu-icon tf-icons bx bxl-messenger"></i> Messenger</div>
-                <span class="badge bg-label-secondary rounded-pill">Soon</span>
-            </a>
-        </li>
-
-        <li class="menu-item">
-            <a href="javascript:void(0);" class="menu-link d-flex align-items-center justify-content-between disabled" aria-disabled="true">
-                <div><i class="menu-icon tf-icons bx bx-chat"></i> Live Chat</div>
-                <span class="badge bg-label-secondary rounded-pill">Soon</span>
             </a>
         </li>
 
@@ -195,11 +167,6 @@
                             <div>Customer Analytics</div>
                         </a>
                     </li>
-                    <li class="menu-item {{ request()->routeIs('reports.gmail-accounts') ? 'active' : '' }}">
-                        <a href="{{ route('reports.gmail-accounts') }}" class="menu-link">
-                            <div>Gmail Analytics</div>
-                        </a>
-                    </li>
                     <li class="menu-item {{ request()->routeIs('reports.timeline') ? 'active' : '' }}">
                         <a href="{{ route('reports.timeline') }}" class="menu-link">
                             <div>Activity Timeline</div>
@@ -221,20 +188,6 @@
             </a>
 
             <ul class="menu-sub">
-                <li class="menu-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
-                    <a href="{{ route('settings.index') }}" class="menu-link">
-                        <div>Gmail Account</div>
-                    </a>
-                </li>
-
-                @can('manage gmail')
-                    <li class="menu-item {{ request()->routeIs('settings.gmail-config.*') ? 'active' : '' }}">
-                        <a href="{{ route('settings.gmail-config.index') }}" class="menu-link">
-                            <div>Gmail API Configuration</div>
-                        </a>
-                    </li>
-                @endcan
-
                 @can('manage models')
                     <li class="menu-item {{ request()->routeIs('settings.ai-config.*') ? 'active' : '' }}">
                         <a href="{{ route('settings.ai-config.index') }}" class="menu-link">
@@ -247,6 +200,32 @@
                     <li class="menu-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
                         <a href="{{ route('users.index') }}" class="menu-link">
                             <div>Users</div>
+                        </a>
+                    </li>
+                @endcan
+            </ul>
+        </li>
+
+        {{-- Integrations: legacy Gmail account/OAuth management, still needed
+         to keep replies working on conversations that haven't migrated to
+         GHL, but no longer surfaced as a first-class channel. --}}
+        <li class="menu-item">
+            <a href="javascript:void(0);" class="menu-link menu-toggle">
+                <i class="menu-icon tf-icons bx bx-plug"></i>
+                <div>Integrations</div>
+            </a>
+
+            <ul class="menu-sub">
+                <li class="menu-item {{ request()->routeIs('settings.index') ? 'active' : '' }}">
+                    <a href="{{ route('settings.index') }}" class="menu-link">
+                        <div>Email Connection</div>
+                    </a>
+                </li>
+
+                @can('manage gmail')
+                    <li class="menu-item {{ request()->routeIs('settings.gmail-config.*') ? 'active' : '' }}">
+                        <a href="{{ route('settings.gmail-config.index') }}" class="menu-link">
+                            <div>Email API Configuration</div>
                         </a>
                     </li>
                 @endcan

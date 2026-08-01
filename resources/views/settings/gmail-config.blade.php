@@ -1,13 +1,16 @@
 @extends('layouts.app')
 
-@section('title', 'Konfigurasi Gmail | AI Email Assistant')
+@section('title', 'Email API Configuration | AI Email Assistant')
 
 @section('content')
     <div class="row">
         <div class="col-md-8">
+            <div class="alert alert-secondary small">
+                Integrasi legacy untuk conversation email lama yang belum bersumber dari GoHighLevel. Data conversation utama sekarang berasal dari GHL — konfigurasi ini hanya diperlukan agar balasan pada thread lama tetap bisa terkirim.
+            </div>
             <div class="card shadow-sm">
                 <div class="card-header d-flex justify-content-between align-items-center bg-white">
-                    <h5 class="mb-0"><i class="bx bxl-google me-1 text-primary"></i> Konfigurasi Gmail OAuth</h5>
+                    <h5 class="mb-0"><i class="bx bxl-google me-1 text-primary"></i> Email API Configuration (Google OAuth)</h5>
                     <small class="text-body float-end">
                         Sumber saat ini:
                         <span class="badge {{ $source === 'database' ? 'bg-label-success' : 'bg-label-warning' }}">

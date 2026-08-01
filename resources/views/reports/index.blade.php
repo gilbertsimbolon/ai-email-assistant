@@ -15,7 +15,6 @@
         ['label' => 'Avg Response Time', 'value' => $kpis['average_response_time'].' min', 'icon' => 'bx-time-five', 'color' => 'info'],
         ['label' => 'Estimated AI Cost', 'value' => '$'.number_format($kpis['estimated_ai_cost'], 4), 'icon' => 'bx-dollar-circle'],
         ['label' => 'Total Tokens', 'value' => number_format($kpis['total_tokens']), 'icon' => 'bx-coin-stack'],
-        ['label' => 'Connected Gmail Accounts', 'value' => number_format($kpis['connected_gmail_accounts']), 'icon' => 'bx-envelope-open', 'color' => 'success'],
     ];
 @endphp
 
@@ -24,17 +23,7 @@
         <h4 class="mb-0">Reports Overview</h4>
     </div>
 
-    <x-reports.filter-bar :period="$period" export-report="overview">
-        <div class="col-auto">
-            <label class="form-label small mb-0 d-block">Gmail Account</label>
-            <select name="gmail_account_id" class="form-select form-select-sm">
-                <option value="">Semua Akun</option>
-                @foreach ($gmailAccounts as $account)
-                    <option value="{{ $account->id }}" {{ (int) $selectedGmailAccountId === $account->id ? 'selected' : '' }}>{{ $account->email }}</option>
-                @endforeach
-            </select>
-        </div>
-    </x-reports.filter-bar>
+    <x-reports.filter-bar :period="$period" export-report="overview" />
 
     <x-reports.kpi-card :tiles="$tiles" />
 

@@ -1,7 +1,7 @@
 @php
     $breadcrumbSection = match (true) {
         request()->routeIs('dashboard') => 'Dashboard',
-        request()->routeIs('inbox.*') => 'Inbox',
+        request()->routeIs('inbox.*') => 'Conversations',
         request()->routeIs('ai-center.*') => 'AI Center',
         request()->routeIs('reports.*') => 'Reports',
         request()->routeIs('settings.*') => 'Administration',
@@ -11,9 +11,8 @@
 
     $breadcrumbPage = match (true) {
         request()->routeIs('dashboard') => null,
-        request()->routeIs('inbox.whatsapp') => 'WhatsApp',
         request()->routeIs('inbox.show') => 'Conversation',
-        request()->routeIs('inbox.index') => 'Email',
+        request()->routeIs('inbox.index') => 'Conversations',
         request()->routeIs('ai-center.dashboard') => 'Dashboard',
         request()->routeIs('ai-center.intents.*') => 'Intent Builder',
         request()->routeIs('ai-center.sops.*') => 'SOP Builder',
@@ -31,11 +30,10 @@
         request()->routeIs('reports.ai-usage') => 'AI Usage & Models',
         request()->routeIs('reports.content') => 'Content Analytics',
         request()->routeIs('reports.customers') => 'Customer Analytics',
-        request()->routeIs('reports.gmail-accounts') => 'Gmail Analytics',
         request()->routeIs('reports.timeline') => 'Activity Timeline',
-        request()->routeIs('settings.gmail-config.*') => 'Gmail API Configuration',
+        request()->routeIs('settings.gmail-config.*') => 'Email API Configuration',
         request()->routeIs('settings.ai-config.*') => 'AI Configuration',
-        request()->routeIs('settings.*') => 'Gmail Account',
+        request()->routeIs('settings.*') => 'Integrations',
         request()->routeIs('profil.*') => 'My Profile',
         default => null,
     };
@@ -81,17 +79,8 @@
             </div>
         </div>
 
-        {{-- Right: notifications, connected gmail, user --}}
+        {{-- Right: notifications, user --}}
         <ul class="navbar-nav flex-row align-items-center ms-auto">
-
-            <li class="nav-item d-none d-md-block me-2">
-                <a href="{{ route('settings.index') }}" class="d-flex align-items-center text-decoration-none px-2 py-1 rounded {{ ($navbarGmailAccount ?? null) ? 'bg-label-success' : 'bg-label-warning' }}">
-                    <i class="bx bx-envelope me-2"></i>
-                    <span class="small fw-medium text-truncate" style="max-width: 180px;">
-                        {{ ($navbarGmailAccount ?? null) ? $navbarGmailAccount->email : 'Hubungkan Gmail' }}
-                    </span>
-                </a>
-            </li>
 
             <li class="nav-item navbar-dropdown dropdown-notifications dropdown me-2">
                 <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">

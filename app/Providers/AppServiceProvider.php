@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use App\Enums\ChannelType;
 use App\Models\Conversation;
 use App\Services\AI\AiConfigurationService;
 use App\Services\AI\AiClientService;
@@ -66,24 +65,19 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // Sidebar is included on every authenticated page, so it needs its
-        // own composer to know the Email unread badge count.
+        // own composer to know the Conversations unread badge count. GHL
+        // conversations are shared (no gmail_account_id owner), legacy
+        // Gmail-synced ones stay scoped to the account owner — same OR
+        // pattern as InboxController's queries.
         View::composer('partials.sidebar', function ($view) {
-            $emailUnreadCount = auth()->check()
-                ? Conversation::whereHas('gmailAccount', fn ($query) => $query->where('user_id', auth()->id()))
-                    ->where('channel', ChannelType::Email)
+            $conversationsUnreadCount = auth()->check()
+                ? Conversation::where(fn ($query) => $query->whereNotNull('ghl_conversation_id')
+                        ->orWhereHas('gmailAccount', fn ($q) => $q->where('user_id', auth()->id())))
                     ->where('is_read', false)
                     ->count()
                 : 0;
 
-            $view->with('emailUnreadCount', $emailUnreadCount);
-        });
-
-        // Topbar shows the currently connected Gmail account, if any.
-        View::composer('partials.navbar', function ($view) {
-            $view->with(
-                'navbarGmailAccount',
-                auth()->check() ? auth()->user()->gmailAccounts()->first() : null
-            );
+            $view->with('conversationsUnreadCount', $conversationsUnreadCount);
         });
     }
 }

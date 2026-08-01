@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Inbox Email | AI Email Assistant')
+@section('title', 'Conversations | AI Email Assistant')
 
 @section('content-padding', 'p-0')
 
@@ -30,18 +30,18 @@
             @include('inbox.components.conversation-thread')
         </div>
 
-        {{-- Panel Kanan: AI Assistant. offcanvas-xl = kolom statis di layar
+        {{-- Panel Kanan: Contact Details. offcanvas-xl = kolom statis di layar
          >= xl (perilaku bawaan Bootstrap 5.2+), slide-in offcanvas di
          bawah itu. Bisa di-collapse manual di desktop lewat #btn-toggle-ai-panel
          (lihat inbox-navigation.js), preferensinya disimpan di localStorage. --}}
         <div id="infoOffcanvas" class="offcanvas offcanvas-end offcanvas-xl inbox-ai-panel border-start h-100 flex-column"
             tabindex="-1">
             <div class="offcanvas-header border-bottom d-xl-none">
-                <h6 class="offcanvas-title fw-bold mb-0">AI Assistant</h6>
+                <h6 class="offcanvas-title fw-bold mb-0">Contact Details</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Tutup"></button>
             </div>
             <div class="d-none d-xl-flex align-items-center border-bottom px-3 py-2 flex-shrink-0">
-                <h6 class="fw-bold mb-0"><i class="bx bx-brain me-1"></i> AI Assistant</h6>
+                <h6 class="fw-bold mb-0"><i class="bx bx-id-card me-1"></i> Contact Details</h6>
             </div>
             <div id="aiPanelBody" class="offcanvas-body p-0 d-flex flex-column">
                 @include('inbox.components.ai-panel')

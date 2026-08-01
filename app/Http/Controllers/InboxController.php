@@ -2,17 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\ChannelType;
+use App\DataTransferObjects\ParsedGhlContactData;
 use App\Enums\ConversationStatus;
 use App\Enums\DraftStatus;
 use App\Http\Controllers\Concerns\AuthorizesConversationAccess;
 use App\Http\Requests\Inbox\UpdateConversationStatusRequest;
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Services\Ghl\GhlParserService;
+use App\Services\Ghl\GoHighLevelApiService;
 use App\Services\Gmail\GmailApiService;
 use App\Services\Gmail\GmailAuthService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class InboxController extends Controller
 {
@@ -22,7 +27,7 @@ class InboxController extends Controller
      * Menampilkan halaman Inbox Email (dua panel: daftar percakapan di kiri,
      * pratinjau percakapan yang dipilih — via ?conversation= — di kanan).
      */
-    public function index(Request $request)
+    public function index(Request $request, GoHighLevelApiService $ghlApi, GhlParserService $ghlParser)
     {
         $filter = $request->get('filter', 'all');
         $search = $request->string('q')->toString();
@@ -34,6 +39,8 @@ class InboxController extends Controller
 
         [$activeConversation, $activeDraft] = $this->resolveActiveConversation($request);
 
+        $contactDetails = $this->loadContactDetails($activeConversation, $ghlApi, $ghlParser);
+
         // Klik conversation di list dilakukan lewat AJAX (lihat inbox-navigation.js)
         // agar tidak perlu reload seluruh halaman — cukup kirim balik markup thread
         // & AI panel yang sudah dirender, JS yang menukar innerHTML-nya. Navigasi
@@ -41,7 +48,7 @@ class InboxController extends Controller
         if ($request->wantsJson()) {
             return response()->json([
                 'thread_html' => view('inbox.components.conversation-thread', compact('activeConversation', 'activeDraft'))->render(),
-                'ai_panel_html' => view('inbox.components.ai-panel', compact('activeConversation'))->render(),
+                'ai_panel_html' => view('inbox.components.ai-panel', compact('activeConversation', 'contactDetails'))->render(),
                 'conversation_id' => $activeConversation?->id,
                 'is_read' => $activeConversation?->is_read,
             ]);
@@ -54,6 +61,7 @@ class InboxController extends Controller
             'ghlConfigured',
             'activeConversation',
             'activeDraft',
+            'contactDetails',
         ));
     }
 
@@ -177,17 +185,18 @@ class InboxController extends Controller
     protected function conversationsByFilter(Request $request, ?string $filter, int $page = 1)
     {
         // Ambil percakapan beserta analisis dan pesan TERAKHIR saja (bukan
-        // seluruh thread — daftar hanya butuh satu baris pratinjau per item),
-        // dibatasi ke channel Email. GHL conversations are a shared inbox
-        // (one Private Integration per location, visible to every agent);
-        // legacy Gmail-synced conversations stay scoped to the account owner.
+        // seluruh thread — daftar hanya butuh satu baris pratinjau per item).
+        // Satu inbox unified untuk semua channel (tidak difilter per
+        // channel) — GHL conversations are a shared inbox (one Private
+        // Integration per location, visible to every agent); legacy
+        // Gmail-synced conversations stay scoped to the account owner.
         return Conversation::with(['analysis', 'latestMessage'])
             ->withExists(['drafts as has_draft' => fn ($query) => $query->whereIn('status', [DraftStatus::Active, DraftStatus::Regenerated])])
             ->where(fn ($query) => $query->whereNotNull('ghl_conversation_id')
                 ->orWhereHas('gmailAccount', fn ($q) => $q->where('user_id', $request->user()->id)))
-            ->where('channel', ChannelType::Email)
             ->when($filter === 'unread', fn ($query) => $query->where('is_read', false))
             ->when($filter === 'starred', fn ($query) => $query->where('is_starred', true))
+            ->when($filter === 'recent', fn ($query) => $query->where('last_message_at', '>=', now()->subDay()))
             // "Waiting Agent" / "Waiting Customer" tidak ada di skema DB — di-mapping
             // ke ConversationStatus yang sudah ada: pending_review = customer baru
             // kirim & agent belum balas, replied = agent sudah balas & menunggu
@@ -201,7 +210,9 @@ class InboxController extends Controller
 
                 $query->where(fn ($q) => $q->where('contact_name', 'like', $term)
                     ->orWhere('contact_email', 'like', $term)
-                    ->orWhere('subject', 'like', $term));
+                    ->orWhere('contact_phone', 'like', $term)
+                    ->orWhere('subject', 'like', $term)
+                    ->orWhereHas('latestMessage', fn ($mq) => $mq->where('body', 'like', $term)));
             })
             ->latest('last_message_at')
             ->paginate(15, page: $page);
@@ -224,7 +235,6 @@ class InboxController extends Controller
             ])
             ->where(fn ($query) => $query->whereNotNull('ghl_conversation_id')
                 ->orWhereHas('gmailAccount', fn ($q) => $q->where('user_id', $request->user()->id)))
-            ->where('channel', ChannelType::Email)
             ->find($request->get('conversation'));
 
         if (! $activeConversation) {
@@ -242,5 +252,42 @@ class InboxController extends Controller
             ->firstWhere('status', DraftStatus::Active);
 
         return [$activeConversation, $activeDraft];
+    }
+
+    /**
+     * Ambil detail contact (tags, custom fields, DND, dll) langsung dari GHL
+     * untuk panel Contact Details — bukan disimpan lokal, di-cache singkat
+     * per contact supaya tidak memanggil GHL berulang kali saat agent
+     * bolak-balik membuka percakapan yang sama. Gagal fetch (mis. GHL down,
+     * contact_id kosong) tidak boleh menjatuhkan halaman — panel jatuh
+     * kembali ke data lokal (contact_name/email/phone) saja.
+     */
+    protected function loadContactDetails(
+        ?Conversation $conversation,
+        GoHighLevelApiService $ghlApi,
+        GhlParserService $ghlParser,
+    ): ?ParsedGhlContactData {
+        if (! $conversation || blank($conversation->contact_id)) {
+            return null;
+        }
+
+        try {
+            return Cache::remember(
+                "ghl_contact_{$conversation->contact_id}",
+                300,
+                function () use ($conversation, $ghlApi, $ghlParser) {
+                    $response = $ghlApi->getContact($conversation->contact_id);
+
+                    return $ghlParser->contactFromApi($response['contact'] ?? $response);
+                }
+            );
+        } catch (Throwable $e) {
+            Log::warning('Failed to fetch GHL contact details', [
+                'contact_id' => $conversation->contact_id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 }

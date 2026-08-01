@@ -2,6 +2,7 @@
 
 namespace App\Services\Ghl;
 
+use App\DataTransferObjects\ParsedGhlContactData;
 use App\DataTransferObjects\ParsedGhlConversationData;
 use App\DataTransferObjects\ParsedGhlMessageData;
 use Carbon\Carbon;
@@ -40,6 +41,70 @@ class GhlParserService
             sentAt: isset($raw['dateAdded']) ? Carbon::parse($raw['dateAdded']) : now(),
             attachments: $this->parseAttachments($raw['attachments'] ?? []),
         );
+    }
+
+    /**
+     * Parses GHL's /contacts/{id} response for the Conversations Column 3
+     * "Contact Details" panel. Every field is read defensively (`?? null`)
+     * — a field missing from GHL's response stays null/empty here, never
+     * faked, so the view can render "not available" instead of a made-up
+     * value.
+     */
+    public function contactFromApi(array $raw): ParsedGhlContactData
+    {
+        return new ParsedGhlContactData(
+            contactId: (string) ($raw['id'] ?? ''),
+            firstName: $raw['firstName'] ?? null,
+            lastName: $raw['lastName'] ?? null,
+            email: $raw['email'] ?? null,
+            phone: $raw['phone'] ?? null,
+            dateOfBirth: $raw['dateOfBirth'] ?? null,
+            tags: $this->parseTags($raw['tags'] ?? []),
+            customFields: $this->parseCustomFields($raw['customFields'] ?? []),
+            dnd: array_key_exists('dnd', $raw) ? (bool) $raw['dnd'] : null,
+            companyName: $raw['companyName'] ?? null,
+            address1: $raw['address1'] ?? null,
+            city: $raw['city'] ?? null,
+            state: $raw['state'] ?? null,
+            postalCode: $raw['postalCode'] ?? null,
+            country: $raw['country'] ?? null,
+            website: $raw['website'] ?? null,
+            timezone: $raw['timezone'] ?? null,
+            source: $raw['source'] ?? null,
+            assignedTo: $raw['assignedTo'] ?? null,
+            dateAdded: $raw['dateAdded'] ?? null,
+            dateUpdated: $raw['dateUpdated'] ?? null,
+        );
+    }
+
+    /**
+     * @param  array<int, mixed>  $rawTags
+     * @return array<int, string>
+     */
+    protected function parseTags(array $rawTags): array
+    {
+        return collect($rawTags)
+            ->filter(fn ($tag) => is_string($tag) && $tag !== '')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $rawFields
+     * @return array<int, array{id: ?string, key: ?string, value: mixed}>
+     */
+    protected function parseCustomFields(array $rawFields): array
+    {
+        return collect($rawFields)
+            ->filter(fn ($field) => is_array($field))
+            ->map(fn (array $field) => [
+                'id' => $field['id'] ?? null,
+                'key' => $field['key'] ?? ($field['name'] ?? null),
+                'value' => $field['value'] ?? ($field['field_value'] ?? null),
+            ])
+            ->filter(fn (array $field) => filled($field['value']))
+            ->values()
+            ->all();
     }
 
     /**

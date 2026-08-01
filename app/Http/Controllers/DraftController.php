@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\ChannelType;
 use App\Enums\DraftStatus;
 use App\Exceptions\AiNotConfiguredException;
 use App\Http\Controllers\Concerns\AuthorizesConversationAccess;
@@ -95,8 +94,6 @@ class DraftController extends Controller
     public function generate(Request $request, Conversation $conversation, AiGenerationService $aiGeneration)
     {
         $this->authorizeConversation($request, $conversation);
-
-        abort_unless($conversation->channel === ChannelType::Email, 404);
 
         try {
             $draft = $aiGeneration->generateReply($conversation, $request->boolean('as_new_version'));

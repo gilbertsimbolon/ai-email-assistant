@@ -11,6 +11,9 @@
             <span class="fw-bold fs-5">{{ $activeConversation->contact_name ?? ($activeConversation->contact_email ?? 'Pelanggan') }}</span>
             <div class="text-muted small mt-1 text-truncate">
                 <i class="bx bx-envelope me-1"></i>{{ $activeConversation->contact_email ?? 'Tidak ada email' }}
+                @if ($activeConversation->contact_phone)
+                    &middot; <i class="bx bx-phone me-1"></i>{{ $activeConversation->contact_phone }}
+                @endif
                 &middot; {{ $activeConversation->subject ?: '(Tanpa subjek)' }}
             </div>
         </div>
