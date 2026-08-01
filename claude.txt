@@ -1,639 +1,845 @@
-# TASK: Implement AI Center Seeder, Spatie Roles, and Smart Inbox Features
+# PROMPT CLAUDE — MIGRASI INBOX GMAIL → GHL API (SEND DARI WEB)
 
-## Context
+## TUJUAN
 
-Project Name: AI Email Assistant
+Migrasikan **hanya fitur Inbox** dari Gmail menjadi menggunakan **GoHighLevel (GHL) sebagai sumber data/API**.
 
-Stack:
+Namun ada satu aturan penting:
 
-- Laravel 13
-- PHP 8.3
-- Bootstrap 5 (Sneat)
-- Gmail API
-- OpenAI API
-- MySQL
+> **GHL hanya digunakan sebagai API/data source. Agent tetap membaca dan mengirim pesan langsung dari website Laravel ini.**
 
-IMPORTANT:
+Jadi website Laravel adalah workspace utama agent.
 
-- Follow existing project architecture.
-- Do NOT rewrite existing features.
-- Do NOT break existing routes.
-- Reuse existing Services whenever possible.
-- Write clean, production-ready code.
-- Follow SOLID principles.
-- Everything must integrate with the existing system.
+### TARGET
 
----
+```text
+GHL
+  ↓
+API
+  ↓
+Laravel Inbox
+  ↓
+Agent membaca conversation
+  ↓
+Agent menulis reply di website
+  ↓
+Laravel mengirim reply melalui GHL API
+  ↓
+Pesan masuk ke conversation/contact tujuan di GHL
+```
 
-# TASK 1
-## Create AI Center Seeder
-
-Create complete database seeders so a fresh installation already contains example AI data.
-
-Seed the following modules.
+Agent **tidak perlu membuka GHL untuk mengirim pesan.**
 
 ---
 
-### Categories
+# 1. SCOPE SANGAT TERBATAS
 
-Support
+Kerjakan **HANYA Inbox migration**.
 
-Billing
+Jangan menyentuh:
 
-Technical
+- AI Center
+- SOP
+- Reply Template
+- Knowledge Base
+- Reports
+- Authentication
+- Spatie / Role
+- Dashboard
+- Settings yang tidak berhubungan dengan Inbox
+- OpenAI configuration
+- AI prompt yang sudah ada
+- Workflow
+- Automation
+- Payment
+- fitur aplikasi lain
 
-General
-
----
-
-### SOP
-
-Create at least 5 SOPs.
-
-Example:
-
-Refund Request
-
-Contains:
-
-- purpose
-- trigger
-- workflow
-- important notes
-- escalation rule
-
-Another examples:
-
-- Login Problem
-- Payment Failed
-- Account Cancellation
-- Subscription Renewal
+Jika file shared digunakan fitur lain, jangan mengubah bagian yang tidak berhubungan dengan Inbox.
 
 ---
 
-### Knowledge Base
-
-Seed examples such as:
-
-Refund Policy
-
-Subscription Policy
-
-Billing FAQ
-
-Login Troubleshooting
-
-Password Reset
-
-Product Features
-
-Every record should contain:
-
-- title
-- type
-- content
-- status
-
----
-
-### Intent
-
-Create realistic intents.
-
-Refund
-
-keywords
-
-refund
-
-money back
-
-cancel payment
-
-examples
-
-I want refund
-
-Please refund me
-
-I need my money back
-
---------------------
-
-Login Issue
-
-keywords
-
-login
-
-cannot login
-
-password
-
-examples
-
-I can't login
-
-Forgot password
-
-etc.
-
-Create at least 10 intents.
-
----
-
-### Variables
-
-Seed variables.
-
-customer_name
-
-customer_email
-
-company_name
-
-current_date
-
-ticket_id
-
-subscription_name
-
-refund_deadline
-
-agent_name
-
-etc.
-
----
-
-### Reply Templates
-
-Create realistic templates.
-
-Examples:
-
-Refund Approved
-
-Refund Rejected
-
-Subscription Renewal
-
-Technical Support
-
-Billing Issue
-
-General Inquiry
-
-Use variables inside templates.
-
-Example:
-
-Hi {{customer_name}}
-
-Thank you for contacting {{company_name}}...
-
----
-
-### Workflow
-
-Seed several workflow examples.
-
-Refund Flow
-
-↓
-
-Identify Intent
-
-↓
-
-Load SOP
-
-↓
-
-Load Knowledge
-
-↓
-
-Generate Draft
-
-↓
-
-Human Review
-
-↓
-
-Send Email
-
----
-
-### AI Models
-
-Seed examples.
-
-GPT-5
-
-GPT-5 Mini
-
-Claude Sonnet
-
-Gemini 2.5 Pro
-
-DeepSeek
-
-Fields:
-
-provider
-
-model
-
-temperature
-
-max_tokens
-
-status
-
-default_model
-
----
-
-Everything should be linked correctly using foreign keys.
-
-Seeder should be idempotent.
-
-Use updateOrCreate() whenever appropriate.
-
----
-
-# TASK 2
-
-## Integrate Spatie Permission
-
-Install and configure Spatie Permission properly.
-
-Use exactly two roles.
-
-Admin
-
-Agent
-
-No additional roles.
-
----
-
-Admin permissions
-
-Can manage AI Center
-
-Can manage Gmail
-
-Can manage Settings
-
-Can manage Users
-
-Can manage Reports
-
-Can manage Models
-
-Can manage Prompt
-
-Can manage Workflow
-
-Can manage Everything
-
----
-
-Agent permissions
-
+# 2. ARSITEKTUR YANG DIINGINKAN
+
+## SEBELUM
+
+```text
+Gmail API
+   ↓
+Laravel
+   ↓
 Inbox
-
-Generate AI
-
-Regenerate AI
-
-Translate Email
-
-Summarize Thread
-
-Approve Draft
-
-Edit Draft
-
-Send Email
-
-View Reports
-
-Cannot access:
-
-Settings
-
-User Management
-
-AI Configuration
-
-Model Configuration
-
-Prompt Configuration
-
-Workflow Configuration
-
----
-
-Protect all routes using middleware.
-
-Use middleware consistently.
-
-Update navigation sidebar automatically depending on role.
-
-Hide menus that user cannot access.
-
-Never show unauthorized menu items.
-
-Seed default users.
-
-Admin
-
-email:
-
-admin@example.com
-
-password:
-
-password
-
-Role:
-
-Admin
-
----------------------
-
+   ↓
 Agent
+```
 
-email:
+## SESUDAH
 
-agent@example.com
-
-password:
-
-password
-
-Role:
-
+```text
+GHL Private Integration API
+   ↓
+Laravel
+   ↓
+Inbox
+   ↓
 Agent
+   ↓
+Send dari Laravel
+   ↓
+GHL API
+```
+
+GHL adalah **backend communication provider**, bukan UI yang harus dibuka agent.
 
 ---
 
-# TASK 3
+# 3. GHL SEBAGAI API SAJA
 
-## Improve Inbox UX
+Laravel mengambil dari GHL:
 
-Redesign Inbox to become an AI-assisted email review workspace.
+- conversations
+- messages
+- contacts
+- contact details
+- channel
+- timestamps
+- unread/status jika tersedia
+- assigned user jika tersedia
+- metadata yang relevan dengan Inbox
 
-DO NOT auto generate AI replies.
+Laravel juga menggunakan GHL API untuk:
 
-Everything should be manual to reduce token usage.
+- mengirim reply;
+- melakukan action conversation yang memang dibutuhkan Inbox.
 
----
+Tetapi:
 
-Above message composer create a toolbar.
+**Semua aktivitas agent dilakukan dari website Laravel.**
 
-Toolbar buttons:
+Jangan membuat agent diarahkan ke GHL.
 
-Summarize Thread
+Jangan membuka GHL dalam iframe.
 
-Translate
+Jangan membuat tombol:
 
-Generate AI Reply
+```text
+Open in GHL
+```
 
-Regenerate
-
-Detect Intent
-
-Extract Customer Information
-
-Sentiment Analysis
-
-Copy Email
-
-Download Email
-
-Print Email
-
----
-
-# Summarize Thread
-
-Click button
-
-↓
-
-Open Bootstrap Modal
-
-AI summarizes entire email thread.
-
-Include:
-
-Conversation Summary
-
-Customer Problem
-
-Current Status
-
-Pending Questions
-
-Suggested Action
-
-Risk Level
-
-Timeline
-
-Important Notes
-
-Estimated Intent
-
-Recommended Reply
+Tidak diperlukan.
 
 ---
 
-# Translate
+# 4. SEND MESSAGE — SANGAT PENTING
 
-Support:
+Saat agent menulis:
 
-English
+```text
+Halo, bagaimana saya bisa membantu?
+```
 
-Indonesia
+lalu klik:
 
-Japanese
+```text
+Send
+```
 
-Chinese
+alur harus:
 
-Spanish
+```text
+Laravel Inbox
+    ↓
+InboxController
+    ↓
+GHL Service
+    ↓
+GHL API
+    ↓
+Conversation/contact
+    ↓
+Message terkirim
+```
 
-French
+Bukan:
 
-German
+```text
+Laravel
+ ↓
+redirect ke GHL
+ ↓
+agent kirim dari GHL
+```
 
-Translation should appear inside modal.
+dan bukan:
 
-Original email never changes.
+```text
+Laravel
+ ↓
+Gmail API
+```
 
----
+### Agent harus bisa melakukan semuanya dari Laravel.
 
-# Detect Intent
+Setelah message berhasil:
 
-Open modal.
-
-AI predicts:
-
-Intent
-
-Confidence Score
-
-Matched SOP
-
-Matched Knowledge
-
-Matched Template
-
-Reasoning
-
----
-
-# Extract Information
-
-AI extracts:
-
-Customer Name
-
-Email
-
-Order Number
-
-Invoice Number
-
-Subscription
-
-Product
-
-Platform
-
-Purchase Date
-
-Refund Eligibility
-
-Important Dates
+1. tampilkan message di conversation;
+2. update conversation state;
+3. clear textarea;
+4. tampilkan status sukses;
+5. handle error jika gagal;
+6. jangan duplicate message.
 
 ---
 
-# Sentiment Analysis
+# 5. JANGAN MENGARANG API GHL
 
-Show
+Audit dokumentasi/API yang sudah digunakan project terlebih dahulu.
 
-Emotion
+Jangan menebak:
 
-Frustration Level
+- endpoint;
+- HTTP method;
+- request body;
+- response format;
+- field;
+- scope.
 
-Urgency
+Jika project sudah memiliki:
 
-Customer Satisfaction
+```text
+GoHighLevelApiService
+```
 
-Risk Score
+gunakan dan extend service tersebut bila memungkinkan.
 
-Priority
+Jangan membuat service duplikat.
 
----
+Jika endpoint Send Message membutuhkan endpoint/permission tertentu, gunakan implementasi GHL yang valid.
 
-# AI Reply
+Jika menemukan:
 
-Current behavior:
+```text
+401
+403
+404
+422
+429
+5xx
+```
 
-User clicks Generate AI.
-
-AI generates draft.
-
-Do NOT auto regenerate.
-
-Do NOT generate automatically when email syncs.
-
----
-
-# Regenerate
-
-Generate a new draft using:
-
-Same SOP
-
-Same Knowledge
-
-Same Intent
+diagnosis dengan benar dan jangan membuat workaround palsu.
 
 ---
 
-# Modal Requirements
+# 6. KONFIGURASI GHL
 
-Use Bootstrap Modal.
+Gunakan Private Integration yang sudah dibuat.
 
-Loading animation.
+Konfigurasi minimal:
 
-Cancel button.
+```env
+GHL_API_KEY=
+GHL_LOCATION_ID=
+GHL_BASE_URL=
+```
 
-Copy Result button.
+Jika project sudah mempunyai sistem Settings untuk konfigurasi GHL, gunakan sistem tersebut.
 
-Regenerate button (where applicable).
+Jangan membuat konfigurasi baru jika tidak diperlukan.
 
-Store results in cache/database if appropriate to reduce repeated OpenAI calls.
+API key:
+
+- jangan hardcode;
+- jangan expose ke frontend;
+- jangan dikirim ke JavaScript;
+- jangan tampilkan di Blade;
+- jangan log token.
+
+Frontend Laravel hanya memanggil endpoint Laravel sendiri.
+
+Contoh:
+
+```text
+Browser
+  ↓
+POST /inbox/{conversation}/messages
+  ↓
+Laravel
+  ↓
+GHL API
+```
+
+Browser **tidak boleh langsung memanggil GHL API menggunakan Private Integration token.**
 
 ---
 
-# UI
+# 7. INBOX UI
 
-The inbox should feel like Gmail + ChatGPT.
+Pertahankan atau sesuaikan Inbox agar terasa seperti GHL Conversations.
 
-Large reading panel.
+Gunakan 3-column workspace:
 
-Chat-style thread.
+```text
+┌──────────────────────────────────────────────────────────────────┐
+│ Search | Filter | Sort | Refresh                                 │
+├──────────────────────┬──────────────────────────┬────────────────┤
+│ CONVERSATIONS        │ CONVERSATION             │ CONTACT        │
+│                      │                          │                │
+│ John Doe             │ John Doe                 │ Name           │
+│ Refund request       │ Channel / Status         │ Email          │
+│ 2 min ago            │                          │ Phone          │
+│                      │ Customer message         │ Tags           │
+│ Jane Doe             │                          │ Assigned       │
+│ Payment issue        │ Agent message            │ Custom fields  │
+│                      │                          │                │
+│ ...                  │ Reply composer           │                │
+│                      │ [textarea] [Send]        │                │
+└──────────────────────┴──────────────────────────┴────────────────┘
+```
 
-Sticky toolbar.
+### Kolom kiri
 
-Sticky compose area.
+- search;
+- filter;
+- conversation list;
+- unread indicator;
+- channel;
+- last message;
+- timestamp.
 
-Beautiful spacing.
+### Kolom tengah
 
-Responsive.
+- conversation header;
+- message timeline;
+- customer message;
+- agent message;
+- timestamp;
+- attachment jika tersedia;
+- reply composer;
+- Send button.
 
-Professional.
+### Kolom kanan
 
-No custom CSS frameworks.
+Ambil dari GHL jika tersedia:
 
-Only Bootstrap 5.
+- contact name;
+- email;
+- phone;
+- tags;
+- assigned user;
+- custom fields;
+- relevant contact metadata.
 
 ---
 
-# General Requirements
+# 8. GHL DATA → LARAVEL INBOX
 
-Do not remove existing features.
+Mapping secara konseptual:
 
-Do not break Gmail sync.
+```text
+GHL Conversation
+        ↓
+Laravel Conversation View
 
-Do not break AI Center.
+GHL Message
+        ↓
+Laravel Message View
 
-Follow existing architecture.
+GHL Contact
+        ↓
+Laravel Contact Sidebar
+```
 
-Refactor duplicated code.
+Jangan membuat data dummy.
 
-Create reusable services.
+Jika GHL tidak menyediakan field tertentu, tampilkan:
 
-Create reusable Blade components.
+```text
+-
+```
 
-Keep controllers thin.
+atau sembunyikan field tersebut.
 
-Use Service classes.
+Jangan mengarang data.
 
-Use Form Requests.
+---
 
-Use Policies where appropriate.
+# 9. THREAD / MESSAGE
 
-Use database transactions.
+Saat agent membuka conversation:
 
-Add comments only where necessary.
+```text
+Laravel
+ ↓
+GHL API
+ ↓
+ambil conversation
+ ↓
+ambil message/thread
+ ↓
+render di Inbox
+```
 
-Everything should be production ready.
+Jangan hanya mengambil pesan terakhir jika API menyediakan history/thread.
+
+Tampilkan sebanyak yang memang tersedia dari GHL.
+
+Perhatikan:
+
+- pagination;
+- ordering;
+- timestamp;
+- direction;
+- sender;
+- recipient;
+- channel.
+
+---
+
+# 10. SEND MESSAGE DARI WEBSITE
+
+Buat/pertahankan endpoint Laravel untuk Send.
+
+Contoh:
+
+```text
+POST /inbox/{conversation}/messages
+```
+
+Request:
+
+```text
+message
+conversation_id
+```
+
+Jika channel membutuhkan field tambahan, gunakan field yang memang diwajibkan GHL.
+
+Controller:
+
+```text
+InboxController
+      ↓
+GoHighLevelApiService
+      ↓
+GHL API
+```
+
+Jangan menaruh HTTP request GHL langsung di Blade/JavaScript.
+
+---
+
+# 11. SECURITY
+
+Jangan pernah melakukan ini:
+
+```javascript
+fetch(GHL_URL, {
+    headers: {
+        Authorization: 'Bearer pit-xxxxxxxx'
+    }
+})
+```
+
+API key hanya boleh berada di backend Laravel.
+
+Yang boleh:
+
+```text
+Browser
+ ↓
+Laravel endpoint
+ ↓
+GHL API
+```
+
+---
+
+# 12. EXISTING AI FEATURES
+
+Jika Inbox saat ini sudah memiliki:
+
+- AI Process
+- AI Summary
+- Translate
+- Improve Reply
+- Draft
+- Recommendation
+
+**jangan hapus.**
+
+Pertahankan.
+
+Yang berubah hanya sumber conversation:
+
+```text
+Gmail conversation
+        ↓
+GHL conversation
+```
+
+AI tetap berjalan melalui architecture yang sudah ada.
+
+Jangan redesign AI Center.
+
+Jangan mengubah prompt AI tanpa kebutuhan migrasi.
+
+---
+
+# 13. AI PROCESS TETAP ON-DEMAND
+
+Jangan otomatis memproses setiap conversation.
+
+Tetap gunakan:
+
+```text
+[AI Process]
+```
+
+Agent menekan tombol jika membutuhkan:
+
+```text
+GHL conversation
+      ↓
+Laravel
+      ↓
+AI Processing
+      ↓
+Summary / Intent / Recommendation / Draft
+```
+
+Tujuannya menghemat token.
+
+---
+
+# 14. HAPUS GMAIL KHUSUS INBOX
+
+Audit codebase untuk:
+
+```text
+Gmail
+GmailAccount
+GmailApiService
+GmailSyncService
+GmailSyncJob
+Gmail webhook
+Gmail history
+Gmail polling
+gmail_thread
+gmail_message
+gmail_history
+```
+
+Cari dependency-nya terlebih dahulu.
+
+Jika kode tersebut:
+
+- hanya digunakan Inbox;
+- tidak digunakan fitur lain;
+- sudah digantikan GHL;
+
+maka boleh dihapus/refactor.
+
+### Jangan menghapus Gmail secara membabi buta.
+
+Jika masih digunakan fitur lain:
+
+**JANGAN HAPUS.**
+
+---
+
+# 15. DATABASE
+
+Jangan membuat migration besar.
+
+Audit terlebih dahulu.
+
+Jika ada field seperti:
+
+```text
+gmail_message_id
+gmail_thread_id
+gmail_history_id
+```
+
+jangan langsung hapus.
+
+Cari seluruh penggunaan.
+
+Jika hanya untuk Inbox, refactor ke identifier GHL yang benar-benar dibutuhkan.
+
+Contoh kandidat:
+
+```text
+ghl_contact_id
+ghl_conversation_id
+ghl_message_id
+```
+
+Gunakan hanya jika memang dibutuhkan.
+
+---
+
+# 16. FRONTEND SEND FLOW
+
+Gunakan AJAX/fetch atau mekanisme existing project.
+
+Contoh:
+
+```text
+Agent mengetik
+      ↓
+Klik Send
+      ↓
+button disabled
+      ↓
+POST ke Laravel
+      ↓
+Laravel call GHL API
+      ↓
+Success
+      ↓
+message tampil di thread
+      ↓
+textarea kosong
+      ↓
+button aktif
+```
+
+Saat gagal:
+
+```text
+Send failed
+[Retry]
+```
+
+Jangan reload seluruh halaman jika tidak diperlukan.
+
+---
+
+# 17. LOADING / EMPTY / ERROR
+
+Conversation loading:
+
+```text
+Loading conversations...
+```
+
+Message loading:
+
+```text
+Loading messages...
+```
+
+Send:
+
+```text
+Sending...
+```
+
+Empty:
+
+```text
+Belum ada conversation.
+```
+
+Error:
+
+```text
+Conversation gagal dimuat.
+[Try Again]
+```
+
+---
+
+# 18. PAGINATION & API EFFICIENCY
+
+Jangan mengambil seluruh database GHL sekaligus.
+
+Gunakan:
+
+- pagination;
+- search;
+- filter;
+- limit;
+- lazy loading jika sesuai.
+
+Tujuan:
+
+```text
+lebih cepat
+lebih hemat API request
+lebih stabil
+```
+
+Jangan membuat polling agresif.
+
+Jika project sudah memiliki refresh/sync mechanism, pertahankan hanya yang diperlukan Inbox.
+
+---
+
+# 19. ROUTES
+
+Audit route Inbox yang sudah ada.
+
+Target konsep:
+
+```text
+GET  /inbox
+GET  /inbox/{conversation}
+POST /inbox/{conversation}/messages
+POST /inbox/{conversation}/ai-process
+```
+
+Sesuaikan dengan route existing.
+
+Jangan mengubah route fitur lain.
+
+---
+
+# 20. CONTROLLER
+
+Controller tetap tipis.
+
+Contoh:
+
+```text
+InboxController
+      ↓
+GHL Conversation Service
+      ↓
+GoHighLevelApiService
+      ↓
+GHL API
+```
+
+Jangan menaruh seluruh logic API di Controller.
+
+---
+
+# 21. ACCEPTANCE CRITERIA
+
+Migrasi dianggap selesai jika:
+
+- [ ] Inbox tidak lagi mengambil data dari Gmail.
+- [ ] Conversation diambil dari GHL API.
+- [ ] Message/thread diambil dari GHL API.
+- [ ] Contact information diambil dari GHL API.
+- [ ] Agent dapat membaca conversation dari Laravel.
+- [ ] Agent dapat mengetik reply di Laravel.
+- [ ] Agent dapat menekan Send dari Laravel.
+- [ ] Laravel mengirim message melalui GHL API.
+- [ ] Agent TIDAK perlu membuka GHL untuk mengirim.
+- [ ] GHL Private Integration token hanya berada di backend.
+- [ ] Tidak ada GHL token di frontend.
+- [ ] Message berhasil muncul kembali di Inbox setelah dikirim.
+- [ ] Existing AI Process tetap bekerja.
+- [ ] Existing AI Summary/Translate/Draft tetap bekerja jika sudah ada.
+- [ ] Gmail-specific Inbox dependency sudah dihapus jika memang tidak digunakan lagi.
+- [ ] Fitur di luar Inbox tidak berubah.
+
+---
+
+# 22. PROSES WAJIB SEBELUM CODING
+
+Jangan langsung mengubah banyak file.
+
+Pertama audit:
+
+```text
+1. Cari seluruh Inbox controller.
+2. Cari Inbox service.
+3. Cari Conversation model/service.
+4. Cari Message model/service.
+5. Cari Gmail dependency Inbox.
+6. Cari GoHighLevelApiService yang sudah ada.
+7. Cari route Inbox.
+8. Cari Blade Inbox.
+9. Cari JavaScript Inbox.
+10. Cari database field yang terkait Gmail.
+```
+
+Kemudian berikan laporan SINGKAT:
+
+```text
+INBOX AUDIT
+
+CURRENT GMAIL FLOW:
+...
+
+GHL SERVICE YANG SUDAH ADA:
+...
+
+FILES TO MODIFY:
+...
+
+FILES TO REMOVE:
+...
+
+GHL API ENDPOINTS NEEDED:
+...
+
+POTENTIAL ISSUES:
+...
+```
+
+Setelah itu langsung implementasikan.
+
+Jangan membuat laporan panjang.
+
+---
+
+# 23. BATASAN KERAS
+
+JANGAN:
+
+- redesign seluruh aplikasi;
+- mengubah AI Center;
+- mengubah Reports;
+- mengubah SOP;
+- mengubah Reply Template;
+- mengubah Knowledge Base;
+- mengubah Authentication;
+- mengubah Spatie;
+- membuat workflow baru;
+- membuat automation baru;
+- membuat payment integration;
+- membuat WhatsApp integration;
+- membuat Instagram integration;
+- membuat Facebook integration;
+- membuat CRM lengkap;
+- membuat GHL dashboard lengkap;
+- membuat transaction module;
+- membuat opportunity module;
+- membuat fitur GHL lain yang tidak diperlukan Inbox.
+
+**Hanya Inbox.**
+
+---
+
+# FINAL INSTRUCTION
+
+Fokus pada satu pekerjaan:
+
+> **Migrasikan Inbox dari Gmail ke GHL API, tetapi agent tetap membaca dan mengirim seluruh pesan langsung dari website Laravel.**
+
+GHL hanya menjadi:
+
+```text
+DATA SOURCE
++
+MESSAGE API
+```
+
+Website Laravel tetap menjadi:
+
+```text
+AGENT WORKSPACE
+```
+
+Jangan arahkan agent ke GHL.
+
+Jangan expose API key ke browser.
+
+Jangan menyentuh fitur lain.
+
+Jika tidak yakin, audit codebase terlebih dahulu daripada menebak.
