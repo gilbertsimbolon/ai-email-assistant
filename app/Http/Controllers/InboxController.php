@@ -30,7 +30,7 @@ class InboxController extends Controller
         $conversations = $this->conversationsByFilter($request, $filter)
             ->appends(['filter' => $filter, 'q' => $search]);
 
-        $hasGmailAccount = $request->user()->gmailAccounts()->exists();
+        $ghlConfigured = filled(config('ghl.api_key')) && filled(config('ghl.location_id'));
 
         [$activeConversation, $activeDraft] = $this->resolveActiveConversation($request);
 
@@ -51,7 +51,7 @@ class InboxController extends Controller
             'conversations',
             'filter',
             'search',
-            'hasGmailAccount',
+            'ghlConfigured',
             'activeConversation',
             'activeDraft',
         ));
@@ -178,10 +178,13 @@ class InboxController extends Controller
     {
         // Ambil percakapan beserta analisis dan pesan TERAKHIR saja (bukan
         // seluruh thread — daftar hanya butuh satu baris pratinjau per item),
-        // dibatasi ke channel Email dan hanya akun Gmail milik user yang login.
+        // dibatasi ke channel Email. GHL conversations are a shared inbox
+        // (one Private Integration per location, visible to every agent);
+        // legacy Gmail-synced conversations stay scoped to the account owner.
         return Conversation::with(['analysis', 'latestMessage'])
             ->withExists(['drafts as has_draft' => fn ($query) => $query->whereIn('status', [DraftStatus::Active, DraftStatus::Regenerated])])
-            ->whereHas('gmailAccount', fn ($query) => $query->where('user_id', $request->user()->id))
+            ->where(fn ($query) => $query->whereNotNull('ghl_conversation_id')
+                ->orWhereHas('gmailAccount', fn ($q) => $q->where('user_id', $request->user()->id)))
             ->where('channel', ChannelType::Email)
             ->when($filter === 'unread', fn ($query) => $query->where('is_read', false))
             ->when($filter === 'starred', fn ($query) => $query->where('is_starred', true))
@@ -219,7 +222,8 @@ class InboxController extends Controller
                 'drafts',
                 'messages' => fn ($query) => $query->orderBy('sent_at'),
             ])
-            ->whereHas('gmailAccount', fn ($query) => $query->where('user_id', $request->user()->id))
+            ->where(fn ($query) => $query->whereNotNull('ghl_conversation_id')
+                ->orWhereHas('gmailAccount', fn ($q) => $q->where('user_id', $request->user()->id)))
             ->where('channel', ChannelType::Email)
             ->find($request->get('conversation'));
 

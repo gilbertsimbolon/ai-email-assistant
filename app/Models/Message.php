@@ -14,6 +14,7 @@ class Message extends Model
     protected $fillable = [
         'conversation_id',
         'gmail_message_id',
+        'ghl_message_id',
         'message_id_header',
         'sender_type',
         'message_type',

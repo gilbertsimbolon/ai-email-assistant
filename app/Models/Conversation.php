@@ -15,6 +15,8 @@ class Conversation extends Model
     protected $fillable = [
         'gmail_account_id',
         'gmail_thread_id',
+        'ghl_conversation_id',
+        'ghl_location_id',
         'contact_id',
         'contact_name',
         'contact_email',

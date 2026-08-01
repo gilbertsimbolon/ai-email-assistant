@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\DataTransferObjects\ParsedGhlMessageData;
 use App\DataTransferObjects\ParsedMessageData;
 use App\Enums\MessageType;
 use App\Enums\SenderType;
@@ -31,6 +32,31 @@ class MessageRepository
             'body' => $data->body,
             'attachments' => $data->attachments,
             'label_ids' => $data->labelIds,
+            'sent_at' => $data->sentAt,
+        ]);
+
+        if (!$conversation->last_message_at || $data->sentAt->gt($conversation->last_message_at)) {
+            $conversation->update(['last_message_at' => $data->sentAt]);
+        }
+
+        return $message;
+    }
+
+    /**
+     * @return Message|null null if this message was already recorded (dedup by ghl_message_id).
+     */
+    public function recordGhlMessage(Conversation $conversation, ParsedGhlMessageData $data): ?Message
+    {
+        if (Message::where('ghl_message_id', $data->ghlMessageId)->exists()) {
+            return null;
+        }
+
+        $message = $conversation->messages()->create([
+            'ghl_message_id' => $data->ghlMessageId,
+            'sender_type' => $data->isInbound() ? SenderType::Customer : SenderType::Agent,
+            'message_type' => MessageType::Email,
+            'body' => $data->body,
+            'attachments' => $data->attachments,
             'sent_at' => $data->sentAt,
         ]);
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\SyncGhlConversationsJob;
 use App\Jobs\SyncGmailAccountJob;
 use App\Models\GmailAccount;
 use Illuminate\Foundation\Inspiring;
@@ -21,5 +22,18 @@ Schedule::call(function () {
     );
 })
 ->name('gmail-sync-dispatch')
+->everyThirtySeconds()
+->withoutOverlapping();
+
+// Inbox conversations/messages now come from GHL (see claude.txt). One
+// shared Private Integration per location — no per-account loop needed,
+// just a single unique job. Skipped entirely until GHL is configured, so a
+// blank GHL_API_KEY in dev doesn't spam failed API calls every 30 seconds.
+Schedule::call(function () {
+    if (filled(config('ghl.api_key')) && filled(config('ghl.location_id'))) {
+        SyncGhlConversationsJob::dispatch();
+    }
+})
+->name('ghl-sync-dispatch')
 ->everyThirtySeconds()
 ->withoutOverlapping();

@@ -10,6 +10,7 @@ use App\Http\Requests\Inbox\UpdateDraftRequest;
 use App\Models\Conversation;
 use App\Models\Draft;
 use App\Services\AiGenerationService;
+use App\Services\Ghl\GhlSendService;
 use App\Services\Gmail\GmailSendService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -43,14 +44,16 @@ class DraftController extends Controller
     }
 
     /**
-     * Approve draft dan kirim balasan melalui Gmail API (in-thread reply).
+     * Approve draft dan kirim balasan — via GHL jika percakapan berasal dari
+     * GHL (shared inbox), atau via Gmail API (in-thread reply) untuk
+     * percakapan lama yang masih dari Gmail.
      */
-    public function approve(Request $request, Draft $draft, GmailSendService $gmailSendService)
+    public function approve(Request $request, Draft $draft, GmailSendService $gmailSendService, GhlSendService $ghlSendService)
     {
         $this->authorizeConversation($request, $draft->conversation);
 
         try {
-            $gmailSendService->sendDraft($draft);
+            $this->dispatchSend($draft, $gmailSendService, $ghlSendService);
         } catch (Throwable $e) {
             Log::error('Failed to send draft', [
                 'draft_id' => $draft->id,
@@ -129,7 +132,7 @@ class DraftController extends Controller
      * Generate — jika belum ada draft aktif, buat draft manual dari isi
      * textarea saat ini lalu langsung kirim.
      */
-    public function send(Request $request, Conversation $conversation, GmailSendService $gmailSendService)
+    public function send(Request $request, Conversation $conversation, GmailSendService $gmailSendService, GhlSendService $ghlSendService)
     {
         $this->authorizeConversation($request, $conversation);
 
@@ -165,7 +168,7 @@ class DraftController extends Controller
         }
 
         try {
-            $gmailSendService->sendDraft($draft);
+            $this->dispatchSend($draft, $gmailSendService, $ghlSendService);
         } catch (Throwable $e) {
             Log::error('Failed to send draft', [
                 'draft_id' => $draft->id,
@@ -176,5 +179,21 @@ class DraftController extends Controller
         }
 
         return response()->json(['status' => 'sent']);
+    }
+
+    /**
+     * Pick the delivery channel by where the conversation actually came
+     * from: GHL-sourced conversations send through GHL, legacy Gmail-synced
+     * ones keep sending through Gmail.
+     */
+    protected function dispatchSend(Draft $draft, GmailSendService $gmailSendService, GhlSendService $ghlSendService): void
+    {
+        if (filled($draft->conversation->ghl_conversation_id)) {
+            $ghlSendService->sendDraft($draft);
+
+            return;
+        }
+
+        $gmailSendService->sendDraft($draft);
     }
 }
