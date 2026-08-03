@@ -25,7 +25,7 @@ use Throwable;
  * are still read from the local `conversations`/`messages` tables, synced
  * by GmailSyncService. Status/star/read toggle and draft/AI-tool actions
  * are NOT duplicated here — they stay on InboxController's shared
- * inbox.status.update/inbox.star/inbox.read.toggle/inbox.drafts.*/
+ * inbox.status.update/inbox.star/inbox.read.toggle/inbox.drafts.
  * inbox.ai-tools.* routes, which already work generically against any local
  * Conversation row regardless of source.
  */

@@ -1,4 +1,4 @@
-<aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+<aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme position-fixed">
     <div class="app-brand demo d-flex align-items-center px-4 py-3">
         <a href="{{ route('dashboard') }}" class="app-brand-link gap-2 d-flex align-items-center text-decoration-none">
             {{-- app-brand-logo lets Sneat's own collapsed-sidebar CSS hide the
@@ -10,19 +10,21 @@
             </span>
         </a>
 
-        <a href="javascript:void(0);" id="desktopSidebarToggle" class="menu-link text-large ms-auto p-2"
-            data-bs-toggle="tooltip" data-bs-placement="right" title="Toggle sidebar">
+        <button type="button" id="desktopSidebarToggle"
+            class="btn btn-sm btn-primary position-absolute top-50 end-0 translate-middle-y rounded-circle shadow-sm p-0 d-none d-xl-flex align-items-center justify-content-center"
+            style="width: 28px; height: 28px; z-index: 1050; transform: translate(50%, -50%) !important;"
+            title="Toggle Sidebar">
 
-            <i class="bx bx-chevron-left align-middle"></i>
+            <i class="bx bx-chevron-left fs-5"></i>
 
-        </a>
+        </button>
     </div>
 
     <div class="menu-divider mt-0"></div>
 
-    <div class="menu-inner-shadow"></div>
+    <div class="menu-inner-shadow" style="pointer-events: none;"></div>
 
-    <ul class="menu-inner py-2">
+    <ul class="menu-inner py-2 sidebar-menu-inner">
 
         {{-- Dashboard --}}
         <li class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
@@ -39,7 +41,7 @@
         </li>
 
         <li class="menu-item {{ request()->routeIs('inbox.*') ? 'active' : '' }}">
-            <a href="{{ route('inbox.index') }}" class="menu-link d-flex align-items-center justify-content-between"
+            <a href="{{ route('inbox.index') }}" class="menu-link d-flex align-items-center"
                 data-bs-toggle="tooltip" data-bs-placement="right" title="Conversations">
                 <i class="menu-icon tf-icons bx bx-conversation"></i>
                 <div>Conversations</div>
@@ -48,7 +50,7 @@
 
         <li class="menu-item {{ request()->routeIs('gmail-inbox.*') ? 'active' : '' }}">
             <a href="{{ route('gmail-inbox.index') }}"
-                class="menu-link d-flex align-items-center justify-content-between" data-bs-toggle="tooltip"
+                class="menu-link d-flex align-items-center" data-bs-toggle="tooltip"
                 data-bs-placement="right" title="Gmail Inbox">
                 <i class="menu-icon tf-icons bx bx-envelope"></i>
                 <div>Gmail Inbox</div>
@@ -296,65 +298,49 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
+    const button = document.getElementById('desktopSidebarToggle');
+
+    if (!button) return;
+
     const html = document.documentElement;
-    const toggleButton = document.getElementById('desktopSidebarToggle');
+    const icon = button.querySelector('i');
 
-    if (!toggleButton) return;
+    // Restore state
+    if (localStorage.getItem('sidebarCollapsed') === 'true') {
 
-    const toggleIcon = toggleButton.querySelector('i');
-    const STORAGE_KEY = 'sidebarCollapsed';
-    // Sneat's own Helpers.toggleCollapsed()/setCollapsed() only manage the
-    // mobile offcanvas ("layout-menu-expanded"); on screens >= LAYOUT_BREAKPOINT
-    // it never adds "layout-menu-collapsed" itself, so the desktop rail state
-    // is toggled here directly instead of duplicating a broken code path.
-    const isDesktop = () => window.innerWidth >= (window.Helpers ? window.Helpers.LAYOUT_BREAKPOINT : 1200);
-
-    function syncToggleUI() {
-        const collapsed = isDesktop() && html.classList.contains('layout-menu-collapsed');
-
-        toggleIcon.classList.toggle('bx-chevron-right', collapsed);
-        toggleIcon.classList.toggle('bx-chevron-left', !collapsed);
-
-        document.querySelectorAll('#layout-menu [data-bs-toggle="tooltip"]').forEach(function (el) {
-            if (el === toggleButton) return;
-
-            const tooltip = bootstrap.Tooltip.getOrCreateInstance(el);
-            if (collapsed) {
-                tooltip.enable();
-            } else {
-                tooltip.disable();
-                tooltip.hide();
-            }
-        });
-    }
-
-    // Restore persisted desktop state (the inline <head> script already does
-    // this before first paint; repeated here in case storage was unavailable then).
-    if (isDesktop() && localStorage.getItem(STORAGE_KEY) === 'true') {
         html.classList.add('layout-menu-collapsed');
+
+        icon.classList.remove('bx-chevron-left');
+        icon.classList.add('bx-chevron-right');
+
     }
 
-    syncToggleUI();
+    // Toggle
+    button.addEventListener('click', function () {
 
-    toggleButton.addEventListener('click', function (e) {
-        e.preventDefault();
+        html.classList.toggle('layout-menu-collapsed');
 
-        if (!isDesktop()) {
-            // Mobile: reuse Sneat's built-in offcanvas close, don't touch desktop state.
-            window.Helpers.toggleCollapsed();
-            return;
+        const collapsed =
+            html.classList.contains('layout-menu-collapsed');
+
+        if (collapsed) {
+
+            icon.classList.remove('bx-chevron-left');
+            icon.classList.add('bx-chevron-right');
+
+        } else {
+
+            icon.classList.remove('bx-chevron-right');
+            icon.classList.add('bx-chevron-left');
+
         }
 
-        const collapsed = html.classList.toggle('layout-menu-collapsed');
+        localStorage.setItem(
+            'sidebarCollapsed',
+            collapsed
+        );
 
-        try {
-            localStorage.setItem(STORAGE_KEY, collapsed ? 'true' : 'false');
-        } catch (e) {}
-
-        syncToggleUI();
     });
-
-    window.addEventListener('resize', syncToggleUI);
 
 });
 </script>
