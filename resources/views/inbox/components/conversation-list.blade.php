@@ -39,11 +39,13 @@
                     <i class="bx bx-search"></i>
                 </span>
 
-                <input type="text"
+                <input
+                    type="text"
                     name="q"
                     value="{{ $search }}"
                     class="form-control border-start-0 ps-0"
-                    placeholder="Cari nama, email, atau nomor telepon...">
+                    placeholder="Cari nama, email, atau nomor telepon..."
+                >
             </div>
         </form>
 
@@ -56,11 +58,12 @@
 
                     <a href="{{ route('inbox.index', [
                         'filter' => $value,
-                        'q' => $search
+                        'q' => $search,
                     ]) }}"
                         class="btn btn-sm flex-fill d-flex align-items-center justify-content-center position-relative
                         {{ $filter === $value ? 'btn-primary' : 'btn-outline-secondary' }}"
                         data-bs-toggle="tooltip"
+                        data-bs-placement="top"
                         title="{{ $meta['label'] }}">
 
                         <i class="bx {{ $meta['icon'] }}"></i>
@@ -80,7 +83,8 @@
             {{-- More filters --}}
             <div class="dropdown">
 
-                <button type="button"
+                <button
+                    type="button"
                     class="btn btn-icon btn-sm btn-outline-secondary"
                     data-bs-toggle="dropdown"
                     title="Filter lainnya">
@@ -94,10 +98,11 @@
                     @foreach ($moreFilters as $value => $meta)
 
                         <li>
-                            <a class="dropdown-item {{ $filter === $value ? 'active' : '' }}"
+                            <a
+                                class="dropdown-item {{ $filter === $value ? 'active' : '' }}"
                                 href="{{ route('inbox.index', [
                                     'filter' => $value,
-                                    'q' => $search
+                                    'q' => $search,
                                 ]) }}">
 
                                 <i class="bx {{ $meta['icon'] }} me-2"></i>
@@ -118,32 +123,10 @@
     </div>
 
 
-    {{-- Select All --}}
-    <div class="d-flex align-items-center border-bottom px-3 py-2 bg-white flex-shrink-0">
-
-        <div class="form-check mb-0">
-
-            <input class="form-check-input"
-                type="checkbox"
-                id="selectAllConversations">
-
-            <label class="form-check-label small text-muted"
-                for="selectAllConversations">
-
-                Select All
-
-            </label>
-
-        </div>
-
-    </div>
-
-
     {{-- Error --}}
     @if ($ghlError ?? false)
 
-        <div class="alert alert-danger rounded-0 mb-0 flex-shrink-0"
-            role="alert">
+        <div class="alert alert-danger rounded-0 mb-0 flex-shrink-0" role="alert">
 
             Unable to load conversations from GHL.
             Please try again.
@@ -153,14 +136,10 @@
     @endif
 
 
-    {{-- ========================================
-         CONVERSATION LIST
-         INI YANG SCROLLABLE
-         ======================================== --}}
+    {{-- Conversation List --}}
     <div class="flex-grow-1 overflow-auto">
 
-        <ul class="list-unstyled m-0"
-            id="conversationList">
+        <ul class="list-unstyled m-0" id="conversationList">
 
             @forelse($conversations as $item)
 
@@ -181,37 +160,21 @@
                     <p class="mb-0">
 
                         @if ($filter === 'unread')
-
                             Tidak ada pesan yang belum dibaca.
-
                         @elseif ($filter === 'recent')
-
                             Tidak ada percakapan dalam 24 jam terakhir.
-
                         @elseif ($filter === 'starred')
-
                             Belum ada percakapan yang dibintangi.
-
                         @elseif ($filter === 'waiting_agent')
-
                             Tidak ada percakapan yang menunggu balasan agent.
-
                         @elseif ($filter === 'waiting_customer')
-
                             Tidak ada percakapan yang menunggu respon customer.
-
                         @elseif ($filter === 'ai_draft')
-
                             Tidak ada draft AI yang tersedia.
-
                         @elseif ($filter === 'closed')
-
                             Tidak ada percakapan yang ditutup.
-
                         @else
-
                             Tidak ada percakapan.
-
                         @endif
 
                     </p>
@@ -223,4 +186,5 @@
         </ul>
 
     </div>
+
 </div>
