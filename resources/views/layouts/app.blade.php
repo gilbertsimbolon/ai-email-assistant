@@ -16,7 +16,7 @@
     {{-- Restore desktop sidebar collapsed state before first paint, so a
          refresh doesn't flash the expanded sidebar before JS collapses it. --}}
     <script>
-        (function () {
+        (function() {
             try {
                 if (window.innerWidth >= 1200 && localStorage.getItem('sidebarCollapsed') === 'true') {
                     document.documentElement.classList.add('layout-menu-collapsed');
@@ -27,12 +27,14 @@
 
     <!-- Bootstrap & Animate CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap"
+        rel="stylesheet" />
 
     <link rel="stylesheet" href="{{ asset('sneat/assets/vendor/fonts/iconify-icons.css') }}" />
 
@@ -50,23 +52,24 @@
     <script src="{{ asset('sneat/assets/js/config.js') }}"></script>
 </head>
 
-<body>
-    <div class="layout-wrapper layout-content-navbar">
-        <div class="layout-container">
+<body class="overflow-hidden">
+    <div class="layout-wrapper layout-content-navbar vh-100 overflow-hidden">
+
+        <div class="layout-container h-100 overflow-hidden">
 
             @if (!isset($hideLayout) || !$hideLayout)
                 @include('partials.sidebar')
             @endif
 
-            <div class="layout-page">
+            <div class="layout-page h-100 overflow-hidden d-flex flex-column">
 
                 @if (!isset($hideLayout) || !$hideLayout)
                     @include('partials.navbar')
                 @endif
 
-                <div class="content-wrapper">
+                <div class="content-wrapper flex-grow-1 overflow-hidden d-flex flex-column">
 
-                    <div class="container-fluid flex-grow-1 d-flex flex-column @yield('content-padding', 'p-4')">
+                    <div class="container-fluid flex-grow-1 overflow-hidden d-flex flex-column @yield('content-padding', 'p-4')">
                         @yield('content')
                     </div>
 
@@ -75,6 +78,7 @@
                     @if (!isset($hideLayout) || !$hideLayout)
                         @include('partials.footer')
                     @endif
+
                 </div>
 
             </div>

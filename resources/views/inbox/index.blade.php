@@ -14,7 +14,7 @@
 
     {{-- Layout 3 panel murni flexbox (bukan Bootstrap Card) supaya mengisi tinggi
      layar dan scroll hanya terjadi di panel yang membutuhkan (list & thread). --}}
-    <div id="inboxApp" class="inbox-app d-flex overflow-hidden flex-grow-1"
+    <div id="inboxApp" class="d-flex flex-column flex-grow-1 overflow-hidden vh-100"
         data-star-url-template="{{ route('inbox.star', ['conversation' => '__ID__']) }}"
         data-read-url-template="{{ route('inbox.read.toggle', ['conversation' => '__ID__']) }}"
         data-list-poll-url="{{ route('inbox.index', ['filter' => $filter, 'q' => $search]) }}"

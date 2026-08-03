@@ -24,7 +24,7 @@
 
     <div class="menu-inner-shadow" style="pointer-events: none;"></div>
 
-    <ul class="menu-inner py-2 sidebar-menu-inner">
+    <ul class="menu-inner py-2">
 
         {{-- Dashboard --}}
         <li class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
