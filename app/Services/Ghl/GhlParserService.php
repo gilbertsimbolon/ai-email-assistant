@@ -29,7 +29,7 @@ class GhlParserService
             subject: $raw['lastMessageBody'] ?? null,
             channel: $raw['lastMessageType'] ?? $raw['type'] ?? null,
             unreadCount: (int) ($raw['unreadCount'] ?? 0),
-            lastActivityAt: $lastActivity ? Carbon::parse($lastActivity) : null,
+            lastActivityAt: $this->parseDate($lastActivity),
         );
     }
 
@@ -43,7 +43,7 @@ class GhlParserService
             ghlMessageId: (string) $raw['id'],
             direction: $raw['direction'] ?? 'inbound',
             body: $raw['body'] ?? '',
-            sentAt: isset($raw['dateAdded']) ? Carbon::parse($raw['dateAdded']) : now(),
+            sentAt: $this->parseDate($raw['dateAdded'] ?? null) ?? now(),
             attachments: $this->parseAttachments($raw['attachments'] ?? []),
         );
     }
@@ -80,6 +80,48 @@ class GhlParserService
             dateAdded: $raw['dateAdded'] ?? null,
             dateUpdated: $raw['dateUpdated'] ?? null,
         );
+    }
+
+    /**
+     * Safely parses GHL date values whether they come as a string, integer timestamp,
+     * or a nested array (e.g. ['date' => '...']).
+     */
+    protected function parseDate(mixed $dateValue): ?Carbon
+    {
+        if (empty($dateValue)) {
+            return null;
+        }
+
+        // Handle case when GHL returns date as an array
+        if (is_array($dateValue)) {
+            $dateValue = $dateValue['date']
+                ?? $dateValue['value']
+                ?? $dateValue['timestamp']
+                ?? null;
+
+            if (!$dateValue) {
+                return null;
+            }
+        }
+
+        try {
+            // Handle unix timestamp (in milliseconds or seconds)
+            if (is_numeric($dateValue)) {
+                $timestamp = strlen((string) $dateValue) === 13
+                    ? (int) ($dateValue / 1000)
+                    : (int) $dateValue;
+
+                return Carbon::createFromTimestamp($timestamp);
+            }
+
+            if (is_string($dateValue)) {
+                return Carbon::parse($dateValue);
+            }
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        return null;
     }
 
     /**

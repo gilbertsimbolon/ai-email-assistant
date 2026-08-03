@@ -1,8 +1,3 @@
-{{-- Panel Kiri: toolbar (search & filter) + daftar percakapan — selalu dari
- GHL secara live (claude.txt). "all"/"unread"/search datang langsung dari
- GHL /conversations/search (cursor pagination, "Load more"); filter lokal
- (starred/workflow status/AI draft/recent) hanya bisa menampilkan
- percakapan yang sudah pernah dibuka agent (lihat InboxController). --}}
 @php
     $filterOptions = [
         'all' => 'All',
@@ -14,13 +9,27 @@
         'ai_draft' => 'AI Draft',
         'closed' => 'Closed',
     ];
+
+    // Menggunakan kelas icon Boxicons yang sesuai dengan Bootstrap/Sneat theme
+    $filterIcons = [
+        'all' => 'bx-grid-alt',
+        'unread' => 'bx-envelope',
+        'recent' => 'bx-time-five',
+        'starred' => 'bx-star',
+        'waiting_agent' => 'bx-user-voice',
+        'waiting_customer' => 'bx-user-check',
+        'ai_draft' => 'bx-bot',
+        'closed' => 'bx-check-circle',
+    ];
+
     $localOnlyFilters = ['recent', 'starred', 'waiting_agent', 'waiting_customer', 'ai_draft', 'closed'];
 @endphp
 
-<div class="border-bottom py-3 px-3 bg-white flex-shrink-0">
+<div class="border-bottom py-3 px-3 bg-white flex-shrink-0 ms-2">
     <div class="d-flex align-items-center justify-content-between mb-3">
         <h5 class="mb-0 fw-bold">Conversations</h5>
-        <a href="{{ route('inbox.index', ['filter' => $filter, 'q' => $search]) }}" class="btn btn-icon btn-sm btn-outline-secondary" title="Refresh">
+        <a href="{{ route('inbox.index', ['filter' => $filter, 'q' => $search]) }}"
+            class="btn btn-icon btn-sm btn-outline-secondary" title="Refresh">
             <i class="bx bx-refresh"></i>
         </a>
     </div>
@@ -29,16 +38,23 @@
         <input type="hidden" name="filter" value="{{ $filter }}">
         <div class="input-group input-group-merge">
             <span class="input-group-text bg-transparent border-end-0"><i class="bx bx-search"></i></span>
-            <input type="text" name="q" value="{{ $search }}" class="form-control border-start-0 ps-0" placeholder="Cari nama, email, atau nomor telepon...">
+            <input type="text" name="q" value="{{ $search }}" class="form-control border-start-0 ps-0"
+                placeholder="Cari nama, email, atau nomor telepon...">
         </div>
     </form>
 
-    <div class="d-flex flex-wrap gap-1">
+    {{-- ICON GROUP FILTER --}}
+    <div class="btn-group w-100 flex-wrap" role="group" aria-label="Filter Conversations">
         @foreach ($filterOptions as $value => $label)
+            @php
+                $isLocal = in_array($value, $localOnlyFilters, true);
+                $tooltip = $label . ($isLocal ? ' (Percakapan lokal)' : '');
+            @endphp
+
             <a href="{{ route('inbox.index', ['filter' => $value, 'q' => $search]) }}"
-               class="btn btn-sm rounded-pill {{ $filter === $value ? 'btn-primary' : 'btn-outline-secondary' }}"
-               @if (in_array($value, $localOnlyFilters, true)) title="Hanya menampilkan percakapan yang sudah pernah dibuka" @endif>
-                {{ $label }}
+                class="btn btn-sm {{ $filter === $value ? 'btn-primary' : 'btn-outline-secondary' }}"
+                data-bs-toggle="tooltip" data-bs-placement="top" title="{{ $tooltip }}">
+                <i class="bx {{ $filterIcons[$value] ?? 'bx-filter' }}"></i>
             </a>
         @endforeach
     </div>
@@ -51,10 +67,15 @@
 @endif
 
 {{-- List Percakapan --}}
-<div class="email-list flex-grow-1 overflow-auto">
+<div class="email-list flex-grow-1 overflow-auto ms-2">
     <ul class="list-unstyled m-0" id="conversationList">
         @forelse($conversations as $item)
-            @include('inbox.components.conversation-item', ['item' => $item, 'filter' => $filter, 'isActive' => $activeConversation && $activeConversation->ghl_conversation_id === $item->ghlConversationId])
+            @include('inbox.components.conversation-item', [
+                'item' => $item,
+                'filter' => $filter,
+                'isActive' =>
+                    $activeConversation && $activeConversation->ghl_conversation_id === $item->ghlConversationId,
+            ])
         @empty
             <li class="text-center p-5 text-muted bg-white">
                 <i class="bx bx-folder-open display-4 mb-2"></i>
@@ -82,16 +103,15 @@
     </ul>
 </div>
 
-{{-- Pagination Footer: cursor "Load more" untuk list live GHL, halaman
- nomor biasa untuk filter lokal (yang memang berbasis paginate() lokal). --}}
+{{-- Pagination Footer --}}
 @if ($localPaginator && $localPaginator->hasPages())
-    <div class="card-footer bg-white py-2 px-4 d-flex justify-content-center border-top flex-shrink-0">
+    <div class="card-footer bg-white py-2 px-4 d-flex justify-content-center border-top flex-shrink-0 ms-2">
         {{ $localPaginator->links() }}
     </div>
 @elseif ($nextCursor ?? null)
-    <div class="card-footer bg-white py-2 px-4 d-flex justify-content-center border-top flex-shrink-0">
+    <div class="card-footer bg-white py-2 px-4 d-flex justify-content-center border-top flex-shrink-0 ms-2">
         <a href="{{ route('inbox.index', array_merge(['filter' => $filter, 'q' => $search], $nextCursor)) }}"
-           class="btn btn-sm btn-outline-secondary">
+            class="btn btn-sm btn-outline-secondary">
             Load more
         </a>
     </div>
