@@ -1,76 +1,481 @@
-# Prompt: Redesign Tampilan Inbox Laravel (GHL Integration)
+Saya ingin kamu menyempurnakan SIDEBAR pada aplikasi Laravel saya.
 
-## 📌 Deskripsi Tugas
-Tolong perbarui dan faktorkan ulang (*refactor*) tampilan interface **Inbox/Conversations** pada aplikasi Laravel kami.
+Gunakan kode sidebar yang sudah ada sebagai baseline. Jangan langsung mengubah kode sebelum memahami struktur layout utama, JavaScript Sneat, CSS/theme, dan behavior sidebar yang sekarang.
 
-Ubah tampilan aplikasi dari **Gambar 1 (Kondisi Saat Ini)** agar memiliki tata letak (*layout*), hierarki visual, dan gaya desain yang presisi seperti pada **Gambar 2 (Referensi Target)**.
+==================================================
+GOAL UTAMA
+==================================================
 
-> **Catatan Penting:**
-> - **JANGAN** mengubah logika backend, nama rute (*routes*), variabel Blade, atau integrasi GoHighLevel (GHL) yang sudah berjalan.
-> - Tugas ini berfokus pada **UI/UX Refactoring** (Blade Views, Tailwind CSS / Bootstrap, & komponen visual).
-> - Seluruh data nyata yang tampil di Gambar 1 (seperti pesan dari "Content360", nama "Rhonda", filter, dll.) harus tetap dirender dengan benar menggunakan variabel Laravel yang ada.
+Saya menggunakan template Sneat dan ingin sidebar menjadi lebih polished, modern, responsive, dan nyaman digunakan baik di desktop maupun mobile.
 
----
+Sidebar harus memiliki behavior seperti dashboard/admin panel modern.
 
-## 🎯 Detail Perubahan Visual (Berdasarkan Gambar Referensi 2)
+Target behavior:
 
-### 1. Structure & Layout (3-Column Layout)
-Ubah tata letak utama menjadi **3 Kolom Responsif** (sebelumnya hanya 2 kolom di Gambar 1):
-- **Kolom 1 (Kiri):** Navigation / Conversation List Panel.
-- **Kolom 2 (Tengah):** Main Thread / Conversation View & Chat Input.
-- **Kolom 3 (Kanan):** Contact Details & Actions Side-Panel (Buat komponen baru/tampilkan panel ini jika sebelumnya tersembunyi).
+1. DESKTOP
+   - Sidebar tampil normal secara default.
+   - Tersedia tombol toggle/collapse di bagian header sidebar.
+   - Ketika tombol diklik:
+     - sidebar menjadi collapsed/narrow
+     - icon menu tetap terlihat
+     - label menu disembunyikan
+     - content utama otomatis melebar
+   - Ketika diklik lagi:
+     - sidebar kembali expanded
+     - label menu muncul kembali
+   - Icon tombol toggle harus berubah:
+     - expanded → chevron-left
+     - collapsed → chevron-right
 
----
+2. MOBILE
+   - Jangan merusak behavior mobile/offcanvas bawaan Sneat.
+   - Sidebar tetap bisa dibuka/tutup menggunakan behavior responsive bawaan Sneat.
+   - Jangan memaksakan desktop collapsed behavior ke mobile.
+   - Pastikan tombol close mobile tetap berfungsi.
 
-### 2. Panel Kiri: Conversation List Header & Filter Group
-- **Filter Bar:**
-  - Ubah tombol filter berbentuk pill/teks biasa menjadi **Icon Group Compact** di bagian atas (menggunakan icon: *Unread*, *All*, *Recent*, *Starred*).
-  - Tambahkan **Badge Count** berwarna biru menempel di atas icon *Unread* (misal: `1.4K` atau variabel `$unreadCount`).
-- **Item List Percakapan:**
-  - Tambahkan *checkbox* "Select All" di atas daftar.
-  - Setiap card percakapan disederhanakan:
-    - **Avatar bulat** dengan inisial nama (misal: "TS", "AS", "RH").
-    - **Nama Kontak** (font tebal).
-    - **Pratinjau Pesan Terakhir** (*truncated text*).
-    - **Timestamp/Tanggal** (misal: "Aug 3") di pojok kanan atas item.
-    - **Badge Unread Message** berbentuk lingkaran biru berisi angka di kanan bawah item.
-    - Icon Bintang (*Star*) untuk penanda percakapan favorit.
+3. DESKTOP DAN MOBILE HARUS DIPISAH BEHAVIOR-NYA
+   - Desktop menggunakan collapse.
+   - Mobile menggunakan offcanvas/mobile menu behavior.
+   - Jangan membuat satu JavaScript yang menyebabkan konflik antara kedua behavior tersebut.
 
----
+==================================================
+SIDEBAR CURRENT STRUCTURE
+==================================================
 
-### 3. Panel Tengah: Thread View & Chat Input
-- **Header Chat:**
-  - Tampilkan avatar kontak, nama kontak aktif, serta tombol-tombol *quick action* di pojok kanan atas (Icon Telepon, Star, Email, Delete, dan Collapse).
-- **Bubble Message:**
-  - Hapus background box ungu tebal dari Gambar 1!
-  - Ubah gaya pesan menjadi **Clean Boxed Cards/Bubbles** dengan background abu-abu muda/putih halus.
-  - Tampilkan Avatar Pengirim (misal "DP" untuk Dom Ricci) pada setiap blok pesan.
-  - Tampilkan nama pengirim, email tujuan/penerima (`To: ...`), serta timestamp waktu (misal: `05:12 AM`).
-  - Tambahkan pemisah tanggal di tengah area chat (*Date Divider*), contoh: `Jul 21`, `Jul 22`.
-- **Input Area (Bottom Chat Bar):**
-  - Buat input area melayang/bersatu di bawah thread dengan tombol pengirim icon pesawat kertas (*Send Button*) berwarna biru di pojok kanan.
-  - Sertakan dropdown pilihan *channel* (misal: Email/SMS) di sebelah kiri input text.
+Sidebar saat ini menggunakan:
 
----
+<aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
 
-### 4. Panel Kanan: Contact Details (Sidebar Kolom Ke-3)
-Buat/Sesuaikan komponen sidebar kanan untuk menampilkan detail kontak secara komprehensif:
-- **Header Details:** Judul "Contact Details" dengan tombol *close* (X) dan *pop-out icon*.
-- **Profile Summary:** Avatar inisial besar, Nama Kontak, dan *Owner/Followers* dropdown field.
-- **Tags Section:** Tampilkan tag kontak dalam bentuk pill/badge (misal: `purchase - c360 lifetime`).
-- **Tab Navigation:** Sub-nav mini (`All fields`, `DND`, `Actions`).
-- **Search Field:** Input pencarian internal fields (`Search fields and folders`).
-- **Collapsible Field Accordion:**
-  - Accordion **Contact** berisi informasi detail yang diambil dari DTO/Database kontak:
-    - *First Name*
-    - *Last Name*
-    - *Email* (dengan icon aksi cepat)
-    - *Phone* (dengan *country code selector*)
-    - *Date of Birth*
+Header:
 
----
+<div class="app-brand demo d-flex align-items-center px-4 py-3">
+    <a href="{{ route('dashboard') }}" class="app-brand-link gap-2 d-flex align-items-center text-decoration-none">
+        <img src="{{ asset('img/logo.jpeg') }}"
+            class="rounded"
+            style="width:32px;height:32px;object-fit:cover;flex-shrink:0;">
 
-## 🛠️ Deliverables yang Diharapkan
-1. **File Blade View yang Diperbarui:** Kode Blade lengkap untuk layout 3-kolom (termasuk komponen `conversation-list`, `chat-thread`, dan `contact-details`).
-2. **Kebutuhan CSS/Tailwind Class:** Kumpulan kelas CSS atau Tailwind utility yang digunakan untuk membentuk tata letak dan warna sesuai Gambar 2.
-3. **Penyesuaian Minor Controller (Jika Ada):** Jika panel kanan (*Contact Details*) membutuhkan data yang belum terpanggil dari controller, sertakan potongan kode controller-nya.
+        <span class="app-brand-text demo text-heading fw-bold fs-5 text-truncate">
+            AI Email Assistant
+        </span>
+    </a>
+
+    <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto p-0">
+        <i class="bx bx-chevron-left d-block d-xl-none align-middle"></i>
+    </a>
+</div>
+
+Sidebar berisi menu:
+
+- Dashboard
+- Conversations
+- Gmail Inbox
+- AI Center
+  - Dashboard
+  - Intent Builder
+  - SOP Builder
+  - Workflow Builder
+  - Reply Templates
+  - Knowledge Base
+  - Forbidden Actions
+  - AI Models
+  - AI Parameters
+  - Prompt Preview
+  - Playground
+  - AI Logs
+  - Settings
+- Reports
+  - Overview
+  - AI Usage & Models
+  - Content Analytics
+  - Customer Analytics
+  - Activity Timeline
+- Administration
+  - Settings
+    - AI Configuration
+    - Users
+- Integrations
+  - Email Connection
+  - Email API Configuration
+
+Di bagian bawah sidebar terdapat:
+
+- Profile user
+- Email
+- Profile link
+- Logout button
+
+==================================================
+IMPORTANT CURRENT PROBLEM
+==================================================
+
+Saat ini tombol sidebar hanya terlihat pada mobile karena icon menggunakan:
+
+d-xl-none
+
+Saya ingin tombol toggle juga tersedia di desktop.
+
+Namun ketika saya menghapus d-xl-none, tombol memang muncul di desktop tetapi ketika diklik sidebar tidak collapse.
+
+Jadi jangan hanya menghapus d-xl-none.
+
+Cari tahu bagaimana Sneat layout dan JavaScript bawaan bekerja terlebih dahulu.
+
+==================================================
+REQUIREMENTS
+==================================================
+
+### 1. Desktop Sidebar Toggle
+
+Buat tombol toggle yang benar-benar bekerja di desktop.
+
+Behavior:
+
+Expanded:
+
+[Logo] AI Email Assistant              <
+
+Collapsed:
+
+[Logo]                                  >
+
+Ketika collapsed:
+
+- Sidebar menjadi sempit
+- Hanya icon menu yang terlihat
+- Text menu disembunyikan
+- Menu header seperti "AI Center", "Reports", "Administration" tidak mengganggu layout
+- Badge/menu counter ditangani dengan baik
+- Profile information di bagian bawah menyesuaikan
+- Logout button menyesuaikan
+- Main content melebar otomatis
+
+Jangan membuat sidebar disappear total.
+
+### 2. Mobile
+
+Pertahankan behavior mobile Sneat.
+
+Mobile harus tetap:
+
+- bisa open
+- bisa close
+- bisa menggunakan overlay/backdrop jika Sneat menggunakannya
+- tidak menyebabkan horizontal overflow
+- tidak menyebabkan body bisa scroll aneh
+
+### 3. Persistence
+
+Jika memungkinkan, simpan state desktop sidebar menggunakan localStorage:
+
+sidebarCollapsed = true / false
+
+Sehingga:
+
+- user collapse sidebar
+- refresh halaman
+- sidebar tetap collapsed
+
+Tetapi jangan menyimpan state mobile sebagai desktop collapsed state.
+
+### 4. Responsive Breakpoint
+
+Gunakan breakpoint Sneat/Bootstrap yang sudah digunakan project.
+
+Jangan membuat breakpoint random jika Sneat sudah memiliki breakpoint yang sesuai.
+
+Desktop behavior hanya aktif pada breakpoint desktop.
+
+Mobile tetap mengikuti behavior responsive Sneat.
+
+### 5. Icon
+
+Gunakan Boxicons yang sudah tersedia.
+
+Expanded:
+
+bx-chevron-left
+
+Collapsed:
+
+bx-chevron-right
+
+Jangan menambahkan library baru.
+
+### 6. Tooltip ketika collapsed
+
+Saat sidebar collapsed di desktop:
+
+- menu icon harus tetap bisa dipahami
+- tampilkan tooltip berisi nama menu ketika hover
+
+Contoh:
+
+🏠 → Dashboard
+💬 → Conversations
+🧠 → AI Center
+
+Gunakan Bootstrap tooltip atau mekanisme tooltip yang sudah tersedia di project.
+
+Jangan membuat library tooltip baru.
+
+### 7. Nested Menu
+
+Perhatikan menu seperti:
+
+AI Center
+Reports
+Settings
+Integrations
+
+Ketika sidebar collapsed:
+
+- icon parent tetap terlihat
+- submenu tidak boleh menyebabkan layout rusak
+- submenu harus tetap bekerja ketika sidebar expanded
+- jangan menghilangkan functionality menu-toggle
+- active state tetap benar
+
+### 8. Active State
+
+Jangan mengubah logic Laravel seperti:
+
+request()->routeIs(...)
+@can(...)
+@canany(...)
+
+Semua permission dan active state yang sudah ada harus tetap bekerja.
+
+Jangan mengubah route.
+
+Jangan mengubah authorization logic.
+
+### 9. Bottom User Section
+
+Bagian:
+
+Profile
+User name
+Email
+Logout
+
+harus tetap terlihat bagus ketika:
+
+EXPANDED:
+
+[Avatar] Gilbert Simbolon
+         email@example.com
+[ Logout / Keluar ]
+
+COLLAPSED:
+
+[Avatar]
+[Logout icon]
+
+Jika text tidak muat ketika collapsed, sembunyikan text tetapi jangan menghilangkan functionality.
+
+### 10. Logo
+
+Ketika expanded:
+
+[logo] AI Email Assistant
+
+Ketika collapsed:
+
+[logo]
+
+Pastikan logo tetap terlihat dan tidak rusak.
+
+==================================================
+IMPORTANT DESIGN RULES
+==================================================
+
+Gunakan styling yang sudah tersedia dari:
+
+- Sneat
+- Bootstrap 5
+- Boxicons
+
+Jangan membuat design system baru.
+
+Jangan menggunakan Tailwind.
+
+Jangan menggunakan GSAP.
+
+Jangan menambahkan dependency baru jika tidak diperlukan.
+
+Utamakan Bootstrap utility classes.
+
+Hindari custom CSS sebanyak mungkin.
+
+Jika custom CSS memang benar-benar diperlukan, letakkan secara terstruktur dan jelaskan kenapa diperlukan.
+
+==================================================
+IMPORTANT CODE RULES
+==================================================
+
+Sebelum coding:
+
+1. Cari layout utama.
+2. Cari app.js / main.js.
+3. Cari JavaScript Sneat yang mengatur:
+   - layout menu
+   - menu toggle
+   - collapsed state
+   - mobile offcanvas
+4. Cari CSS Sneat yang mengatur:
+   - layout-menu
+   - layout-menu-collapsed
+   - layout-menu-fixed
+   - layout-page
+   - layout-navbar
+5. Cari apakah project sudah memiliki mekanisme sidebar collapse.
+
+Jangan duplicate functionality yang sebenarnya sudah tersedia.
+
+Jika Sneat sudah memiliki API/function/class untuk sidebar collapse, gunakan itu.
+
+Jangan membuat sistem toggle baru jika sistem existing bisa digunakan.
+
+==================================================
+VERY IMPORTANT
+==================================================
+
+Jangan hanya mengubah file sidebar.
+
+Audit semua file yang relevan terlebih dahulu.
+
+Jika diperlukan perubahan pada:
+
+- Blade layout
+- sidebar Blade
+- app.js
+- main.js
+- CSS
+- Bootstrap initialization
+- Sneat initialization
+
+lakukan perubahan hanya pada bagian yang benar-benar diperlukan.
+
+Jangan merusak functionality lain.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+Desktop expanded:
+
+┌──────────────────────────────────────────┐
+│ [LOGO] AI Email Assistant             <  │
+├──────────────────────────────────────────┤
+│ 🏠 Dashboard                             │
+│                                          │
+│ CONVERSATIONS                            │
+│ 💬 Conversations                         │
+│ ✉ Gmail Inbox                            │
+│                                          │
+│ AI CENTER                                │
+│ 🧠 AI Center                         >   │
+│                                          │
+│ REPORTS                                  │
+│ 📊 Reports                           >   │
+│                                          │
+│ ADMINISTRATION                           │
+│ ⚙ Settings                           >   │
+│ 🔌 Integrations                       >  │
+│                                          │
+│ ───────────────────────────────────────  │
+│ 👤 User Name                             │
+│    email@example.com                     │
+│                                          │
+│ [ Logout ]                               │
+└──────────────────────────────────────────┘
+
+
+Desktop collapsed:
+
+┌──────┐
+│ LOGO >│
+├──────┤
+│  🏠  │
+│      │
+│  💬  │
+│  ✉   │
+│      │
+│  🧠  │
+│      │
+│  📊  │
+│      │
+│  ⚙   │
+│  🔌  │
+│      │
+│  👤  │
+│  🚪  │
+└──────┘
+
+Main content harus otomatis mengambil ruang yang dibebaskan.
+
+==================================================
+DELIVERABLE
+==================================================
+
+Setelah memahami project:
+
+1. Jelaskan root cause kenapa tombol desktop sekarang tidak berfungsi.
+2. Jelaskan behavior Sneat yang sedang digunakan.
+3. Sebutkan file apa saja yang perlu diubah.
+4. Implementasikan perubahan.
+5. Jangan menghapus functionality existing.
+6. Pastikan desktop collapse berfungsi.
+7. Pastikan mobile offcanvas tetap berfungsi.
+8. Pastikan nested menu tetap berfungsi.
+9. Pastikan active state dan permission tetap aman.
+10. Pastikan tidak ada horizontal overflow.
+11. Pastikan tidak ada console error.
+12. Pastikan tidak ada JavaScript error.
+13. Pastikan state collapsed bisa dipertahankan setelah refresh jika memungkinkan.
+
+==================================================
+VALIDATION CHECKLIST
+==================================================
+
+Setelah selesai, test:
+
+[ ] Desktop sidebar expanded
+[ ] Desktop sidebar collapse
+[ ] Desktop sidebar expand kembali
+[ ] Icon berubah kiri/kanan
+[ ] Content melebar ketika sidebar collapse
+[ ] Logo tetap terlihat
+[ ] Menu icons tetap terlihat
+[ ] Menu labels hilang ketika collapsed
+[ ] Tooltip muncul ketika collapsed
+[ ] Nested menu tetap bekerja
+[ ] Active state tetap bekerja
+[ ] Permission tetap bekerja
+[ ] Profile section tetap bekerja
+[ ] Logout tetap bekerja
+[ ] Mobile sidebar tetap bekerja
+[ ] Mobile overlay tetap bekerja
+[ ] Tidak ada horizontal scrollbar
+[ ] Tidak ada console error
+[ ] Refresh tidak merusak state
+[ ] Tidak ada dependency baru yang tidak diperlukan
+
+==================================================
+IMPORTANT FINAL INSTRUCTION
+==================================================
+
+Jangan berhenti hanya karena tombol toggle sudah bisa diklik.
+
+Saya ingin hasil akhirnya terasa seperti sidebar admin dashboard profesional:
+
+- smooth
+- responsive
+- clean
+- consistent dengan Sneat
+- desktop collapse benar
+- mobile offcanvas benar
+- content ikut menyesuaikan
+- tidak merusak menu/permission/route yang sudah ada
+
+Audit project terlebih dahulu, kemudian implementasikan solusi terbaik berdasarkan struktur project yang sebenarnya.

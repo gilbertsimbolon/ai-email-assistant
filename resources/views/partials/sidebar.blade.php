@@ -1,14 +1,18 @@
 <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
     <div class="app-brand demo d-flex align-items-center px-4 py-3">
         <a href="{{ route('dashboard') }}" class="app-brand-link gap-2 d-flex align-items-center text-decoration-none">
-            <img src="{{ asset('img/logo.jpeg') }}" class="rounded" style="width:32px;height:32px;object-fit:cover;flex-shrink:0;">
+            <img src="{{ asset('img/logo.jpeg') }}" class="rounded"
+                style="width:32px;height:32px;object-fit:cover;flex-shrink:0;">
             <span class="app-brand-text demo text-heading fw-bold fs-5 text-truncate">
                 AI Email Assistant
             </span>
         </a>
 
-        <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto p-0">
-            <i class="bx bx-chevron-left d-block d-xl-none align-middle"></i>
+        <a href="javascript:void(0);" id="desktopSidebarToggle" class="menu-link text-large ms-auto p-2"
+            title="Toggle Sidebar">
+
+            <i class="bx bx-chevron-left align-middle"></i>
+
         </a>
     </div>
 
@@ -38,7 +42,8 @@
         </li>
 
         <li class="menu-item {{ request()->routeIs('gmail-inbox.*') ? 'active' : '' }}">
-            <a href="{{ route('gmail-inbox.index') }}" class="menu-link d-flex align-items-center justify-content-between">
+            <a href="{{ route('gmail-inbox.index') }}"
+                class="menu-link d-flex align-items-center justify-content-between">
                 <div><i class="menu-icon tf-icons bx bx-envelope"></i> Gmail Inbox</div>
                 @if (($gmailUnreadCount ?? 0) > 0)
                     <span class="badge bg-primary rounded-pill">{{ $gmailUnreadCount }}</span>
@@ -274,3 +279,31 @@
 
     </div>
 </aside>
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const toggleButton = document.getElementById('desktopSidebarToggle');
+    const html = document.documentElement;
+
+    if (!toggleButton) return;
+
+    toggleButton.addEventListener('click', function (e) {
+        e.preventDefault();
+
+        html.classList.toggle('layout-menu-collapsed');
+
+        const icon = this.querySelector('i');
+
+        if (html.classList.contains('layout-menu-collapsed')) {
+            icon.classList.remove('bx-chevron-left');
+            icon.classList.add('bx-chevron-right');
+        } else {
+            icon.classList.remove('bx-chevron-right');
+            icon.classList.add('bx-chevron-left');
+        }
+    });
+
+});
+</script>
+@endpush
