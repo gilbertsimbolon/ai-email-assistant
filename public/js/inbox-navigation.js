@@ -170,6 +170,34 @@
         aiPanelWrapper.classList.add('ai-panel-collapsed');
     }
 
+    // Contact Details "Search fields and folders" — client-side filter atas
+    // baris/section accordion yang sudah dirender, tidak ada request baru.
+    // Delegated di document (bukan langsung ke #contactFieldSearch) karena
+    // panel ini dirender ulang tiap ganti percakapan (lihat aiPanelBody.innerHTML di atas).
+    document.addEventListener('input', function (event) {
+        if (!event.target.matches('#contactFieldSearch')) {
+            return;
+        }
+
+        const term = event.target.value.trim().toLowerCase();
+        const groups = document.querySelectorAll('#contactFieldsAccordion [data-field-group]');
+
+        groups.forEach(function (group) {
+            const rows = group.querySelectorAll('[data-field-row]');
+            let visibleCount = 0;
+
+            rows.forEach(function (row) {
+                const matches = term === '' || row.textContent.toLowerCase().includes(term);
+                row.classList.toggle('d-none', !matches);
+                if (matches) {
+                    visibleCount++;
+                }
+            });
+
+            group.classList.toggle('d-none', visibleCount === 0);
+        });
+    });
+
     initTooltips(document);
 
     /**

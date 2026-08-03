@@ -5,7 +5,17 @@
 
         {{-- Bubble Chat --}}
         <div class="chat-history flex-grow-1 overflow-auto p-4" id="chatHistory">
+            @php $lastDividerDate = null; @endphp
             @forelse ($activeConversation->messages as $message)
+                @php $messageDate = $message->sent_at?->toDateString(); @endphp
+                @if ($messageDate && $messageDate !== $lastDividerDate)
+                    @php $lastDividerDate = $messageDate; @endphp
+                    <div class="chat-date-divider d-flex align-items-center text-muted small my-3">
+                        <span class="flex-grow-1 border-top"></span>
+                        <span class="px-2">{{ $message->sent_at->format('M j') }}</span>
+                        <span class="flex-grow-1 border-top"></span>
+                    </div>
+                @endif
                 @include('inbox.components.message-bubble', ['message' => $message, 'activeConversation' => $activeConversation])
             @empty
                 <div class="alert alert-secondary text-center mb-0" role="alert">

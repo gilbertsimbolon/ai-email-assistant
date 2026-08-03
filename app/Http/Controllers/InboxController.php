@@ -76,6 +76,12 @@ class InboxController extends Controller
 
         $ghlConfigured = filled(config('ghl.api_key')) && filled(config('ghl.location_id'));
 
+        // GHL's /conversations/search has no cheap "total unread across
+        // every conversation" aggregate, so the badge next to the Unread
+        // filter icon only reflects the conversations already loaded on
+        // this page — not a location-wide total.
+        $unreadCount = $list['items']->sum(fn (GhlConversationListItem $item) => $item->isRead ? 0 : $item->unreadCount);
+
         // Polling list (no ?conversation=): each row is pre-rendered server
         // side (same partial the initial page load uses) so the browser
         // only needs to patch/append <li> elements it doesn't already have
@@ -112,6 +118,7 @@ class InboxController extends Controller
             'search' => $search,
             'ghlConfigured' => $ghlConfigured,
             'ghlError' => $list['error'] ?? false,
+            'unreadCount' => $unreadCount,
             'activeConversation' => $activeConversation,
             'activeDraft' => $activeDraft,
             'contactDetails' => $contactDetails,
@@ -328,6 +335,7 @@ class InboxController extends Controller
             isStarred: $anchor?->is_starred ?? false,
             status: $anchor?->status ?? ConversationStatus::PendingReview,
             hasDraft: (bool) ($anchor?->has_draft ?? false),
+            unreadCount: $live?->unreadCount ?? 0,
         );
     }
 

@@ -1,25 +1,20 @@
 @php
-    $filterOptions = [
-        'all' => 'All',
-        'unread' => 'Unread',
-        'recent' => 'Recent',
-        'starred' => 'Starred',
-        'waiting_agent' => 'Waiting Agent',
-        'waiting_customer' => 'Waiting Customer',
-        'ai_draft' => 'AI Draft',
-        'closed' => 'Closed',
+    // 4 filter utama tampil sebagai icon group compact (Gambar 2). Filter
+    // lain yang sudah ada (waiting_agent/waiting_customer/ai_draft/closed)
+    // tetap berfungsi penuh, dipindah ke dropdown "More" supaya tidak ada
+    // logika/route yang hilang — hanya presentasinya yang dipadatkan.
+    $primaryFilters = [
+        'unread' => ['label' => 'Unread', 'icon' => 'bx-envelope'],
+        'all' => ['label' => 'All', 'icon' => 'bx-grid-alt'],
+        'recent' => ['label' => 'Recent', 'icon' => 'bx-time-five'],
+        'starred' => ['label' => 'Starred', 'icon' => 'bx-star'],
     ];
 
-    // Menggunakan kelas icon Boxicons yang sesuai dengan Bootstrap/Sneat theme
-    $filterIcons = [
-        'all' => 'bx-grid-alt',
-        'unread' => 'bx-envelope',
-        'recent' => 'bx-time-five',
-        'starred' => 'bx-star',
-        'waiting_agent' => 'bx-user-voice',
-        'waiting_customer' => 'bx-user-check',
-        'ai_draft' => 'bx-bot',
-        'closed' => 'bx-check-circle',
+    $moreFilters = [
+        'waiting_agent' => ['label' => 'Waiting Agent', 'icon' => 'bx-user-voice'],
+        'waiting_customer' => ['label' => 'Waiting Customer', 'icon' => 'bx-user-check'],
+        'ai_draft' => ['label' => 'AI Draft', 'icon' => 'bx-bot'],
+        'closed' => ['label' => 'Closed', 'icon' => 'bx-check-circle'],
     ];
 
     $localOnlyFilters = ['recent', 'starred', 'waiting_agent', 'waiting_customer', 'ai_draft', 'closed'];
@@ -43,20 +38,46 @@
         </div>
     </form>
 
-    {{-- ICON GROUP FILTER --}}
-    <div class="btn-group w-100 flex-wrap" role="group" aria-label="Filter Conversations">
-        @foreach ($filterOptions as $value => $label)
-            @php
-                $isLocal = in_array($value, $localOnlyFilters, true);
-                $tooltip = $label . ($isLocal ? ' (Percakapan lokal)' : '');
-            @endphp
+    {{-- ICON GROUP FILTER: compact, dengan badge count biru di atas Unread --}}
+    <div class="d-flex align-items-center gap-2">
+        <div class="inbox-filter-group d-flex align-items-center gap-1 flex-grow-1">
+            @foreach ($primaryFilters as $value => $meta)
+                <a href="{{ route('inbox.index', ['filter' => $value, 'q' => $search]) }}"
+                    class="btn btn-icon btn-sm inbox-filter-btn position-relative {{ $filter === $value ? 'btn-primary' : 'btn-outline-secondary' }}"
+                    data-bs-toggle="tooltip" data-bs-placement="top" title="{{ $meta['label'] }}">
+                    <i class="bx {{ $meta['icon'] }}"></i>
+                    @if ($value === 'unread' && ($unreadCount ?? 0) > 0)
+                        <span class="badge bg-primary rounded-pill inbox-filter-badge">
+                            {{ $unreadCount > 999 ? round($unreadCount / 1000, 1) . 'K' : $unreadCount }}
+                        </span>
+                    @endif
+                </a>
+            @endforeach
+        </div>
 
-            <a href="{{ route('inbox.index', ['filter' => $value, 'q' => $search]) }}"
-                class="btn btn-sm {{ $filter === $value ? 'btn-primary' : 'btn-outline-secondary' }}"
-                data-bs-toggle="tooltip" data-bs-placement="top" title="{{ $tooltip }}">
-                <i class="bx {{ $filterIcons[$value] ?? 'bx-filter' }}"></i>
-            </a>
-        @endforeach
+        <div class="dropdown">
+            <button type="button" class="btn btn-icon btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" title="Filter lainnya">
+                <i class="bx bx-filter-alt"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                @foreach ($moreFilters as $value => $meta)
+                    <li>
+                        <a class="dropdown-item {{ $filter === $value ? 'active' : '' }}" href="{{ route('inbox.index', ['filter' => $value, 'q' => $search]) }}">
+                            <i class="bx {{ $meta['icon'] }} me-2"></i>{{ $meta['label'] }}
+                            <span class="text-muted small">(lokal)</span>
+                        </a>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    </div>
+</div>
+
+{{-- Select All --}}
+<div class="d-flex align-items-center border-bottom px-3 py-2 bg-white flex-shrink-0 ms-2">
+    <div class="form-check mb-0">
+        <input class="form-check-input" type="checkbox" id="selectAllConversations">
+        <label class="form-check-label small text-muted" for="selectAllConversations">Select All</label>
     </div>
 </div>
 

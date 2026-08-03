@@ -41,10 +41,23 @@
             tabindex="-1">
             <div class="offcanvas-header border-bottom d-xl-none">
                 <h6 class="offcanvas-title fw-bold mb-0">Contact Details</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Tutup"></button>
+                <div class="d-flex align-items-center gap-1">
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Segera hadir (buka di jendela baru)">
+                        <i class="bx bx-link-external"></i>
+                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Tutup"></button>
+                </div>
             </div>
-            <div class="d-none d-xl-flex align-items-center border-bottom px-3 py-2 flex-shrink-0">
+            <div class="d-none d-xl-flex align-items-center justify-content-between border-bottom px-3 py-2 flex-shrink-0">
                 <h6 class="fw-bold mb-0"><i class="bx bx-id-card me-1"></i> Contact Details</h6>
+                <div class="d-flex align-items-center gap-1">
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Segera hadir (buka di jendela baru)">
+                        <i class="bx bx-link-external"></i>
+                    </button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" onclick="document.getElementById('btn-toggle-ai-panel')?.click()" title="Tutup panel">
+                        <i class="bx bx-x"></i>
+                    </button>
+                </div>
             </div>
             <div id="aiPanelBody" class="offcanvas-body p-0 d-flex flex-column">
                 @include('inbox.components.ai-panel')

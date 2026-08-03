@@ -25,6 +25,7 @@ final class GhlConversationListItem
         public readonly bool $isStarred,
         public readonly ConversationStatus $status,
         public readonly bool $hasDraft,
+        public readonly int $unreadCount = 0,
     ) {
     }
 
@@ -46,6 +47,7 @@ final class GhlConversationListItem
             'is_starred' => $this->isStarred,
             'status' => $this->status->value,
             'has_draft' => $this->hasDraft,
+            'unread_count' => $this->unreadCount,
         ];
     }
 }
