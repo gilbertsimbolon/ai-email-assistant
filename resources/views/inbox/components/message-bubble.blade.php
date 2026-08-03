@@ -12,6 +12,14 @@
     $recipient = $isAgent
         ? ($activeConversation->contact_email ?? $activeConversation->contact_phone)
         : null;
+
+    // Single-line preview used by the per-message Reply button (composer
+    // reply-preview bar) — never re-rendered server-side elsewhere, so no
+    // HTML escaping concerns beyond the blade attribute output below.
+    $replySnippet = \Illuminate\Support\Str::limit(
+        str_replace(["\r\n", "\n", "\r"], ' ', strip_tags((string) $message->body)),
+        160
+    );
 @endphp
 
 <div
@@ -56,12 +64,21 @@
                 </span>
             @endif
 
+            <button type="button"
+                class="btn btn-link btn-sm text-muted p-0 ms-1 js-msg-reply"
+                data-sender="{{ $senderName }}"
+                data-snippet="{{ $replySnippet }}"
+                title="Reply pesan ini"
+            >
+                <i class="bx bx-reply"></i>
+            </button>
+
         </div>
 
 
         {{-- Bubble --}}
         <div
-            class="border rounded-3 px-3 py-3 bg-white shadow-sm"
+            class="border rounded-3 px-3 py-3 shadow-sm {{ $isAgent ? 'chat-bubble-agent' : 'chat-bubble-customer' }}"
         >
 
             {{-- Message body --}}

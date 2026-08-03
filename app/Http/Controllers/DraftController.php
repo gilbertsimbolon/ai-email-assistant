@@ -136,13 +136,31 @@ class DraftController extends Controller
         $validated = $request->validate([
             'subject' => ['nullable', 'string', 'max:255'],
             'body' => ['required', 'string'],
+            // Message-specific Reply (claude.txt task 1): populated only
+            // when the agent clicked Reply on a bubble in the thread
+            // (message-bubble.blade.php `.js-msg-reply` → composer.js
+            // setReplyTarget). GHL's /conversations/messages send API has
+            // no reply-to-message-id field, so the reference is carried as
+            // quoted text prepended to the outgoing body instead — see
+            // GhlSendService::sendDraft().
+            'reply_to_sender' => ['nullable', 'string', 'max:190'],
+            'reply_to_snippet' => ['nullable', 'string', 'max:500'],
         ]);
+
+        $quoted = filled($validated['reply_to_snippet'] ?? null) ? [
+            'sender' => $validated['reply_to_sender'] ?? null,
+            'snippet' => $validated['reply_to_snippet'],
+        ] : null;
 
         $draft = $conversation->drafts()->where('status', DraftStatus::Active)->first();
 
         if ($draft) {
             $draft->update([
-                'content' => array_merge($draft->content ?? [], $validated),
+                'content' => array_merge($draft->content ?? [], [
+                    'subject' => $validated['subject'] ?? null,
+                    'body' => $validated['body'],
+                    'quoted' => $quoted,
+                ]),
             ]);
         } else {
             $channelValue = (string) $conversation->channelValue();
@@ -156,6 +174,7 @@ class DraftController extends Controller
                     'body' => $validated['body'],
                     'tone' => null,
                     'confidence' => null,
+                    'quoted' => $quoted,
                 ],
                 'version' => 1,
                 'status' => DraftStatus::Active,

@@ -17,6 +17,23 @@
     <input type="text" id="composer-subject" class="form-control form-control-sm mb-2"
            placeholder="Subjek..." value="{{ $activeDraft->content['subject'] ?? $defaultSubject }}">
 
+    {{-- Reply-preview: menunjukkan pesan spesifik yang sedang dibalas
+         (klik ikon Reply pada bubble di message-bubble.blade.php). Kosong &
+         d-none secara default, ditampilkan/disembunyikan oleh
+         inbox-composer.js (setReplyTarget/clearReplyTarget). --}}
+    <div id="composer-reply-preview" class="d-none align-items-start justify-content-between gap-2 border rounded-3 bg-label-secondary px-2 py-1 mb-2 small">
+        <div class="d-flex align-items-start gap-2 overflow-hidden">
+            <i class="bx bx-reply text-primary flex-shrink-0 mt-1"></i>
+            <div class="overflow-hidden">
+                <div class="fw-semibold text-truncate">Membalas <span id="composer-reply-sender"></span></div>
+                <div class="text-muted text-truncate" id="composer-reply-snippet"></div>
+            </div>
+        </div>
+        <button type="button" id="btn-cancel-reply" class="btn btn-icon btn-sm btn-outline-secondary border-0 flex-shrink-0" title="Batalkan balasan">
+            <i class="bx bx-x"></i>
+        </button>
+    </div>
+
     <div class="composer-input-shell border rounded-3 p-2">
         <textarea id="composer-body" class="form-control composer-textarea border-0 shadow-none p-1" rows="4"
                   placeholder="Tulis balasan, atau klik Generate Reply untuk membuat draft AI...">{{ $activeDraft->content['body'] ?? '' }}</textarea>

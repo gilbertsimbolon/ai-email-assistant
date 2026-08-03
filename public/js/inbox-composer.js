@@ -7,11 +7,13 @@
     // longer in the document.
     let composer, subjectEl, bodyEl, btnGenerate, btnRegenerate, btnClear, btnCopy, btnSend;
     let thinkingEl, thinkingDotsEl, saveIndicatorEl;
+    let replyPreviewEl, replySenderEl, replySnippetEl;
     let draftUpdateUrlTemplate, generateUrl, sendUrl;
 
     let autosaveTimer = null;
     let dotsTimer = null;
     let generateAbortController = null;
+    let replyTarget = null;
 
     function csrfToken() {
         return document.querySelector('meta[name="csrf-token"]').content;
@@ -99,6 +101,41 @@
                     saveIndicatorEl.textContent = '';
                 }
             });
+    }
+
+    /**
+     * Message-specific Reply (claude.txt task 1): clicking the reply icon on
+     * a bubble (message-bubble.blade.php `.js-msg-reply`) calls this to show
+     * a quoted reference above the composer, similar to GHL. Cleared on
+     * cancel, on Escape, or whenever a fresh conversation is mounted.
+     */
+    function setReplyTarget(target) {
+        replyTarget = target;
+
+        if (!replyPreviewEl) {
+            return;
+        }
+
+        if (replySenderEl) {
+            replySenderEl.textContent = target.sender;
+        }
+        if (replySnippetEl) {
+            replySnippetEl.textContent = target.snippet;
+        }
+
+        replyPreviewEl.classList.remove('d-none');
+        replyPreviewEl.classList.add('d-flex');
+    }
+
+    function clearReplyTarget() {
+        replyTarget = null;
+
+        if (!replyPreviewEl) {
+            return;
+        }
+
+        replyPreviewEl.classList.add('d-none');
+        replyPreviewEl.classList.remove('d-flex');
     }
 
     function scheduleAutosave() {
@@ -235,6 +272,16 @@
 
         setThinking(true);
 
+        const payload = {
+            subject: subjectEl.value,
+            body: bodyEl.value,
+        };
+
+        if (replyTarget) {
+            payload.reply_to_sender = replyTarget.sender;
+            payload.reply_to_snippet = replyTarget.snippet;
+        }
+
         fetch(sendUrl, {
             method: 'POST',
             headers: {
@@ -242,10 +289,7 @@
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                subject: subjectEl.value,
-                body: bodyEl.value,
-            }),
+            body: JSON.stringify(payload),
         })
             .then(function (response) {
                 return response.json().then(function (data) {
@@ -311,6 +355,9 @@
         thinkingEl = document.getElementById('ai-thinking');
         thinkingDotsEl = thinkingEl ? thinkingEl.querySelector('.ai-thinking-dots') : null;
         saveIndicatorEl = document.getElementById('draft-save-indicator');
+        replyPreviewEl = document.getElementById('composer-reply-preview');
+        replySenderEl = document.getElementById('composer-reply-sender');
+        replySnippetEl = document.getElementById('composer-reply-snippet');
 
         draftUpdateUrlTemplate = composer.dataset.draftUpdateUrlTemplate;
         generateUrl = composer.dataset.generateUrl;
@@ -318,6 +365,9 @@
 
         autosaveTimer = null;
         generateAbortController = null;
+        // Reply state never carries over from a previous conversation —
+        // each thread swap replaces the composer/preview DOM wholesale.
+        replyTarget = null;
 
         btnGenerate.addEventListener('click', handleGenerateClick);
         btnRegenerate.addEventListener('click', handleGenerateClick);
@@ -352,6 +402,8 @@
                 (composer.dataset.draftId ? btnRegenerate : btnGenerate).click();
             } else if (event.key === 'Escape' && generateAbortController) {
                 generateAbortController.abort();
+            } else if (event.key === 'Escape' && replyTarget) {
+                clearReplyTarget();
             }
         });
 
@@ -370,6 +422,28 @@
     window.addEventListener('beforeunload', function () {
         if (autosaveTimer && composer && composer.dataset.draftId) {
             saveDraftNow();
+        }
+    });
+
+    // Message bubbles (chatHistory) and the composer's cancel button are
+    // both replaced wholesale on every AJAX thread swap, so this is
+    // delegated on document once — same convention as the reply/AI-panel
+    // buttons in inbox-navigation.js — instead of re-bound from initComposer.
+    document.addEventListener('click', function (event) {
+        const replyBtn = event.target.closest('.js-msg-reply');
+        if (replyBtn) {
+            setReplyTarget({
+                sender: replyBtn.dataset.sender || 'Pelanggan',
+                snippet: replyBtn.dataset.snippet || '',
+            });
+            if (bodyEl) {
+                bodyEl.focus();
+            }
+            return;
+        }
+
+        if (event.target.closest('#btn-cancel-reply')) {
+            clearReplyTarget();
         }
     });
 

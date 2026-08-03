@@ -34,7 +34,7 @@ class GhlSendService
             throw new RuntimeException('Percakapan ini belum terhubung dengan GoHighLevel, tidak bisa mengirim balasan.');
         }
 
-        $body = $draft->content['body'] ?? '';
+        $body = $this->withQuotedReply($draft->content['body'] ?? '', $draft->content['quoted'] ?? null);
         $channel = $this->liveChannel($conversation->ghl_conversation_id) ?? $conversation->channel;
 
         $payload = array_merge(
@@ -56,6 +56,27 @@ class GhlSendService
             'draft_id' => $draft->id,
             'channel' => $channel,
         ]);
+    }
+
+    /**
+     * Prepends a quoted reference to whichever specific message the agent
+     * clicked "Reply" on (claude.txt task 1). GHL's /conversations/messages
+     * send API is conversation-scoped only — there is no reply-to-message-id
+     * field to set — so the reference travels as visible quoted text in the
+     * body itself, the same way GHL's own UI represents a "reply" on
+     * non-email channels that don't support real message threading.
+     *
+     * @param  ?array{sender: ?string, snippet: string}  $quoted
+     */
+    protected function withQuotedReply(string $body, ?array $quoted): string
+    {
+        if (blank($quoted['snippet'] ?? null)) {
+            return $body;
+        }
+
+        $sender = $quoted['sender'] ?: 'pesan sebelumnya';
+
+        return "> {$sender}: {$quoted['snippet']}\n\n{$body}";
     }
 
     /**
