@@ -1,7 +1,9 @@
 <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
     <div class="app-brand demo d-flex align-items-center px-4 py-3">
         <a href="{{ route('dashboard') }}" class="app-brand-link gap-2 d-flex align-items-center text-decoration-none">
-            <img src="{{ asset('img/logo.jpeg') }}" class="rounded"
+            {{-- app-brand-logo lets Sneat's own collapsed-sidebar CSS hide the
+                 sibling app-brand-text and center this image automatically. --}}
+            <img src="{{ asset('img/logo.jpeg') }}" class="rounded app-brand-logo"
                 style="width:32px;height:32px;object-fit:cover;flex-shrink:0;">
             <span class="app-brand-text demo text-heading fw-bold fs-5 text-truncate">
                 AI Email Assistant
@@ -9,7 +11,7 @@
         </a>
 
         <a href="javascript:void(0);" id="desktopSidebarToggle" class="menu-link text-large ms-auto p-2"
-            title="Toggle Sidebar">
+            data-bs-toggle="tooltip" data-bs-placement="right" title="Toggle sidebar">
 
             <i class="bx bx-chevron-left align-middle"></i>
 
@@ -24,7 +26,8 @@
 
         {{-- Dashboard --}}
         <li class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-            <a href="{{ route('dashboard') }}" class="menu-link">
+            <a href="{{ route('dashboard') }}" class="menu-link" data-bs-toggle="tooltip" data-bs-placement="right"
+                title="Dashboard">
                 <i class="menu-icon tf-icons bx bx-home-circle"></i>
                 <div>Dashboard</div>
             </a>
@@ -36,15 +39,19 @@
         </li>
 
         <li class="menu-item {{ request()->routeIs('inbox.*') ? 'active' : '' }}">
-            <a href="{{ route('inbox.index') }}" class="menu-link d-flex align-items-center justify-content-between">
-                <div><i class="menu-icon tf-icons bx bx-conversation"></i> Conversations</div>
+            <a href="{{ route('inbox.index') }}" class="menu-link d-flex align-items-center justify-content-between"
+                data-bs-toggle="tooltip" data-bs-placement="right" title="Conversations">
+                <i class="menu-icon tf-icons bx bx-conversation"></i>
+                <div>Conversations</div>
             </a>
         </li>
 
         <li class="menu-item {{ request()->routeIs('gmail-inbox.*') ? 'active' : '' }}">
             <a href="{{ route('gmail-inbox.index') }}"
-                class="menu-link d-flex align-items-center justify-content-between">
-                <div><i class="menu-icon tf-icons bx bx-envelope"></i> Gmail Inbox</div>
+                class="menu-link d-flex align-items-center justify-content-between" data-bs-toggle="tooltip"
+                data-bs-placement="right" title="Gmail Inbox">
+                <i class="menu-icon tf-icons bx bx-envelope"></i>
+                <div>Gmail Inbox</div>
                 @if (($gmailUnreadCount ?? 0) > 0)
                     <span class="badge bg-primary rounded-pill">{{ $gmailUnreadCount }}</span>
                 @endif
@@ -58,7 +65,8 @@
             </li>
 
             <li class="menu-item {{ request()->routeIs('ai-center.*') ? 'active open' : '' }}">
-                <a href="javascript:void(0);" class="menu-link menu-toggle">
+                <a href="javascript:void(0);" class="menu-link menu-toggle" data-bs-toggle="tooltip"
+                    data-bs-placement="right" title="AI Center">
                     <i class="menu-icon tf-icons bx bx-brain"></i>
                     <div>AI Center</div>
                 </a>
@@ -152,7 +160,8 @@
             </li>
 
             <li class="menu-item {{ request()->routeIs('reports.*') ? 'active open' : '' }}">
-                <a href="javascript:void(0);" class="menu-link menu-toggle">
+                <a href="javascript:void(0);" class="menu-link menu-toggle" data-bs-toggle="tooltip"
+                    data-bs-placement="right" title="Reports">
                     <i class="menu-icon tf-icons bx bx-bar-chart-alt-2"></i>
                     <div>Reports</div>
                 </a>
@@ -193,7 +202,8 @@
         </li>
 
         <li class="menu-item">
-            <a href="javascript:void(0);" class="menu-link menu-toggle">
+            <a href="javascript:void(0);" class="menu-link menu-toggle" data-bs-toggle="tooltip"
+                data-bs-placement="right" title="Settings">
                 <i class="menu-icon tf-icons bx bx-cog"></i>
                 <div>Settings</div>
             </a>
@@ -221,7 +231,8 @@
          to keep replies working on conversations that haven't migrated to
          GHL, but no longer surfaced as a first-class channel. --}}
         <li class="menu-item">
-            <a href="javascript:void(0);" class="menu-link menu-toggle">
+            <a href="javascript:void(0);" class="menu-link menu-toggle" data-bs-toggle="tooltip"
+                data-bs-placement="right" title="Integrations">
                 <i class="menu-icon tf-icons bx bx-plug"></i>
                 <div>Integrations</div>
             </a>
@@ -247,7 +258,8 @@
     <div class="menu-inner-bottom border-top p-3 mt-auto">
 
         <a href="{{ route('profil.index') }}"
-            class="d-flex align-items-center text-decoration-none text-reset rounded p-2 mb-2 sidebar-profile-link">
+            class="d-flex align-items-center text-decoration-none text-reset rounded p-2 mb-2 sidebar-profile-link"
+            data-bs-toggle="tooltip" data-bs-placement="right" title="{{ auth()->user()->name }}">
 
             <div class="avatar avatar-sm me-2">
                 <span class="avatar-initial rounded-circle bg-label-primary">
@@ -255,7 +267,7 @@
                 </span>
             </div>
 
-            <div class="flex-grow-1 overflow-hidden">
+            <div class="flex-grow-1 overflow-hidden sidebar-profile-info">
                 <h6 class="mb-0 text-truncate">
                     {{ auth()->user()->name }}
                 </h6>
@@ -265,15 +277,16 @@
                 </small>
             </div>
 
-            <i class="bx bx-chevron-right fs-4 text-muted"></i>
+            <i class="bx bx-chevron-right fs-4 text-muted sidebar-profile-chevron"></i>
         </a>
 
         <form action="{{ route('logout') }}" method="POST">
             @csrf
 
-            <button type="submit" class="btn btn-outline-danger w-100">
+            <button type="submit" class="btn btn-outline-danger w-100" data-bs-toggle="tooltip"
+                data-bs-placement="right" title="Keluar">
                 <i class="bx bx-log-out me-1"></i>
-                Keluar
+                <span class="sidebar-logout-text">Keluar</span>
             </button>
         </form>
 
@@ -283,26 +296,65 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    const toggleButton = document.getElementById('desktopSidebarToggle');
     const html = document.documentElement;
+    const toggleButton = document.getElementById('desktopSidebarToggle');
 
     if (!toggleButton) return;
+
+    const toggleIcon = toggleButton.querySelector('i');
+    const STORAGE_KEY = 'sidebarCollapsed';
+    // Sneat's own Helpers.toggleCollapsed()/setCollapsed() only manage the
+    // mobile offcanvas ("layout-menu-expanded"); on screens >= LAYOUT_BREAKPOINT
+    // it never adds "layout-menu-collapsed" itself, so the desktop rail state
+    // is toggled here directly instead of duplicating a broken code path.
+    const isDesktop = () => window.innerWidth >= (window.Helpers ? window.Helpers.LAYOUT_BREAKPOINT : 1200);
+
+    function syncToggleUI() {
+        const collapsed = isDesktop() && html.classList.contains('layout-menu-collapsed');
+
+        toggleIcon.classList.toggle('bx-chevron-right', collapsed);
+        toggleIcon.classList.toggle('bx-chevron-left', !collapsed);
+
+        document.querySelectorAll('#layout-menu [data-bs-toggle="tooltip"]').forEach(function (el) {
+            if (el === toggleButton) return;
+
+            const tooltip = bootstrap.Tooltip.getOrCreateInstance(el);
+            if (collapsed) {
+                tooltip.enable();
+            } else {
+                tooltip.disable();
+                tooltip.hide();
+            }
+        });
+    }
+
+    // Restore persisted desktop state (the inline <head> script already does
+    // this before first paint; repeated here in case storage was unavailable then).
+    if (isDesktop() && localStorage.getItem(STORAGE_KEY) === 'true') {
+        html.classList.add('layout-menu-collapsed');
+    }
+
+    syncToggleUI();
 
     toggleButton.addEventListener('click', function (e) {
         e.preventDefault();
 
-        html.classList.toggle('layout-menu-collapsed');
-
-        const icon = this.querySelector('i');
-
-        if (html.classList.contains('layout-menu-collapsed')) {
-            icon.classList.remove('bx-chevron-left');
-            icon.classList.add('bx-chevron-right');
-        } else {
-            icon.classList.remove('bx-chevron-right');
-            icon.classList.add('bx-chevron-left');
+        if (!isDesktop()) {
+            // Mobile: reuse Sneat's built-in offcanvas close, don't touch desktop state.
+            window.Helpers.toggleCollapsed();
+            return;
         }
+
+        const collapsed = html.classList.toggle('layout-menu-collapsed');
+
+        try {
+            localStorage.setItem(STORAGE_KEY, collapsed ? 'true' : 'false');
+        } catch (e) {}
+
+        syncToggleUI();
     });
+
+    window.addEventListener('resize', syncToggleUI);
 
 });
 </script>

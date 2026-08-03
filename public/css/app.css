@@ -300,6 +300,64 @@
 }
 
 /* ---------------------------------------------------------------------
+   Sidebar collapse (desktop, >=1200px to match Sneat's own
+   .layout-menu-collapsed breakpoint). Sneat's core.css already handles
+   collapsing standard .menu-item content; the rules below only cover the
+   two bits of sidebar markup that are custom to this app and therefore
+   outside Sneat's collapse selectors: the brand-row toggle button, and
+   the bottom profile/logout block.
+   --------------------------------------------------------------------- */
+@media (min-width: 1200px) {
+    /* Brand row: Sneat shrinks .app-brand to the collapsed rail width and
+       hides the logo's sibling text automatically (see app-brand-logo class
+       on the <img>), but its default horizontal padding is too wide to also
+       fit our always-visible toggle button in that narrower row. */
+    .layout-menu-collapsed:not(.layout-menu-hover, .layout-menu-offcanvas, .layout-menu-fixed-offcanvas) #layout-menu .app-brand {
+        padding-inline: 0.5rem;
+    }
+
+    .layout-menu-collapsed:not(.layout-menu-hover, .layout-menu-offcanvas, .layout-menu-fixed-offcanvas) #layout-menu .app-brand-link {
+        gap: 0 !important;
+    }
+
+    .layout-menu-collapsed:not(.layout-menu-hover, .layout-menu-offcanvas, .layout-menu-fixed-offcanvas) #layout-menu #desktopSidebarToggle {
+        padding: 0.25rem !important;
+    }
+
+    /* Sneat only auto-hides <div> labels inside .menu-item when collapsed;
+       the Gmail unread count is a sibling <span class="badge">, so it needs
+       to be hidden explicitly instead of cramping the icon-only rail. */
+    .layout-menu-collapsed:not(.layout-menu-hover, .layout-menu-offcanvas, .layout-menu-fixed-offcanvas) #layout-menu .menu-link .badge {
+        display: none;
+    }
+
+    /* Bottom profile/logout block is bespoke markup (not a .menu-item), so
+       its collapsed state isn't covered by Sneat's stylesheet at all. */
+    .layout-menu-collapsed:not(.layout-menu-hover, .layout-menu-offcanvas, .layout-menu-fixed-offcanvas) #layout-menu .sidebar-profile-link {
+        justify-content: center;
+        padding-inline: 0.5rem !important;
+    }
+
+    .layout-menu-collapsed:not(.layout-menu-hover, .layout-menu-offcanvas, .layout-menu-fixed-offcanvas) #layout-menu .sidebar-profile-link .avatar {
+        margin-inline-end: 0 !important;
+    }
+
+    .layout-menu-collapsed:not(.layout-menu-hover, .layout-menu-offcanvas, .layout-menu-fixed-offcanvas) #layout-menu .sidebar-profile-info,
+    .layout-menu-collapsed:not(.layout-menu-hover, .layout-menu-offcanvas, .layout-menu-fixed-offcanvas) #layout-menu .sidebar-profile-chevron,
+    .layout-menu-collapsed:not(.layout-menu-hover, .layout-menu-offcanvas, .layout-menu-fixed-offcanvas) #layout-menu .sidebar-logout-text {
+        display: none;
+    }
+
+    .layout-menu-collapsed:not(.layout-menu-hover, .layout-menu-offcanvas, .layout-menu-fixed-offcanvas) #layout-menu .menu-inner-bottom form button {
+        padding-inline: 0;
+    }
+
+    .layout-menu-collapsed:not(.layout-menu-hover, .layout-menu-offcanvas, .layout-menu-fixed-offcanvas) #layout-menu .menu-inner-bottom form button i {
+        margin-inline-end: 0 !important;
+    }
+}
+
+/* ---------------------------------------------------------------------
    Inbox "Print Email" toolbar action — shows only the message thread.
    --------------------------------------------------------------------- */
 

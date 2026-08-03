@@ -13,6 +13,18 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    {{-- Restore desktop sidebar collapsed state before first paint, so a
+         refresh doesn't flash the expanded sidebar before JS collapses it. --}}
+    <script>
+        (function () {
+            try {
+                if (window.innerWidth >= 1200 && localStorage.getItem('sidebarCollapsed') === 'true') {
+                    document.documentElement.classList.add('layout-menu-collapsed');
+                }
+            } catch (e) {}
+        })();
+    </script>
+
     <!-- Bootstrap & Animate CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
