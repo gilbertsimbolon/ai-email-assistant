@@ -1,481 +1,112 @@
-Saya ingin kamu menyempurnakan SIDEBAR pada aplikasi Laravel saya.
-
-Gunakan kode sidebar yang sudah ada sebagai baseline. Jangan langsung mengubah kode sebelum memahami struktur layout utama, JavaScript Sneat, CSS/theme, dan behavior sidebar yang sekarang.
-
-==================================================
-GOAL UTAMA
-==================================================
-
-Saya menggunakan template Sneat dan ingin sidebar menjadi lebih polished, modern, responsive, dan nyaman digunakan baik di desktop maupun mobile.
-
-Sidebar harus memiliki behavior seperti dashboard/admin panel modern.
-
-Target behavior:
-
-1. DESKTOP
-   - Sidebar tampil normal secara default.
-   - Tersedia tombol toggle/collapse di bagian header sidebar.
-   - Ketika tombol diklik:
-     - sidebar menjadi collapsed/narrow
-     - icon menu tetap terlihat
-     - label menu disembunyikan
-     - content utama otomatis melebar
-   - Ketika diklik lagi:
-     - sidebar kembali expanded
-     - label menu muncul kembali
-   - Icon tombol toggle harus berubah:
-     - expanded → chevron-left
-     - collapsed → chevron-right
-
-2. MOBILE
-   - Jangan merusak behavior mobile/offcanvas bawaan Sneat.
-   - Sidebar tetap bisa dibuka/tutup menggunakan behavior responsive bawaan Sneat.
-   - Jangan memaksakan desktop collapsed behavior ke mobile.
-   - Pastikan tombol close mobile tetap berfungsi.
-
-3. DESKTOP DAN MOBILE HARUS DIPISAH BEHAVIOR-NYA
-   - Desktop menggunakan collapse.
-   - Mobile menggunakan offcanvas/mobile menu behavior.
-   - Jangan membuat satu JavaScript yang menyebabkan konflik antara kedua behavior tersebut.
-
-==================================================
-SIDEBAR CURRENT STRUCTURE
-==================================================
-
-Sidebar saat ini menggunakan:
-
-<aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
-
-Header:
-
-<div class="app-brand demo d-flex align-items-center px-4 py-3">
-    <a href="{{ route('dashboard') }}" class="app-brand-link gap-2 d-flex align-items-center text-decoration-none">
-        <img src="{{ asset('img/logo.jpeg') }}"
-            class="rounded"
-            style="width:32px;height:32px;object-fit:cover;flex-shrink:0;">
-
-        <span class="app-brand-text demo text-heading fw-bold fs-5 text-truncate">
-            AI Email Assistant
-        </span>
-    </a>
-
-    <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto p-0">
-        <i class="bx bx-chevron-left d-block d-xl-none align-middle"></i>
-    </a>
-</div>
-
-Sidebar berisi menu:
-
-- Dashboard
-- Conversations
-- Gmail Inbox
-- AI Center
-  - Dashboard
-  - Intent Builder
-  - SOP Builder
-  - Workflow Builder
-  - Reply Templates
-  - Knowledge Base
-  - Forbidden Actions
-  - AI Models
-  - AI Parameters
-  - Prompt Preview
-  - Playground
-  - AI Logs
-  - Settings
-- Reports
-  - Overview
-  - AI Usage & Models
-  - Content Analytics
-  - Customer Analytics
-  - Activity Timeline
-- Administration
-  - Settings
-    - AI Configuration
-    - Users
-- Integrations
-  - Email Connection
-  - Email API Configuration
-
-Di bagian bawah sidebar terdapat:
-
-- Profile user
-- Email
-- Profile link
-- Logout button
-
-==================================================
-IMPORTANT CURRENT PROBLEM
-==================================================
-
-Saat ini tombol sidebar hanya terlihat pada mobile karena icon menggunakan:
-
-d-xl-none
-
-Saya ingin tombol toggle juga tersedia di desktop.
-
-Namun ketika saya menghapus d-xl-none, tombol memang muncul di desktop tetapi ketika diklik sidebar tidak collapse.
-
-Jadi jangan hanya menghapus d-xl-none.
-
-Cari tahu bagaimana Sneat layout dan JavaScript bawaan bekerja terlebih dahulu.
-
-==================================================
-REQUIREMENTS
-==================================================
-
-### 1. Desktop Sidebar Toggle
-
-Buat tombol toggle yang benar-benar bekerja di desktop.
-
-Behavior:
-
-Expanded:
-
-[Logo] AI Email Assistant              <
-
-Collapsed:
-
-[Logo]                                  >
-
-Ketika collapsed:
-
-- Sidebar menjadi sempit
-- Hanya icon menu yang terlihat
-- Text menu disembunyikan
-- Menu header seperti "AI Center", "Reports", "Administration" tidak mengganggu layout
-- Badge/menu counter ditangani dengan baik
-- Profile information di bagian bawah menyesuaikan
-- Logout button menyesuaikan
-- Main content melebar otomatis
-
-Jangan membuat sidebar disappear total.
-
-### 2. Mobile
-
-Pertahankan behavior mobile Sneat.
-
-Mobile harus tetap:
-
-- bisa open
-- bisa close
-- bisa menggunakan overlay/backdrop jika Sneat menggunakannya
-- tidak menyebabkan horizontal overflow
-- tidak menyebabkan body bisa scroll aneh
-
-### 3. Persistence
-
-Jika memungkinkan, simpan state desktop sidebar menggunakan localStorage:
-
-sidebarCollapsed = true / false
-
-Sehingga:
-
-- user collapse sidebar
-- refresh halaman
-- sidebar tetap collapsed
-
-Tetapi jangan menyimpan state mobile sebagai desktop collapsed state.
-
-### 4. Responsive Breakpoint
-
-Gunakan breakpoint Sneat/Bootstrap yang sudah digunakan project.
-
-Jangan membuat breakpoint random jika Sneat sudah memiliki breakpoint yang sesuai.
-
-Desktop behavior hanya aktif pada breakpoint desktop.
-
-Mobile tetap mengikuti behavior responsive Sneat.
-
-### 5. Icon
-
-Gunakan Boxicons yang sudah tersedia.
-
-Expanded:
-
-bx-chevron-left
-
-Collapsed:
-
-bx-chevron-right
-
-Jangan menambahkan library baru.
-
-### 6. Tooltip ketika collapsed
-
-Saat sidebar collapsed di desktop:
-
-- menu icon harus tetap bisa dipahami
-- tampilkan tooltip berisi nama menu ketika hover
-
-Contoh:
-
-🏠 → Dashboard
-💬 → Conversations
-🧠 → AI Center
-
-Gunakan Bootstrap tooltip atau mekanisme tooltip yang sudah tersedia di project.
-
-Jangan membuat library tooltip baru.
-
-### 7. Nested Menu
-
-Perhatikan menu seperti:
-
-AI Center
-Reports
-Settings
-Integrations
-
-Ketika sidebar collapsed:
-
-- icon parent tetap terlihat
-- submenu tidak boleh menyebabkan layout rusak
-- submenu harus tetap bekerja ketika sidebar expanded
-- jangan menghilangkan functionality menu-toggle
-- active state tetap benar
-
-### 8. Active State
-
-Jangan mengubah logic Laravel seperti:
-
-request()->routeIs(...)
-@can(...)
-@canany(...)
-
-Semua permission dan active state yang sudah ada harus tetap bekerja.
-
-Jangan mengubah route.
-
-Jangan mengubah authorization logic.
-
-### 9. Bottom User Section
-
-Bagian:
-
-Profile
-User name
-Email
-Logout
-
-harus tetap terlihat bagus ketika:
-
-EXPANDED:
-
-[Avatar] Gilbert Simbolon
-         email@example.com
-[ Logout / Keluar ]
-
-COLLAPSED:
-
-[Avatar]
-[Logout icon]
-
-Jika text tidak muat ketika collapsed, sembunyikan text tetapi jangan menghilangkan functionality.
-
-### 10. Logo
-
-Ketika expanded:
-
-[logo] AI Email Assistant
-
-Ketika collapsed:
-
-[logo]
-
-Pastikan logo tetap terlihat dan tidak rusak.
-
-==================================================
-IMPORTANT DESIGN RULES
-==================================================
-
-Gunakan styling yang sudah tersedia dari:
-
-- Sneat
-- Bootstrap 5
-- Boxicons
-
-Jangan membuat design system baru.
-
-Jangan menggunakan Tailwind.
-
-Jangan menggunakan GSAP.
-
-Jangan menambahkan dependency baru jika tidak diperlukan.
-
-Utamakan Bootstrap utility classes.
-
-Hindari custom CSS sebanyak mungkin.
-
-Jika custom CSS memang benar-benar diperlukan, letakkan secara terstruktur dan jelaskan kenapa diperlukan.
-
-==================================================
-IMPORTANT CODE RULES
-==================================================
-
-Sebelum coding:
-
-1. Cari layout utama.
-2. Cari app.js / main.js.
-3. Cari JavaScript Sneat yang mengatur:
-   - layout menu
-   - menu toggle
-   - collapsed state
-   - mobile offcanvas
-4. Cari CSS Sneat yang mengatur:
-   - layout-menu
-   - layout-menu-collapsed
-   - layout-menu-fixed
-   - layout-page
-   - layout-navbar
-5. Cari apakah project sudah memiliki mekanisme sidebar collapse.
-
-Jangan duplicate functionality yang sebenarnya sudah tersedia.
-
-Jika Sneat sudah memiliki API/function/class untuk sidebar collapse, gunakan itu.
-
-Jangan membuat sistem toggle baru jika sistem existing bisa digunakan.
-
-==================================================
-VERY IMPORTANT
-==================================================
-
-Jangan hanya mengubah file sidebar.
-
-Audit semua file yang relevan terlebih dahulu.
-
-Jika diperlukan perubahan pada:
-
-- Blade layout
-- sidebar Blade
-- app.js
-- main.js
-- CSS
-- Bootstrap initialization
-- Sneat initialization
-
-lakukan perubahan hanya pada bagian yang benar-benar diperlukan.
-
-Jangan merusak functionality lain.
-
-==================================================
-EXPECTED RESULT
-==================================================
-
-Desktop expanded:
-
-┌──────────────────────────────────────────┐
-│ [LOGO] AI Email Assistant             <  │
-├──────────────────────────────────────────┤
-│ 🏠 Dashboard                             │
-│                                          │
-│ CONVERSATIONS                            │
-│ 💬 Conversations                         │
-│ ✉ Gmail Inbox                            │
-│                                          │
-│ AI CENTER                                │
-│ 🧠 AI Center                         >   │
-│                                          │
-│ REPORTS                                  │
-│ 📊 Reports                           >   │
-│                                          │
-│ ADMINISTRATION                           │
-│ ⚙ Settings                           >   │
-│ 🔌 Integrations                       >  │
-│                                          │
-│ ───────────────────────────────────────  │
-│ 👤 User Name                             │
-│    email@example.com                     │
-│                                          │
-│ [ Logout ]                               │
-└──────────────────────────────────────────┘
-
-
-Desktop collapsed:
-
-┌──────┐
-│ LOGO >│
-├──────┤
-│  🏠  │
-│      │
-│  💬  │
-│  ✉   │
-│      │
-│  🧠  │
-│      │
-│  📊  │
-│      │
-│  ⚙   │
-│  🔌  │
-│      │
-│  👤  │
-│  🚪  │
-└──────┘
-
-Main content harus otomatis mengambil ruang yang dibebaskan.
-
-==================================================
-DELIVERABLE
-==================================================
-
-Setelah memahami project:
-
-1. Jelaskan root cause kenapa tombol desktop sekarang tidak berfungsi.
-2. Jelaskan behavior Sneat yang sedang digunakan.
-3. Sebutkan file apa saja yang perlu diubah.
-4. Implementasikan perubahan.
-5. Jangan menghapus functionality existing.
-6. Pastikan desktop collapse berfungsi.
-7. Pastikan mobile offcanvas tetap berfungsi.
-8. Pastikan nested menu tetap berfungsi.
-9. Pastikan active state dan permission tetap aman.
-10. Pastikan tidak ada horizontal overflow.
-11. Pastikan tidak ada console error.
-12. Pastikan tidak ada JavaScript error.
-13. Pastikan state collapsed bisa dipertahankan setelah refresh jika memungkinkan.
-
-==================================================
-VALIDATION CHECKLIST
-==================================================
-
-Setelah selesai, test:
-
-[ ] Desktop sidebar expanded
-[ ] Desktop sidebar collapse
-[ ] Desktop sidebar expand kembali
-[ ] Icon berubah kiri/kanan
-[ ] Content melebar ketika sidebar collapse
-[ ] Logo tetap terlihat
-[ ] Menu icons tetap terlihat
-[ ] Menu labels hilang ketika collapsed
-[ ] Tooltip muncul ketika collapsed
-[ ] Nested menu tetap bekerja
-[ ] Active state tetap bekerja
-[ ] Permission tetap bekerja
-[ ] Profile section tetap bekerja
-[ ] Logout tetap bekerja
-[ ] Mobile sidebar tetap bekerja
-[ ] Mobile overlay tetap bekerja
-[ ] Tidak ada horizontal scrollbar
-[ ] Tidak ada console error
-[ ] Refresh tidak merusak state
-[ ] Tidak ada dependency baru yang tidak diperlukan
-
-==================================================
-IMPORTANT FINAL INSTRUCTION
-==================================================
-
-Jangan berhenti hanya karena tombol toggle sudah bisa diklik.
-
-Saya ingin hasil akhirnya terasa seperti sidebar admin dashboard profesional:
-
-- smooth
-- responsive
-- clean
-- consistent dengan Sneat
-- desktop collapse benar
-- mobile offcanvas benar
-- content ikut menyesuaikan
-- tidak merusak menu/permission/route yang sudah ada
-
-Audit project terlebih dahulu, kemudian implementasikan solusi terbaik berdasarkan struktur project yang sebenarnya.
+You are working on my Laravel 13 AI Email Assistant inbox.
+
+IMPORTANT:
+- DO NOT modify the left conversation list/panel.
+- The left conversation list is already stable and must remain exactly as it is.
+- Do not refactor unrelated code.
+- Do not change database architecture.
+- Do not add unnecessary dependencies.
+- Reuse the existing Bootstrap 5 + Sneat UI and existing services/routes where possible.
+- Before changing code, inspect the current inbox/thread implementation and understand how GHL messages are currently loaded and sent.
+
+TASK:
+
+1. FIX MESSAGE / THREAD PANEL
+Make the middle Message panel stable and behave like GoHighLevel's conversation/message view.
+
+Required:
+- Display the full conversation/message thread correctly.
+- Messages must appear in the correct chronological order.
+- Clearly distinguish customer messages and agent messages.
+- Keep the message area internally scrollable without causing the whole page to scroll.
+- Composer must remain usable at the bottom.
+- Reply must work correctly.
+- The agent must be able to choose WHICH specific message they are replying to, similar to GHL.
+- When clicking Reply on a specific message:
+  - show the selected/referenced message above the composer or in a reply-preview area
+  - clearly show who/what message is being replied to
+  - allow canceling the reply
+  - sending must send the reply to the correct conversation/thread
+- Do not implement a fake frontend-only reply. Connect it to the existing Laravel/GHL flow.
+- Preserve existing polling/realtime behavior if already implemented.
+- Avoid duplicate messages when polling.
+- Avoid the thread jumping unexpectedly when new messages arrive.
+- Handle loading, empty state, and error state properly.
+
+2. ADD THIRD COLUMN
+Change the inbox layout to 3 columns:
+
+LEFT:
+Conversation List
+- DO NOT TOUCH THIS.
+- Keep the current implementation exactly as it is.
+
+CENTER:
+Message / Conversation Thread
+- This is the panel you must fix in task #1.
+
+RIGHT:
+Profile / Contact Details
+- Add a new third column on the right side.
+- For now, make it an EMPTY placeholder only.
+- Do not implement profile functionality yet.
+- Give it a clean Bootstrap/Sneat layout with a simple "Contact Details" header.
+- It should occupy a stable fixed-width column on desktop.
+- On smaller screens, follow the existing responsive/offcanvas behavior if appropriate.
+
+TARGET LAYOUT:
+
+┌────────────────────┬──────────────────────────────┬───────────────────┐
+│                    │                              │                   │
+│ Conversation List  │ Message / Conversation      │ Contact Details   │
+│                    │ Thread                       │                   │
+│ DO NOT MODIFY      │ FIX THIS                    │ EMPTY FOR NOW     │
+│                    │                              │                   │
+│                    │                              │                   │
+│                    │ Composer                     │                   │
+└────────────────────┴──────────────────────────────┴───────────────────┘
+
+IMPORTANT IMPLEMENTATION RULES:
+- Use Bootstrap utility classes wherever possible.
+- Avoid creating custom CSS unless absolutely necessary.
+- Do not use min-vh-100 inside nested inbox panels if it causes page-level scrolling.
+- The inbox should fit within the available layout/page height.
+- Only the conversation list and message thread should scroll internally where necessary.
+- The right profile column should not create an additional page-level scrollbar.
+- Do not modify the existing conversation-list component.
+- Do not modify unrelated navbar/sidebar/footer/layout code unless absolutely required to make the 3-column inbox work.
+- Do not remove existing GHL functionality.
+- Do not break existing star/read/polling/message functionality.
+
+WORKFLOW:
+1. Inspect the existing inbox Blade files, controllers, services, routes, and JS related to:
+   - conversation list
+   - conversation thread
+   - sending messages
+   - message polling
+   - GHL API
+2. Identify the minimum files that need changes.
+3. Implement the 3-column layout.
+4. Fix the middle message/thread panel.
+5. Implement message-specific Reply behavior.
+6. Add the empty right Contact Details panel.
+7. Test for:
+   - desktop layout
+   - responsive behavior
+   - opening conversations
+   - loading messages
+   - replying to a specific message
+   - sending reply
+   - polling/new messages
+   - no duplicate messages
+   - no unwanted page-level scrolling
+
+IMPORTANT:
+Do NOT rewrite the entire inbox.
+Do NOT redesign the left conversation list.
+Do NOT touch the left panel unless a tiny integration change is absolutely required.
+
+At the end:
+- Give a concise summary of files changed.
+- Explain exactly how message-specific Reply works.
+- Mention any remaining limitation.
