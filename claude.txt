@@ -1,79 +1,177 @@
-Extract Info masih bermasalah.
+Saya ingin kamu melakukan DEBUGGING TOTAL terhadap fitur Extract Info GHL.
 
-Saya menemukan bahwa data Product, Purchase Date, Purchase Price, dan Receipt Number selalu "-" padahal customer tersebut melakukan pembelian.
+MASALAH:
+Extract Info saat ini berhasil menampilkan:
 
-Berikut contoh response Contact API yang sedang digunakan:
+- Customer Name
+- Email
+- Phone
+- Contact ID
+- Conversation ID
+- Channel
+- Company
+- Tags
+
+Tetapi selalu:
+
+- Product: -
+- Purchase Date: -
+- Purchase Price: -
+- Receipt Number: -
+
+Saya SUDAH membuat Private Integration GHL BARU dan memberikan SEMUA SCOPE/PERMISSION yang tersedia.
+
+Jadi JANGAN berasumsi masalahnya adalah permission.
+
+CONTOH RESPONSE CONTACT API:
 
 {
   "id": "lucHozaAh4OHu8DuGWPx",
   "locationId": "AnMwkyCLq3d9mi0cfvmI",
   "contactName": "carmen gonzalez",
   "email": "cmariegonzalez@gmail.com",
-  "customFields": [],
-  "tags": []
+  "tags": [],
+  "customFields": []
 }
 
-MASALAH:
-Contact API response tersebut memang TIDAK memiliki:
-- product
-- purchase date
-- purchase price
-- receipt number
+Perhatikan:
+customFields = []
+dan response Contact API tidak memiliki:
+product
+purchaseDate
+purchasePrice
+receiptNumber
 
-Dan customFields juga kosong.
+TARGET UTAMA:
 
-Jadi JANGAN hanya melakukan mapping dari Contact API.
+Jangan berhenti pada Contact API.
 
-TASK:
+Saya ingin kamu mencari SUMBER DATA TRANSAKSI SEBENARNYA di GoHighLevel.
 
-1. Trace seluruh flow Extract Info yang sekarang.
-2. Identifikasi dari API/endpoint mana data transaksi customer sebenarnya bisa diperoleh.
-3. Cari berdasarkan Contact ID / Conversation ID yang sedang dibuka.
-4. Periksa apakah GHL menyediakan data transaksi/order/opportunity/payment atau data terkait lainnya untuk customer tersebut.
-5. Periksa juga message/thread metadata jika data pembelian dikirim melalui conversation.
-6. Cari field yang kemungkinan berisi:
-   - Product
-   - Purchase Date
-   - Purchase Price
-   - Receipt Number
+==================================================
+STEP 1 — AUDIT KODE
+==================================================
 
-Receipt Number harus memiliki format seperti:
+Cari seluruh implementasi Extract Info saat ini.
+
+Identifikasi:
+
+- Controller
+- Service
+- GHL API Service
+- endpoint yang dipanggil
+- Contact ID yang digunakan
+- Conversation ID yang digunakan
+- response API yang diterima
+- bagaimana Product/Purchase Date/Purchase Price/Receipt Number saat ini diisi
+
+Jangan langsung mengubah kode.
+
+==================================================
+STEP 2 — TRACE DATA CUSTOMER
+==================================================
+
+Gunakan Contact ID dan Conversation ID customer sebagai starting point.
+
+Cari apakah data pembelian tersedia melalui:
+
+- Contact API
+- Conversations API
+- Messages API
+- Opportunities
+- Pipelines
+- Orders
+- Payments
+- Transactions
+- Products
+- Invoices
+- Ecommerce
+- Custom Objects
+- Custom Fields
+- Notes
+- Tags
+- conversation metadata
+- message metadata
+- webhook/event data
+
+Jangan mengasumsikan salah satu endpoint.
+
+Cari berdasarkan struktur API GHL yang benar-benar digunakan project ini.
+
+==================================================
+STEP 3 — CEK SEMUA RESPONSE
+==================================================
+
+Untuk sementara tambahkan logging/debugging yang aman.
+
+Untuk setiap API request yang relevan, log:
+
+- endpoint
+- HTTP status
+- response keys
+- response structure yang relevan
+
+JANGAN log:
+- API key
+- access token
+- secret
+- password
+- data sensitif yang tidak diperlukan
+
+Saya ingin mengetahui:
+
+"Data Product, Purchase Date, Purchase Price, dan Receipt Number sebenarnya berada di response API mana?"
+
+==================================================
+STEP 4 — JANGAN GUNAKAN AI
+==================================================
+
+Data transaksi HARUS diambil langsung dari API.
+
+Jangan gunakan OpenAI/Claude/Gemini untuk:
+- menebak product
+- mengekstrak purchase date
+- menebak price
+- membuat receipt number
+
+AI tidak boleh menjadi source of truth untuk Extract Info.
+
+==================================================
+STEP 5 — RECEIPT NUMBER
+==================================================
+
+Receipt Number harus berasal dari data API.
+
+Contoh format:
+
 REC2141
 
-7. Gunakan API sebagai source of truth.
-8. JANGAN gunakan AI untuk menebak atau mengekstrak data tersebut.
-9. JANGAN hardcode.
-10. Jika diperlukan lebih dari satu API request, gabungkan data berdasarkan Contact ID / Conversation ID.
-11. Pertahankan data Extract Info yang sudah berhasil seperti:
-   - Customer Name
-   - Email
-   - Phone
-   - Contact ID
-   - Conversation ID
-   - Channel
-   - Company
-   - Tags
+Jangan generate nomor baru.
 
-12. Tambahkan:
-   - Product
-   - Purchase Date
-   - Purchase Price
-   - Receipt Number
+Jika API memberikan:
 
-IMPORTANT:
-Jangan langsung coding sebelum menemukan source data sebenarnya.
+receiptNumber = "REC2141"
 
-Debug terlebih dahulu:
-- tampilkan endpoint API yang dipanggil
-- tampilkan struktur response yang relevan
-- identifikasi field transaksi yang sebenarnya
-- jelaskan kenapa data transaksi tidak ditemukan dari Contact API
+maka tampilkan:
 
-Jika Contact API memang tidak menyediakan data transaksi, cari endpoint GHL lain yang relevan.
+Receipt Number
+REC2141
 
-Jangan mengubah UI Inbox yang tidak berkaitan.
+==================================================
+STEP 6 — PURCHASE DATA
+==================================================
 
-TARGET:
+Cari hubungan antara:
+
+Contact ID
+↓
+Transaction / Order / Payment / Opportunity
+↓
+Product / Purchase Information
+
+Jika GHL membutuhkan endpoint kedua/ketiga untuk mendapatkan informasi transaksi, lakukan API request tambahan dan gabungkan hasilnya.
+
+Contoh hasil akhir yang diharapkan:
 
 Customer Name
 Leanne Gutierrez
@@ -97,16 +195,95 @@ Company
 -
 
 Product
-[NAMA PRODUK]
+[NAMA PRODUK DARI API]
 
 Purchase Date
-[TANGGAL]
+[TANGGAL DARI API]
 
 Purchase Price
-[HARGA]
+[HARGA DARI API]
 
 Receipt Number
 REC2141
 
 Tags
 purchase - c360 lifetime
+
+==================================================
+STEP 7 — JIKA DATA TIDAK ADA
+==================================================
+
+INI SANGAT PENTING.
+
+Jika setelah API audit ternyata Contact API memang tidak memiliki data transaksi, JANGAN hanya membuat field tetap "-".
+
+Cari tahu:
+
+1. Apakah data pembelian memang disimpan di GHL?
+2. Jika iya, endpoint mana yang menyimpannya?
+3. Jika tidak, apakah data tersebut berasal dari sistem eksternal/integrasi Content360?
+4. Apakah GHL hanya menerima customer/contact + conversation tetapi transaksi tersimpan di platform lain?
+5. Apakah tag "purchase - c360 lifetime" hanya menunjukkan status pembelian tanpa menyimpan detail transaksi?
+
+Jika tidak ditemukan, jelaskan dengan bukti dari response API.
+
+==================================================
+STEP 8 — PRIVATE INTEGRATION
+==================================================
+
+Karena Private Integration BARU sudah dibuat dengan SEMUA SCOPE:
+
+- jangan meminta saya membuat integration baru lagi
+- jangan mengubah scope secara random
+- cek API response dan HTTP status sebenarnya
+- pastikan Laravel benar-benar menggunakan API key Private Integration BARU
+- pastikan tidak masih menggunakan API key lama dari .env/database/cache
+
+Tambahkan debug untuk memastikan integration yang aktif memang integration baru.
+
+Jangan pernah menampilkan API key secara penuh di log.
+
+==================================================
+STEP 9 — CACHE / CONFIG
+==================================================
+
+Pastikan Laravel tidak menggunakan credential lama karena:
+
+- config cache
+- application cache
+- database settings
+- .env lama
+
+Periksa source credential yang sebenarnya digunakan GoHighLevelService.
+
+Jika ada kemungkinan credential lama masih digunakan, jelaskan dan perbaiki.
+
+==================================================
+STEP 10 — HASIL AKHIR
+==================================================
+
+Sebelum selesai, berikan laporan singkat:
+
+1. Endpoint GHL apa saja yang digunakan Extract Info.
+2. Endpoint mana yang mengandung data transaksi.
+3. Field API yang digunakan untuk:
+   - Product
+   - Purchase Date
+   - Purchase Price
+   - Receipt Number
+4. Bagaimana data tersebut dihubungkan dengan Contact ID.
+5. Kenapa sebelumnya field selalu "-".
+6. File apa saja yang diubah.
+
+Setelah sumber data benar-benar ditemukan, baru implementasikan mapping ke Extract Info.
+
+JANGAN membuat fake/mock data.
+
+JANGAN hardcode.
+
+JANGAN menggunakan AI.
+
+JANGAN berhenti hanya karena Contact API tidak memiliki customFields.
+
+Fokus utama:
+TEMUKAN SUMBER DATA PEMBELIAN SEBENARNYA DI GHL DAN TAMPILKAN DATA TERSEBUT DI EXTRACT INFO.
