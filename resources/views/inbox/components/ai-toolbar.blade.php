@@ -48,16 +48,4 @@
     <button type="button" class="btn btn-sm btn-outline-secondary ai-tool-trigger" data-tool="sentiment">
         <i class="bx bx-happy-heart-eyes me-1"></i> Sentiment
     </button>
-
-    <div class="vr mx-1 d-none d-sm-block"></div>
-
-    <button type="button" id="btn-copy-email" class="btn btn-icon btn-sm btn-outline-secondary" title="Copy Email">
-        <i class="bx bx-copy"></i>
-    </button>
-    <button type="button" id="btn-download-email" class="btn btn-icon btn-sm btn-outline-secondary" title="Download Email">
-        <i class="bx bx-download"></i>
-    </button>
-    <button type="button" id="btn-print-email" class="btn btn-icon btn-sm btn-outline-secondary" title="Print Email">
-        <i class="bx bx-printer"></i>
-    </button>
 </div>
