@@ -1,52 +1,48 @@
-Perbaiki arsitektur Inbox agar tidak lagi bergantung pada Laravel Scheduler (schedule:work) maupun Queue Worker (queue:work).
+Buat perbaikan kecil pada fitur Extract Info di Inbox.
 
-TARGET
-Aplikasi harus selalu realtime langsung dari GoHighLevel (GHL). User tidak perlu menjalankan scheduler ataupun queue untuk melihat perubahan.
+CATATAN:
+Saya sebelumnya lupa melakukan git pull, jadi pastikan kamu bekerja berdasarkan kode TERBARU yang sekarang ada di repository. Jangan mengembalikan perubahan ke implementasi lama.
 
-REQUIREMENTS
+Saat ini Extract Info sudah berhasil mengambil informasi dari API dan sudah berjalan. JANGAN ubah mekanisme yang sudah ada dan JANGAN gunakan AI untuk mengambil data tersebut.
 
-1. Hapus dependency terhadap:
-- schedule:work
-- queue:work
-- queued jobs untuk sinkronisasi inbox
-- polling yang bergantung pada database lokal
+Tambahkan 4 informasi berikut jika tersedia dari data/API:
 
-2. Semua data Inbox harus berasal langsung dari GoHighLevel API.
-Saat halaman dibuka:
-- ambil conversation list langsung dari GHL
-- ambil message thread langsung dari GHL
-- ambil contact detail langsung dari GHL
+1. Produk yang dibeli
+2. Tanggal pembelian
+3. Harga pembelian
+4. Receipt Number
 
-3. Setelah halaman terbuka, perubahan harus realtime tanpa refresh halaman.
-Gunakan pendekatan yang paling sederhana dan ringan, misalnya:
-- short polling ke GHL setiap beberapa detik
-atau
-- mekanisme realtime lain yang tidak membutuhkan Laravel Scheduler maupun Queue Worker.
+Format Receipt Number harus seperti:
+REC2141
 
-4. Jangan membuat cache database untuk conversation maupun message.
-Database hanya digunakan untuk:
-- konfigurasi aplikasi
-- AI Settings
-- Prompt
-- SOP
-- Template
-- data internal aplikasi
+REQUIREMENTS:
+- Ambil data langsung dari API/source yang sudah digunakan oleh Extract Info.
+- Jangan generate/menebak data menggunakan AI.
+- Jangan hardcode value.
+- Jika data tidak tersedia, tampilkan "-" atau "Tidak tersedia".
+- Pertahankan field Extract Info yang sudah ada.
+- Jangan mengubah UI/layout Inbox yang tidak berkaitan.
+- Pastikan data ditampilkan dengan format yang rapi dan konsisten dengan field Extract Info lainnya.
+- Cari terlebih dahulu struktur response API yang saat ini digunakan untuk mengetahui field yang tepat.
+- Jangan membuat database baru hanya untuk menyimpan informasi ini.
 
-Conversation dan message tidak boleh menjadi source of truth.
+SEBELUM CODING:
+1. Pull/analisis kode terbaru yang tersedia.
+2. Cari implementasi Extract Info saat ini.
+3. Identifikasi API endpoint dan response yang menjadi sumber data.
+4. Cari field yang berisi:
+   - product
+   - purchase date
+   - purchase price
+   - receipt number
+5. Jika nama field berbeda, mapping sesuai response API yang sebenarnya.
 
-5. Pertahankan seluruh tampilan UI yang sudah ada.
-Jangan mengubah layout Inbox maupun desain.
+HASIL AKHIR:
+Extract Info harus menampilkan:
 
-6. Pastikan:
-- conversation baru langsung muncul
-- pesan baru langsung muncul
-- unread count selalu mengikuti GHL
-- perubahan status mengikuti GHL
-- tidak perlu reload browser
+Product: [produk yang dibeli]
+Purchase Date: [tanggal pembelian]
+Purchase Price: [harga pembelian]
+Receipt Number: REC2141
 
-7. Prioritaskan implementasi yang sederhana, maintainable, dan hemat resource. Hindari over-engineering.
-
-Sebelum mengubah kode:
-- analisis seluruh alur Inbox saat ini
-- identifikasi bagian yang masih bergantung pada Scheduler, Queue, atau database
-- refactor menjadi arsitektur realtime langsung dari GHL.
+Selain 4 field tersebut, semua fungsi Extract Info yang sudah berjalan harus tetap berfungsi seperti sebelumnya.
