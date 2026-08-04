@@ -73,8 +73,7 @@ class InboxController extends Controller
         protected GhlParserService $ghlParser,
         protected GhlConversationAnchorService $anchors,
         protected GhlThreadLoader $threadLoader,
-    ) {
-    }
+    ) {}
 
     /**
      * Menampilkan halaman Inbox GHL (3 kolom: list, thread, contact
@@ -106,7 +105,7 @@ class InboxController extends Controller
         // — never a full page reload (claude.txt section 11-12).
         if ($request->wantsJson() && ! $request->filled('conversation')) {
             return response()->json([
-                'items' => $list['items']->map(fn (GhlConversationListItem $item) => [
+                'items' => $list['items']->map(fn(GhlConversationListItem $item) => [
                     'id' => $item->ghlConversationId,
                     'is_read' => $item->isRead,
                     'html' => view('inbox.components.conversation-item', [
@@ -126,8 +125,17 @@ class InboxController extends Controller
 
         if ($request->wantsJson()) {
             return response()->json([
-                'thread_html' => view('inbox.components.conversation-thread', compact('activeConversation', 'activeDraft'))->render(),
-                'ai_panel_html' => view('inbox.components.ai-panel', compact('activeConversation', 'contactDetails'))->render(),
+                'thread_html' => view('inbox.components.conversation-thread', [
+                    'activeConversation' => $activeConversation,
+                    'activeDraft' => $activeDraft,
+                    'contactDetails' => $contactDetails,
+                ])->render(),
+
+                'ai_panel_html' => view('inbox.components.ai-panel', [
+                    'activeConversation' => $activeConversation,
+                    'contactDetails' => $contactDetails,
+                ])->render(),
+
                 'conversation_id' => $activeConversation?->ghl_conversation_id,
                 'is_read' => $activeConversation?->is_read,
             ]);
@@ -192,7 +200,7 @@ class InboxController extends Controller
 
         return response()->json([
             'success' => true,
-            'messages' => $messages->map(fn (Message $message) => [
+            'messages' => $messages->map(fn(Message $message) => [
                 'id' => $message->ghl_message_id,
                 'html' => view('inbox.components.message-bubble', [
                     'message' => $message,
@@ -293,22 +301,22 @@ class InboxController extends Controller
 
         $raw = $result['conversations'] ?? [];
 
-        $parsed = collect($raw)->map(fn (array $r) => $this->ghlParser->conversationFromSearchApi($r));
+        $parsed = collect($raw)->map(fn(array $r) => $this->ghlParser->conversationFromSearchApi($r));
 
         // Safety net, not the primary filter: keeps the tab correct even if
         // GHL's `status=unread` isn't honored for some reason. Real
         // pagination through the *unread* set happens via the cursor below,
         // which walks GHL's own filtered pages — never a single page.
         if ($filter === 'unread') {
-            $parsed = $parsed->filter(fn (ParsedGhlConversationData $p) => $p->isUnread())->values();
+            $parsed = $parsed->filter(fn(ParsedGhlConversationData $p) => $p->isUnread())->values();
         }
 
         $anchors = Conversation::whereIn('ghl_conversation_id', $parsed->pluck('ghlConversationId'))
-            ->withExists(['drafts as has_draft' => fn ($q) => $q->whereIn('status', [DraftStatus::Active, DraftStatus::Regenerated])])
+            ->withExists(['drafts as has_draft' => fn($q) => $q->whereIn('status', [DraftStatus::Active, DraftStatus::Regenerated])])
             ->get()
             ->keyBy('ghl_conversation_id');
 
-        $items = $parsed->map(fn (ParsedGhlConversationData $p) => $this->buildListItem($p, $anchors->get($p->ghlConversationId)))
+        $items = $parsed->map(fn(ParsedGhlConversationData $p) => $this->buildListItem($p, $anchors->get($p->ghlConversationId)))
             ->values();
 
         $nextCursor = null;
@@ -426,14 +434,14 @@ class InboxController extends Controller
     protected function conversationsFromLocalAnchors(string $filter): array
     {
         $query = Conversation::whereNotNull('ghl_conversation_id')
-            ->withExists(['drafts as has_draft' => fn ($q) => $q->whereIn('status', [DraftStatus::Active, DraftStatus::Regenerated])]);
+            ->withExists(['drafts as has_draft' => fn($q) => $q->whereIn('status', [DraftStatus::Active, DraftStatus::Regenerated])]);
 
         match ($filter) {
             'recent' => $query->where('updated_at', '>=', now()->subDay()),
             'starred' => $query->where('is_starred', true),
             'waiting_agent' => $query->where('status', ConversationStatus::PendingReview),
             'waiting_customer' => $query->where('status', ConversationStatus::Replied),
-            'ai_draft' => $query->whereHas('drafts', fn ($q) => $q->whereIn('status', [DraftStatus::Active, DraftStatus::Regenerated])),
+            'ai_draft' => $query->whereHas('drafts', fn($q) => $q->whereIn('status', [DraftStatus::Active, DraftStatus::Regenerated])),
             'closed' => $query->where('status', ConversationStatus::Closed),
             default => null,
         };
