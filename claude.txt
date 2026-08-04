@@ -1,192 +1,25 @@
-Saya ingin kamu melakukan DEBUGGING TOTAL terhadap fitur Extract Info GHL.
+Saya ingin memperbaiki fitur Extract Info di halaman Inbox.
 
-MASALAH:
-Extract Info saat ini berhasil menampilkan:
+JANGAN langsung mengubah kode. Audit dulu bagaimana Laravel saat ini mengambil data contact/purchase dari GoHighLevel (GHL), lalu perbaiki berdasarkan data API yang benar-benar tersedia.
 
-- Customer Name
-- Email
-- Phone
-- Contact ID
-- Conversation ID
-- Channel
-- Company
-- Tags
+MASALAH SAAT INI:
 
-Tetapi selalu:
-
-- Product: -
-- Purchase Date: -
-- Purchase Price: -
-- Receipt Number: -
-
-Saya SUDAH membuat Private Integration GHL BARU dan memberikan SEMUA SCOPE/PERMISSION yang tersedia.
-
-Jadi JANGAN berasumsi masalahnya adalah permission.
-
-CONTOH RESPONSE CONTACT API:
-
-{
-  "id": "lucHozaAh4OHu8DuGWPx",
-  "locationId": "AnMwkyCLq3d9mi0cfvmI",
-  "contactName": "carmen gonzalez",
-  "email": "cmariegonzalez@gmail.com",
-  "tags": [],
-  "customFields": []
-}
-
-Perhatikan:
-customFields = []
-dan response Contact API tidak memiliki:
-product
-purchaseDate
-purchasePrice
-receiptNumber
-
-TARGET UTAMA:
-
-Jangan berhenti pada Contact API.
-
-Saya ingin kamu mencari SUMBER DATA TRANSAKSI SEBENARNYA di GoHighLevel.
-
-==================================================
-STEP 1 — AUDIT KODE
-==================================================
-
-Cari seluruh implementasi Extract Info saat ini.
-
-Identifikasi:
-
-- Controller
-- Service
-- GHL API Service
-- endpoint yang dipanggil
-- Contact ID yang digunakan
-- Conversation ID yang digunakan
-- response API yang diterima
-- bagaimana Product/Purchase Date/Purchase Price/Receipt Number saat ini diisi
-
-Jangan langsung mengubah kode.
-
-==================================================
-STEP 2 — TRACE DATA CUSTOMER
-==================================================
-
-Gunakan Contact ID dan Conversation ID customer sebagai starting point.
-
-Cari apakah data pembelian tersedia melalui:
-
-- Contact API
-- Conversations API
-- Messages API
-- Opportunities
-- Pipelines
-- Orders
-- Payments
-- Transactions
-- Products
-- Invoices
-- Ecommerce
-- Custom Objects
-- Custom Fields
-- Notes
-- Tags
-- conversation metadata
-- message metadata
-- webhook/event data
-
-Jangan mengasumsikan salah satu endpoint.
-
-Cari berdasarkan struktur API GHL yang benar-benar digunakan project ini.
-
-==================================================
-STEP 3 — CEK SEMUA RESPONSE
-==================================================
-
-Untuk sementara tambahkan logging/debugging yang aman.
-
-Untuk setiap API request yang relevan, log:
-
-- endpoint
-- HTTP status
-- response keys
-- response structure yang relevan
-
-JANGAN log:
-- API key
-- access token
-- secret
-- password
-- data sensitif yang tidak diperlukan
-
-Saya ingin mengetahui:
-
-"Data Product, Purchase Date, Purchase Price, dan Receipt Number sebenarnya berada di response API mana?"
-
-==================================================
-STEP 4 — JANGAN GUNAKAN AI
-==================================================
-
-Data transaksi HARUS diambil langsung dari API.
-
-Jangan gunakan OpenAI/Claude/Gemini untuk:
-- menebak product
-- mengekstrak purchase date
-- menebak price
-- membuat receipt number
-
-AI tidak boleh menjadi source of truth untuk Extract Info.
-
-==================================================
-STEP 5 — RECEIPT NUMBER
-==================================================
-
-Receipt Number harus berasal dari data API.
-
-Contoh format:
-
-REC2141
-
-Jangan generate nomor baru.
-
-Jika API memberikan:
-
-receiptNumber = "REC2141"
-
-maka tampilkan:
-
-Receipt Number
-REC2141
-
-==================================================
-STEP 6 — PURCHASE DATA
-==================================================
-
-Cari hubungan antara:
-
-Contact ID
-↓
-Transaction / Order / Payment / Opportunity
-↓
-Product / Purchase Information
-
-Jika GHL membutuhkan endpoint kedua/ketiga untuk mendapatkan informasi transaksi, lakukan API request tambahan dan gabungkan hasilnya.
-
-Contoh hasil akhir yang diharapkan:
+Contoh hasil di UI:
 
 Customer Name
-Leanne Gutierrez
+Stephanie Wartell
 
 Email
-sweetxdreamsxlove@gmail.com
+stephaniewartell@gmail.com
 
 Phone
--
++12145059523
 
 Contact ID
-C3PUI0u6aaXKenUbzA34
+aH2R5ZDF6lmNlQTcFV3h
 
 Conversation ID
-d7AZeP8UzxnKXSdlqpLq
+QB6bnYjOtwnhCBpJ7eVB
 
 Channel
 3
@@ -195,95 +28,436 @@ Company
 -
 
 Product
-[NAMA PRODUK DARI API]
+-
 
 Purchase Date
-[TANGGAL DARI API]
+31 Jul 2026
 
 Purchase Price
-[HARGA DARI API]
+USD 97
+
+Receipt Number
+-
+
+Tags
+purchase - creator360, purchase - viral scraper, purchase - bv bootcamp 97
+
+Purchase Date dan Purchase Price sudah berhasil muncul, tetapi Product dan Receipt Number masih kosong.
+
+Saya sudah membuat Private Integration GHL baru dan memberikan semua scope yang tersedia.
+
+==================================================
+GOAL
+==================================================
+
+Perbaiki Extract Info agar seluruh data berikut diambil dari API GHL secara akurat:
+
+1. Customer Name
+2. Email
+3. Phone
+4. Contact ID
+5. Conversation ID
+6. Channel
+7. Company
+8. Product
+9. Purchase Date
+10. Purchase Price
+11. Receipt Number
+12. Tags
+
+PENTING:
+
+Jangan menggunakan AI untuk Extract Info.
+
+Jangan meminta OpenAI/Claude/Gemini menebak Product, Purchase Date, Purchase Price, atau Receipt Number.
+
+Semua data harus berasal dari API GHL atau data yang memang tersedia dari response GHL.
+
+==================================================
+CONTOH DATA YANG BERHASIL
+==================================================
+
+Customer:
+
+Stephanie Wartell
+
+Tags:
+
+purchase - creator360
+purchase - viral scraper
+purchase - bv bootcamp 97
+
+Current UI:
+
+Product: -
+Purchase Date: 31 Jul 2026
+Purchase Price: USD 97
+Receipt Number: -
+
+Artinya mapping saat ini belum lengkap.
+
+==================================================
+TUGAS UTAMA
+==================================================
+
+1. TRACE DATA SOURCE
+
+Cari seluruh code yang bertanggung jawab terhadap:
+
+- Extract Info
+- Contact Details
+- Customer information
+- Product
+- Purchase Date
+- Purchase Price
+- Receipt Number
+- Tags
+
+Identifikasi service/controller/API method yang digunakan.
+
+Jangan mengasumsikan field Product atau Receipt Number berada langsung di:
+
+contacts/{contactId}
+
+Periksa response API sebenarnya.
+
+==================================================
+2. INSPECT RAW GHL RESPONSE
+==================================================
+
+Tambahkan temporary logging/debugging jika diperlukan untuk melihat RAW RESPONSE dari endpoint GHL yang digunakan.
+
+Saya ingin mengetahui dengan pasti:
+
+- endpoint apa yang dipanggil
+- response JSON-nya
+- field apa yang tersedia
+- apakah purchase information berada di contact
+- apakah berada di order
+- apakah berada di transaction
+- apakah berada di opportunity
+- apakah berada di custom fields
+- apakah berada di notes
+- apakah hanya tersedia melalui tags
+- apakah Receipt Number memang tersedia dari endpoint yang sedang digunakan
+
+JANGAN mengarang field API.
+
+Jika Product / Receipt Number tidak tersedia dari endpoint sekarang, cari endpoint GHL yang memang menyediakan informasi tersebut dan gunakan API tersebut.
+
+==================================================
+3. PRODUCT
+==================================================
+
+Product jangan hanya ditampilkan sebagai "-".
+
+Periksa seluruh sumber data yang tersedia.
+
+Prioritas:
+
+A. Product/order/transaction data dari API GHL
+B. Custom fields jika memang digunakan untuk menyimpan product
+C. Tags sebagai FALLBACK ONLY
+
+Contoh tags:
+
+purchase - creator360
+purchase - viral scraper
+purchase - bv bootcamp 97
+
+Jika tidak ada product/order API yang bisa digunakan, parsing tag purchase-* boleh dilakukan sebagai fallback.
+
+Namun jangan menganggap seluruh tag adalah product secara otomatis.
+
+Jika terdapat beberapa purchase:
+
+purchase - creator360
+purchase - viral scraper
+purchase - bv bootcamp 97
+
+jangan hanya mengambil satu secara random.
+
+Tampilkan seluruh product yang dapat diidentifikasi, misalnya:
+
+Creator360
+Viral Scraper
+BV Bootcamp 97
+
+atau format yang konsisten dengan UI existing.
+
+==================================================
+4. PURCHASE DATE
+==================================================
+
+Purchase Date saat ini sudah muncul:
+
+31 Jul 2026
+
+Pastikan tanggal tersebut benar-benar berasal dari purchase/order/transaction data GHL, bukan tanggal conversation atau dateAdded contact.
+
+Prioritas:
+
+purchase date
+transaction date
+order date
+
+Jangan menggunakan:
+
+contact.dateAdded
+conversation.createdAt
+
+kecuali memang itu sumber purchase yang valid.
+
+==================================================
+5. PURCHASE PRICE
+==================================================
+
+Purchase Price saat ini sudah muncul:
+
+USD 97
+
+Pertahankan behavior yang sudah benar.
+
+Pastikan harga berasal dari purchase/order/transaction data.
+
+Jika ada multiple purchases, jangan mengambil harga purchase yang salah.
+
+==================================================
+6. RECEIPT NUMBER
+==================================================
+
+Ini yang paling penting.
+
+Receipt Number harus dicari dari data GHL yang sebenarnya.
+
+Format contoh:
+
+REC2141
+
+Cari apakah receipt number tersedia pada:
+
+- order
+- transaction
+- payment
+- invoice
+- custom field
+- metadata
+- external reference
+- other GHL purchase-related response
+
+Jangan membuat receipt number sendiri.
+
+Jangan generate random number.
+
+Jangan menggunakan AI.
+
+Jika API memang mengembalikan:
+
+"receiptNumber": "REC2141"
+
+maka tampilkan:
 
 Receipt Number
 REC2141
 
+Jika nama field berbeda, lakukan mapping berdasarkan RAW RESPONSE yang sebenarnya.
+
+==================================================
+7. MULTIPLE PURCHASES
+==================================================
+
+PENTING:
+
+Satu contact bisa mempunyai beberapa purchase.
+
+Jangan menggunakan:
+
+first()
+latest()
+
+secara sembarangan untuk seluruh informasi.
+
+Contoh:
+
+Product A
+Purchase Date A
+Purchase Price A
+Receipt A
+
+Product B
+Purchase Date B
+Purchase Price B
+Receipt B
+
+Jika API mengembalikan multiple purchase records, data harus dipertahankan sebagai satu kesatuan.
+
+Jangan sampai:
+
+Product A
+Purchase Date B
+Purchase Price A
+Receipt C
+
+Data antar-purchase harus tetap berpasangan.
+
+Jika UI saat ini hanya mendukung satu purchase, buat struktur backend yang benar untuk multiple purchases terlebih dahulu, lalu tampilkan purchase terbaru atau seluruh purchase dengan format yang paling aman.
+
+==================================================
+8. CUSTOM FIELDS
+==================================================
+
+Periksa apakah GHL contact mempunyai customFields.
+
+Jangan hanya melihat:
+
+customFields: []
+
+Periksa juga endpoint/schema custom fields yang diperlukan untuk mengetahui:
+
+field ID
+field name
+field value
+
+Jika custom field digunakan untuk:
+
+Product
+Purchase Date
+Purchase Price
+Receipt Number
+
+mapping harus berdasarkan field ID/name yang benar.
+
+Jangan hardcode ID tanpa terlebih dahulu memastikan ID tersebut memang sesuai dengan field di GHL location.
+
+==================================================
+9. TAGS
+==================================================
+
+Tags harus tetap ditampilkan.
+
+Contoh:
+
+purchase - creator360
+purchase - viral scraper
+purchase - bv bootcamp 97
+
+Jangan menghapus tags hanya karena product berhasil ditemukan dari API.
+
+Tags dan Product adalah dua informasi berbeda.
+
+==================================================
+10. UI
+==================================================
+
+Pertahankan UI Extract Info yang sekarang.
+
+Jangan redesign halaman.
+
+Jangan mengubah layout Inbox.
+
+Jangan mengubah conversation list.
+
+Jangan mengubah message/thread UI.
+
+Fokus hanya pada sumber data dan mapping Extract Info.
+
+Field tetap:
+
+Customer Name
+Email
+Phone
+Contact ID
+Conversation ID
+Channel
+Company
+Product
+Purchase Date
+Purchase Price
+Receipt Number
 Tags
-purchase - c360 lifetime
 
 ==================================================
-STEP 7 — JIKA DATA TIDAK ADA
+11. FALLBACK BEHAVIOR
 ==================================================
 
-INI SANGAT PENTING.
+Jika suatu field benar-benar tidak tersedia:
 
-Jika setelah API audit ternyata Contact API memang tidak memiliki data transaksi, JANGAN hanya membuat field tetap "-".
+tampilkan "-"
 
-Cari tahu:
+Jangan:
 
-1. Apakah data pembelian memang disimpan di GHL?
-2. Jika iya, endpoint mana yang menyimpannya?
-3. Jika tidak, apakah data tersebut berasal dari sistem eksternal/integrasi Content360?
-4. Apakah GHL hanya menerima customer/contact + conversation tetapi transaksi tersimpan di platform lain?
-5. Apakah tag "purchase - c360 lifetime" hanya menunjukkan status pembelian tanpa menyimpan detail transaksi?
+- generate data
+- menggunakan AI
+- menebak
+- mengambil data dari conversation secara sembarangan
+- mengarang receipt number
 
-Jika tidak ditemukan, jelaskan dengan bukti dari response API.
+Contoh:
 
-==================================================
-STEP 8 — PRIVATE INTEGRATION
-==================================================
+Receipt Number
+-
 
-Karena Private Integration BARU sudah dibuat dengan SEMUA SCOPE:
-
-- jangan meminta saya membuat integration baru lagi
-- jangan mengubah scope secara random
-- cek API response dan HTTP status sebenarnya
-- pastikan Laravel benar-benar menggunakan API key Private Integration BARU
-- pastikan tidak masih menggunakan API key lama dari .env/database/cache
-
-Tambahkan debug untuk memastikan integration yang aktif memang integration baru.
-
-Jangan pernah menampilkan API key secara penuh di log.
+hanya jika API memang tidak menyediakan receipt number.
 
 ==================================================
-STEP 9 — CACHE / CONFIG
+12. IMPORTANT: DEBUG FIRST
 ==================================================
 
-Pastikan Laravel tidak menggunakan credential lama karena:
+Sebelum mengubah implementation, tunjukkan kepada saya:
 
-- config cache
-- application cache
-- database settings
-- .env lama
-
-Periksa source credential yang sebenarnya digunakan GoHighLevelService.
-
-Jika ada kemungkinan credential lama masih digunakan, jelaskan dan perbaiki.
-
-==================================================
-STEP 10 — HASIL AKHIR
-==================================================
-
-Sebelum selesai, berikan laporan singkat:
-
-1. Endpoint GHL apa saja yang digunakan Extract Info.
-2. Endpoint mana yang mengandung data transaksi.
-3. Field API yang digunakan untuk:
+1. Service yang saat ini mengambil contact data
+2. Endpoint GHL yang dipanggil
+3. Endpoint purchase/order/transaction yang tersedia
+4. RAW RESPONSE yang relevan
+5. Field mana yang digunakan untuk:
    - Product
    - Purchase Date
    - Purchase Price
    - Receipt Number
-4. Bagaimana data tersebut dihubungkan dengan Contact ID.
-5. Kenapa sebelumnya field selalu "-".
-6. File apa saja yang diubah.
+6. Kenapa Product saat ini "-"
+7. Kenapa Receipt Number saat ini "-"
+8. Apakah data tersebut memang tersedia dari API GHL
 
-Setelah sumber data benar-benar ditemukan, baru implementasikan mapping ke Extract Info.
+Setelah itu baru implementasikan fix.
 
-JANGAN membuat fake/mock data.
+==================================================
+13. CODE QUALITY
+==================================================
 
-JANGAN hardcode.
+Gunakan architecture Laravel yang sudah ada.
 
-JANGAN menggunakan AI.
+Jangan membuat duplicate service jika service existing bisa diperbaiki.
 
-JANGAN berhenti hanya karena Contact API tidak memiliki customFields.
+Jangan membuat database baru hanya untuk menyimpan Extract Info jika data tersebut memang bisa diambil realtime dari GHL API.
 
-Fokus utama:
-TEMUKAN SUMBER DATA PEMBELIAN SEBENARNYA DI GHL DAN TAMPILKAN DATA TERSEBUT DI EXTRACT INFO.
+Jangan menggunakan AI untuk extraction.
+
+Gunakan API GHL sebagai source of truth.
+
+Setelah selesai:
+
+- test endpoint
+- test service
+- test Extract Info
+- pastikan tidak ada error
+- pastikan Product/Purchase Date/Purchase Price/Receipt Number tidak lagi kosong jika datanya memang tersedia di GHL
+
+Terakhir, berikan saya ringkasan:
+
+FILES CHANGED:
+- ...
+
+API ENDPOINTS USED:
+- ...
+
+FIELD MAPPING:
+- Product → ...
+- Purchase Date → ...
+- Purchase Price → ...
+- Receipt Number → ...
+
+FALLBACK:
+- ...
+
+TEST RESULT:
+- ...
