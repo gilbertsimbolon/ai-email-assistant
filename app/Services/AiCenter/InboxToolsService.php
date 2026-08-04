@@ -141,6 +141,22 @@ class InboxToolsService
 
         $contact = $this->fetchContact($conversation->contact_id);
         $purchaseInfo = $this->extractPurchaseInfo($contact?->customFields ?? []);
+        $purchaseInfo = $this->fillPurchaseInfoFromOrders($conversation->contact_id, $purchaseInfo);
+        $purchaseInfo = $this->fillPurchaseInfoFromTransactions($conversation->contact_id, $purchaseInfo);
+
+        // claude.txt Step 3/10: never logs the actual values (names, prices,
+        // etc.), only which source — if any — ended up answering each of
+        // the 4 purchase fields. This is the evidence trail for "kenapa
+        // field selalu -": check this log line against GHL API request
+        // succeeded/failed lines for the same conversation_id.
+        Log::debug('Extract Info purchase field resolution', [
+            'conversation_id' => $conversation->id,
+            'contact_id' => $conversation->contact_id,
+            'product_found' => $purchaseInfo['product'] !== null,
+            'purchase_date_found' => $purchaseInfo['purchase_date'] !== null,
+            'purchase_price_found' => $purchaseInfo['purchase_price'] !== null,
+            'receipt_number_found' => $purchaseInfo['receipt_number'] !== null,
+        ]);
 
         $result = [
             'customer_name' => $contact?->fullName() ?: $conversation->contact_name,
@@ -220,6 +236,190 @@ class InboxToolsService
             'receipt_number' => $this->formatReceiptNumber($values['receipt_number']),
             'remaining_custom_fields' => $remaining,
         ];
+    }
+
+    /**
+     * Falls back to GHL's Payments Orders API (claude.txt Step 6: Contact ID
+     * -> Order -> Product/Purchase Info) for whichever purchase fields the
+     * contact's own custom fields didn't answer. Orders is the GHL resource
+     * that actually models "a completed purchase" — amount/currency,
+     * createdAt, and an items[] array carrying the product name — unlike
+     * the Contact resource, which only has whatever custom fields a
+     * location owner manually configured. Skips the API call entirely once
+     * every field is already filled, and never overwrites a value the
+     * custom fields already provided.
+     *
+     * Assumes the most recent order (first page, default sort) is the
+     * relevant one — GHL's Orders list doesn't let you target "the order
+     * this conversation is about", so with multiple historical purchases
+     * this picks the latest rather than guessing which one the customer is
+     * asking about.
+     *
+     * @param  array{product: ?string, purchase_date: ?string, purchase_price: ?string, receipt_number: ?string, remaining_custom_fields: array}  $purchaseInfo
+     * @return array{product: ?string, purchase_date: ?string, purchase_price: ?string, receipt_number: ?string, remaining_custom_fields: array}
+     */
+    protected function fillPurchaseInfoFromOrders(?string $contactId, array $purchaseInfo): array
+    {
+        if (blank($contactId) || $this->purchaseInfoComplete($purchaseInfo)) {
+            return $purchaseInfo;
+        }
+
+        try {
+            $response = $this->ghlApi->getOrders($contactId);
+        } catch (Throwable $e) {
+            Log::warning('Failed to fetch GHL orders for Extract Info', [
+                'contact_id' => $contactId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $purchaseInfo;
+        }
+
+        $order = $this->firstRecord($response, ['orders', 'data']);
+
+        if ($order === null) {
+            return $purchaseInfo;
+        }
+
+        $item = $this->firstRecord(['items' => $order['items'] ?? []], ['items']) ?? [];
+
+        if ($purchaseInfo['product'] === null) {
+            $purchaseInfo['product'] = $item['product']['name'] ?? $item['name'] ?? null;
+        }
+
+        if ($purchaseInfo['purchase_date'] === null) {
+            $purchaseInfo['purchase_date'] = $this->formatPurchaseDate($order['createdAt'] ?? null);
+        }
+
+        if ($purchaseInfo['purchase_price'] === null) {
+            $purchaseInfo['purchase_price'] = $this->formatPrice($order['amount'] ?? null, $order['currency'] ?? null);
+        }
+
+        if ($purchaseInfo['receipt_number'] === null) {
+            $purchaseInfo['receipt_number'] = $this->formatReceiptNumber($this->findReceiptNumber($order));
+        }
+
+        return $purchaseInfo;
+    }
+
+    /**
+     * Secondary probe against GHL's Payments Transactions API (claude.txt
+     * Step 2: "jangan mengasumsikan salah satu endpoint") — only reached for
+     * whatever Orders still left null. Unlike Orders, GHL's public
+     * Transaction schema isn't documented to carry a receipt/invoice
+     * number, so this only claims a value when the response itself has a
+     * field explicitly named like one (see findReceiptNumber) — it never
+     * repurposes a payment/charge ID as a "receipt number", since that
+     * would misrepresent an internal identifier as a customer-facing one.
+     *
+     * @param  array{product: ?string, purchase_date: ?string, purchase_price: ?string, receipt_number: ?string, remaining_custom_fields: array}  $purchaseInfo
+     * @return array{product: ?string, purchase_date: ?string, purchase_price: ?string, receipt_number: ?string, remaining_custom_fields: array}
+     */
+    protected function fillPurchaseInfoFromTransactions(?string $contactId, array $purchaseInfo): array
+    {
+        if (blank($contactId) || $this->purchaseInfoComplete($purchaseInfo)) {
+            return $purchaseInfo;
+        }
+
+        try {
+            $response = $this->ghlApi->getTransactions($contactId);
+        } catch (Throwable $e) {
+            Log::warning('Failed to fetch GHL transactions for Extract Info', [
+                'contact_id' => $contactId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $purchaseInfo;
+        }
+
+        $transaction = $this->firstRecord($response, ['transactions', 'data']);
+
+        if ($transaction === null) {
+            return $purchaseInfo;
+        }
+
+        if ($purchaseInfo['product'] === null) {
+            $purchaseInfo['product'] = $transaction['productName'] ?? $transaction['description'] ?? null;
+        }
+
+        if ($purchaseInfo['purchase_date'] === null) {
+            $purchaseInfo['purchase_date'] = $this->formatPurchaseDate($transaction['createdAt'] ?? null);
+        }
+
+        if ($purchaseInfo['purchase_price'] === null) {
+            $purchaseInfo['purchase_price'] = $this->formatPrice($transaction['amount'] ?? null, $transaction['currency'] ?? null);
+        }
+
+        if ($purchaseInfo['receipt_number'] === null) {
+            $purchaseInfo['receipt_number'] = $this->formatReceiptNumber($this->findReceiptNumber($transaction));
+        }
+
+        return $purchaseInfo;
+    }
+
+    protected function purchaseInfoComplete(array $purchaseInfo): bool
+    {
+        return $purchaseInfo['product'] !== null
+            && $purchaseInfo['purchase_date'] !== null
+            && $purchaseInfo['purchase_price'] !== null
+            && $purchaseInfo['receipt_number'] !== null;
+    }
+
+    /**
+     * GHL list endpoints aren't consistent about the wrapper key around
+     * their array of records (`orders`, `data`, or occasionally the bare
+     * list), so this tries each known wrapper before giving up — never
+     * assumes a shape it hasn't actually seen in the response.
+     *
+     * @param  array<int, string>  $listKeys
+     */
+    protected function firstRecord(array $response, array $listKeys): ?array
+    {
+        foreach ($listKeys as $listKey) {
+            $list = $response[$listKey] ?? null;
+
+            if (is_array($list) && $list !== [] && is_array($list[array_key_first($list)])) {
+                return $list[array_key_first($list)];
+            }
+        }
+
+        if (array_is_list($response) && isset($response[0]) && is_array($response[0])) {
+            return $response[0];
+        }
+
+        return null;
+    }
+
+    /**
+     * Only matches a field GHL itself named like a receipt/invoice number —
+     * never a generic identifier (order _id, chargeId) that happens to
+     * contain digits, since presenting an internal payment ID as "Receipt
+     * Number" would misrepresent real data rather than reflect it.
+     */
+    protected function findReceiptNumber(array $source): ?string
+    {
+        foreach (['receiptNumber', 'receipt_number', 'receiptNo', 'invoiceNumber', 'invoice_number', 'invoiceNo', 'orderNumber', 'order_number'] as $key) {
+            if (filled($source[$key] ?? null)) {
+                return (string) $source[$key];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Formats a GHL amount (a plain number, minor or major unit depending
+     * on the endpoint) alongside its currency code exactly as returned —
+     * no currency symbol guessing, since GHL locations can be configured
+     * in any currency.
+     */
+    protected function formatPrice(mixed $amount, ?string $currency): ?string
+    {
+        if (blank($amount) && $amount !== 0) {
+            return null;
+        }
+
+        return $currency ? trim($currency).' '.$amount : (string) $amount;
     }
 
     /**

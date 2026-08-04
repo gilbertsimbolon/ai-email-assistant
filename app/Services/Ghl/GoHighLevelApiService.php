@@ -36,6 +36,36 @@ class GoHighLevelApiService
         $this->retryTimes = config('ghl.retry_times', 3);
         $this->retryDelayMs = config('ghl.retry_delay_ms', 1000);
         $this->verifySsl = (bool) config('ghl.verify_ssl', true);
+
+        // claude.txt Step 8/9: lets you confirm — from Laravel's own log,
+        // without ever printing the key — that a given request actually
+        // used the NEW Private Integration token after rotating it. The
+        // fingerprint is a truncated SHA-256 hash, not a key substring, so
+        // it reveals nothing about the key itself; it only changes when the
+        // underlying key changes. Compare this value across two log lines
+        // (before/after updating .env + restarting PHP) to prove the app
+        // picked up the rotation instead of silently reusing the old token.
+        Log::debug('GoHighLevelApiService initialized', [
+            'base_url' => $this->baseUrl,
+            'location_id' => $this->locationId,
+            'api_key_present' => $this->apiKey !== '' && $this->apiKey !== null,
+            'api_key_fingerprint' => $this->credentialFingerprint((string) $this->apiKey),
+        ]);
+    }
+
+    /**
+     * Truncated SHA-256 of the credential — enough to tell "same key as
+     * last time" apart from "different key", never enough to reconstruct
+     * or brute-force the original value. This is the only form the API key
+     * is allowed to appear in logs (claude.txt Step 8: never log the full key).
+     */
+    protected function credentialFingerprint(string $key): string
+    {
+        if ($key === '') {
+            return '(empty)';
+        }
+
+        return substr(hash('sha256', $key), 0, 12).' (len:'.strlen($key).')';
     }
 
     protected function client(): PendingRequest
@@ -153,6 +183,51 @@ class GoHighLevelApiService
     }
 
     /**
+     * Fetch GHL Payments "Orders" for a contact — claude.txt Step 2/6: the
+     * Contact API has no product/purchase fields (customFields = [] for
+     * contacts that never had a location-level custom field set up for it),
+     * so Extract Info's Product/Purchase Date/Purchase Price have to be
+     * traced to wherever GHL actually stores a completed purchase. Orders is
+     * that place: each order has amount/currency, createdAt, and an items[]
+     * array carrying product.name — the closest thing GHL has to "what did
+     * this contact buy". Requires the payments/orders.readonly scope.
+     */
+    public function getOrders(string $contactId, array $params = []): array
+    {
+        return $this->request(
+            'getOrders',
+            fn () => $this->client()->get($this->baseUrl.'/payments/orders', array_merge([
+                'altId' => $this->locationId,
+                'altType' => 'location',
+                'contactId' => $contactId,
+                'limit' => 10,
+            ], $params)),
+            ['contact_id' => $contactId]
+        );
+    }
+
+    /**
+     * Fetch GHL Payments "Transactions" for a contact — probed alongside
+     * getOrders() (claude.txt Step 2: "jangan mengasumsikan salah satu
+     * endpoint") in case a location's payment gateway attaches a
+     * receipt/invoice-style reference here that the Order record itself
+     * doesn't carry. Requires the payments/transactions.readonly scope.
+     */
+    public function getTransactions(string $contactId, array $params = []): array
+    {
+        return $this->request(
+            'getTransactions',
+            fn () => $this->client()->get($this->baseUrl.'/payments/transactions', array_merge([
+                'altId' => $this->locationId,
+                'altType' => 'location',
+                'contactId' => $contactId,
+                'limit' => 10,
+            ], $params)),
+            ['contact_id' => $contactId]
+        );
+    }
+
+    /**
      * Execute a GHL API call, logging and normalizing failures consistently.
      *
      * @param  callable(): Response  $call
@@ -162,8 +237,19 @@ class GoHighLevelApiService
     {
         try {
             $response = $call()->throw();
+            $body = $response->json() ?? [];
 
-            return $response->json() ?? [];
+            // claude.txt Step 3: for every GHL call, log enough to answer
+            // "which endpoint actually has the data" — status and the
+            // response's top-level keys — without dumping the customer
+            // payload itself (names/emails/amounts) into the log.
+            Log::debug('GHL API request succeeded', array_merge($context, [
+                'operation' => $operation,
+                'status' => $response->status(),
+                'response_keys' => array_is_list($body) ? ['(list)', 'count:'.count($body)] : array_keys($body),
+            ]));
+
+            return $body;
         } catch (RequestException $e) {
             $status = $e->response->status();
 
