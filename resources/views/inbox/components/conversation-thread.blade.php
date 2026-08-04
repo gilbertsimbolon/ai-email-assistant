@@ -1,5 +1,6 @@
 @if ($activeConversation)
-    <div class="email-thread d-flex flex-column h-100" id="conversationThread" data-conversation-id="{{ $activeConversation->id }}">
+    <div class="email-thread d-flex flex-column h-100" id="conversationThread"
+        data-conversation-id="{{ $activeConversation->id }}">
 
         @include('inbox.components.toolbar', ['activeConversation' => $activeConversation])
 
@@ -16,7 +17,11 @@
                         <span class="flex-grow-1 border-top"></span>
                     </div>
                 @endif
-                @include('inbox.components.message-bubble', ['message' => $message, 'activeConversation' => $activeConversation])
+                @include('inbox.components.message-bubble', [
+                    'message' => $message,
+                    'activeConversation' => $activeConversation,
+                    'contactDetails' => $contactDetails ?? null,
+                ])
             @empty
                 <div class="alert alert-secondary text-center mb-0" role="alert">
                     Belum ada riwayat pesan dalam thread ini.
@@ -24,7 +29,10 @@
             @endforelse
         </div>
 
-        @include('inbox.components.ai-toolbar', ['activeConversation' => $activeConversation, 'activeDraft' => $activeDraft ?? null])
+        @include('inbox.components.ai-toolbar', [
+            'activeConversation' => $activeConversation,
+            'activeDraft' => $activeDraft ?? null,
+        ])
         @include('inbox.components.composer')
         @include('inbox.components.ai-tool-modals')
     </div>
