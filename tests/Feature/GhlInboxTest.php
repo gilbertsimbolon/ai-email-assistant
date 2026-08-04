@@ -6,6 +6,7 @@ use App\Models\Conversation;
 use App\Models\Draft;
 use App\Models\Message;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -19,6 +20,11 @@ function fakeGhl(): void
         'ghl.api_key' => 'test-private-integration-token',
         'ghl.location_id' => 'loc-1',
     ]);
+
+    // InboxController::resolveUnreadCount() caches its GHL-wide total
+    // across requests — flush so one test's cached count can't leak into
+    // the next.
+    Cache::flush();
 }
 
 test('conversation list renders live from a faked GHL response, not the database', function () {
@@ -92,6 +98,55 @@ test('opening a GHL conversation lazily creates exactly one anchor row and no me
     $anchor = Conversation::first();
     expect($anchor->ghl_conversation_id)->toBe('ghl-conv-1');
     expect($anchor->is_read)->toBeTrue();
+});
+
+test('opening an unread GHL conversation in Laravel does not mark it as read', function () {
+    fakeGhl();
+    $user = User::factory()->create();
+
+    Http::fake([
+        'services.leadconnectorhq.com/conversations/search*' => Http::response(['conversations' => []], 200),
+        'services.leadconnectorhq.com/conversations/ghl-conv-unread/messages*' => Http::response([
+            'messages' => ['messages' => []],
+        ], 200),
+        'services.leadconnectorhq.com/conversations/ghl-conv-unread' => Http::response([
+            'id' => 'ghl-conv-unread',
+            'locationId' => 'loc-1',
+            'contactId' => 'contact-unread',
+            'contactName' => 'Rina',
+            'email' => 'rina@example.com',
+            'lastMessageType' => 'TYPE_EMAIL',
+            'unreadCount' => 3,
+            'dateUpdated' => now()->toIso8601String(),
+        ], 200),
+    ]);
+
+    // Opening it once seeds the anchor from GHL's own unread state...
+    $this->actingAs($user)->get(route('inbox.index', ['conversation' => 'ghl-conv-unread']))->assertOk();
+
+    $anchor = Conversation::where('ghl_conversation_id', 'ghl-conv-unread')->firstOrFail();
+    expect($anchor->is_read)->toBeFalse();
+
+    // ...and opening it again (still unread in GHL) must not flip it either.
+    $this->actingAs($user)->get(route('inbox.index', ['conversation' => 'ghl-conv-unread']))->assertOk();
+
+    expect($anchor->fresh()->is_read)->toBeFalse();
+});
+
+test('the Unread tab asks GHL to filter server-side instead of relying on a single page', function () {
+    fakeGhl();
+    $user = User::factory()->create();
+
+    Http::fake([
+        'services.leadconnectorhq.com/conversations/search*' => Http::response(['conversations' => []], 200),
+    ]);
+
+    $this->actingAs($user)->get(route('inbox.index', ['filter' => 'unread']))->assertOk();
+
+    Http::assertSent(function ($request) {
+        return str_contains($request->url(), 'conversations/search')
+            && str_contains($request->url(), 'status=unread');
+    });
 });
 
 test('sending a draft on a non-email GHL conversation sends it as that channel, not hardcoded Email', function () {
