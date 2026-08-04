@@ -1,48 +1,112 @@
-Buat perbaikan kecil pada fitur Extract Info di Inbox.
+Extract Info masih bermasalah.
 
-CATATAN:
-Saya sebelumnya lupa melakukan git pull, jadi pastikan kamu bekerja berdasarkan kode TERBARU yang sekarang ada di repository. Jangan mengembalikan perubahan ke implementasi lama.
+Saya menemukan bahwa data Product, Purchase Date, Purchase Price, dan Receipt Number selalu "-" padahal customer tersebut melakukan pembelian.
 
-Saat ini Extract Info sudah berhasil mengambil informasi dari API dan sudah berjalan. JANGAN ubah mekanisme yang sudah ada dan JANGAN gunakan AI untuk mengambil data tersebut.
+Berikut contoh response Contact API yang sedang digunakan:
 
-Tambahkan 4 informasi berikut jika tersedia dari data/API:
+{
+  "id": "lucHozaAh4OHu8DuGWPx",
+  "locationId": "AnMwkyCLq3d9mi0cfvmI",
+  "contactName": "carmen gonzalez",
+  "email": "cmariegonzalez@gmail.com",
+  "customFields": [],
+  "tags": []
+}
 
-1. Produk yang dibeli
-2. Tanggal pembelian
-3. Harga pembelian
-4. Receipt Number
+MASALAH:
+Contact API response tersebut memang TIDAK memiliki:
+- product
+- purchase date
+- purchase price
+- receipt number
 
-Format Receipt Number harus seperti:
+Dan customFields juga kosong.
+
+Jadi JANGAN hanya melakukan mapping dari Contact API.
+
+TASK:
+
+1. Trace seluruh flow Extract Info yang sekarang.
+2. Identifikasi dari API/endpoint mana data transaksi customer sebenarnya bisa diperoleh.
+3. Cari berdasarkan Contact ID / Conversation ID yang sedang dibuka.
+4. Periksa apakah GHL menyediakan data transaksi/order/opportunity/payment atau data terkait lainnya untuk customer tersebut.
+5. Periksa juga message/thread metadata jika data pembelian dikirim melalui conversation.
+6. Cari field yang kemungkinan berisi:
+   - Product
+   - Purchase Date
+   - Purchase Price
+   - Receipt Number
+
+Receipt Number harus memiliki format seperti:
 REC2141
 
-REQUIREMENTS:
-- Ambil data langsung dari API/source yang sudah digunakan oleh Extract Info.
-- Jangan generate/menebak data menggunakan AI.
-- Jangan hardcode value.
-- Jika data tidak tersedia, tampilkan "-" atau "Tidak tersedia".
-- Pertahankan field Extract Info yang sudah ada.
-- Jangan mengubah UI/layout Inbox yang tidak berkaitan.
-- Pastikan data ditampilkan dengan format yang rapi dan konsisten dengan field Extract Info lainnya.
-- Cari terlebih dahulu struktur response API yang saat ini digunakan untuk mengetahui field yang tepat.
-- Jangan membuat database baru hanya untuk menyimpan informasi ini.
+7. Gunakan API sebagai source of truth.
+8. JANGAN gunakan AI untuk menebak atau mengekstrak data tersebut.
+9. JANGAN hardcode.
+10. Jika diperlukan lebih dari satu API request, gabungkan data berdasarkan Contact ID / Conversation ID.
+11. Pertahankan data Extract Info yang sudah berhasil seperti:
+   - Customer Name
+   - Email
+   - Phone
+   - Contact ID
+   - Conversation ID
+   - Channel
+   - Company
+   - Tags
 
-SEBELUM CODING:
-1. Pull/analisis kode terbaru yang tersedia.
-2. Cari implementasi Extract Info saat ini.
-3. Identifikasi API endpoint dan response yang menjadi sumber data.
-4. Cari field yang berisi:
-   - product
-   - purchase date
-   - purchase price
-   - receipt number
-5. Jika nama field berbeda, mapping sesuai response API yang sebenarnya.
+12. Tambahkan:
+   - Product
+   - Purchase Date
+   - Purchase Price
+   - Receipt Number
 
-HASIL AKHIR:
-Extract Info harus menampilkan:
+IMPORTANT:
+Jangan langsung coding sebelum menemukan source data sebenarnya.
 
-Product: [produk yang dibeli]
-Purchase Date: [tanggal pembelian]
-Purchase Price: [harga pembelian]
-Receipt Number: REC2141
+Debug terlebih dahulu:
+- tampilkan endpoint API yang dipanggil
+- tampilkan struktur response yang relevan
+- identifikasi field transaksi yang sebenarnya
+- jelaskan kenapa data transaksi tidak ditemukan dari Contact API
 
-Selain 4 field tersebut, semua fungsi Extract Info yang sudah berjalan harus tetap berfungsi seperti sebelumnya.
+Jika Contact API memang tidak menyediakan data transaksi, cari endpoint GHL lain yang relevan.
+
+Jangan mengubah UI Inbox yang tidak berkaitan.
+
+TARGET:
+
+Customer Name
+Leanne Gutierrez
+
+Email
+sweetxdreamsxlove@gmail.com
+
+Phone
+-
+
+Contact ID
+C3PUI0u6aaXKenUbzA34
+
+Conversation ID
+d7AZeP8UzxnKXSdlqpLq
+
+Channel
+3
+
+Company
+-
+
+Product
+[NAMA PRODUK]
+
+Purchase Date
+[TANGGAL]
+
+Purchase Price
+[HARGA]
+
+Receipt Number
+REC2141
+
+Tags
+purchase - c360 lifetime
