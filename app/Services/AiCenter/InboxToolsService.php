@@ -15,6 +15,7 @@ use App\Services\AiCenter\Support\InboxToolPromptFactory;
 use App\Services\Ghl\GhlParserService;
 use App\Services\Ghl\GhlThreadLoader;
 use App\Services\Ghl\GoHighLevelApiService;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -139,6 +140,7 @@ class InboxToolsService
         }
 
         $contact = $this->fetchContact($conversation->contact_id);
+        $purchaseInfo = $this->extractPurchaseInfo($contact?->customFields ?? []);
 
         $result = [
             'customer_name' => $contact?->fullName() ?: $conversation->contact_name,
@@ -148,13 +150,116 @@ class InboxToolsService
             'conversation_id' => $conversation->ghl_conversation_id,
             'channel' => $conversation->channel,
             'company_name' => $contact?->companyName,
+            'product' => $purchaseInfo['product'],
+            'purchase_date' => $purchaseInfo['purchase_date'],
+            'purchase_price' => $purchaseInfo['purchase_price'],
+            'receipt_number' => $purchaseInfo['receipt_number'],
             'tags' => $contact?->tags ?? [],
-            'custom_fields' => $contact?->customFields ?? [],
+            'custom_fields' => $purchaseInfo['remaining_custom_fields'],
         ];
 
         Cache::put($key, $result, now()->addMinutes(self::EXTRACT_INFO_CACHE_TTL_MINUTES));
 
         return $result;
+    }
+
+    /**
+     * Picks the 4 purchase-related fields (claude.txt: Product/Purchase
+     * Date/Purchase Price/Receipt Number) out of GHL's free-form contact
+     * custom fields. GHL custom field *keys* are whatever an agency named
+     * them in their own location (e.g. "contact.product_purchased" vs just
+     * "product"), so this matches against a normalized key (lowercased,
+     * stripped of separators) against a handful of known aliases instead of
+     * one exact string. Never invents a value — a field GHL doesn't have
+     * stays null and the UI renders "-". Matched fields are removed from
+     * the generic custom-fields list so they aren't shown twice.
+     *
+     * @param  array<int, array{id: ?string, key: ?string, value: mixed}>  $customFields
+     * @return array{product: ?string, purchase_date: ?string, purchase_price: ?string, receipt_number: ?string, remaining_custom_fields: array}
+     */
+    protected function extractPurchaseInfo(array $customFields): array
+    {
+        $aliasesByTarget = [
+            'product' => ['product', 'productname', 'productpurchased', 'itempurchased', 'item', 'productbought'],
+            'purchase_date' => ['purchasedate', 'dateofpurchase', 'orderdate', 'datepurchased', 'transactiondate'],
+            'purchase_price' => ['purchaseprice', 'price', 'amount', 'orderamount', 'ordertotal', 'transactionamount', 'total', 'paymentamount'],
+            'receipt_number' => ['receiptnumber', 'receiptno', 'receipt', 'invoicenumber', 'invoiceno', 'ordernumber', 'orderid', 'transactionid'],
+        ];
+
+        $values = ['product' => null, 'purchase_date' => null, 'purchase_price' => null, 'receipt_number' => null];
+        $matchedFieldIds = [];
+
+        foreach ($customFields as $field) {
+            $normalizedKey = preg_replace('/[^a-z0-9]/', '', strtolower((string) ($field['key'] ?? '')));
+
+            if ($normalizedKey === '') {
+                continue;
+            }
+
+            foreach ($aliasesByTarget as $target => $aliases) {
+                if ($values[$target] !== null || ! in_array($normalizedKey, $aliases, true)) {
+                    continue;
+                }
+
+                $value = $field['value'];
+                $values[$target] = is_array($value) ? implode(', ', $value) : (string) $value;
+                $matchedFieldIds[] = $field['id'] ?? $field['key'];
+                break;
+            }
+        }
+
+        $remaining = collect($customFields)
+            ->reject(fn (array $field) => in_array($field['id'] ?? $field['key'], $matchedFieldIds, true))
+            ->values()
+            ->all();
+
+        return [
+            'product' => $values['product'],
+            'purchase_date' => $this->formatPurchaseDate($values['purchase_date']),
+            'purchase_price' => $values['purchase_price'],
+            'receipt_number' => $this->formatReceiptNumber($values['receipt_number']),
+            'remaining_custom_fields' => $remaining,
+        ];
+    }
+
+    /**
+     * Renders whatever date format GHL stored the custom field in as
+     * "d M Y" (same day/month style as the rest of Inbox, e.g.
+     * conversation-item.blade.php's "M j"). Falls back to the raw string
+     * if GHL's value isn't a parseable date, rather than dropping it.
+     */
+    protected function formatPurchaseDate(?string $value): ?string
+    {
+        if (blank($value)) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value)->format('d M Y');
+        } catch (Throwable) {
+            return $value;
+        }
+    }
+
+    /**
+     * Normalizes the receipt number to the "REC<digits>" format claude.txt
+     * requires (e.g. REC2141), pulling the digits out of whatever raw value
+     * GHL has for that field — never a made-up number, just a consistent
+     * shape around GHL's own value.
+     */
+    protected function formatReceiptNumber(?string $value): ?string
+    {
+        if (blank($value)) {
+            return null;
+        }
+
+        $digits = preg_replace('/\D/', '', $value);
+
+        if ($digits === '') {
+            return $value;
+        }
+
+        return 'REC'.$digits;
     }
 
     /**

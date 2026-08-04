@@ -137,6 +137,10 @@
             ['Conversation ID', data.conversation_id],
             ['Channel', data.channel],
             ['Company', data.company_name],
+            ['Product', data.product],
+            ['Purchase Date', data.purchase_date],
+            ['Purchase Price', data.purchase_price],
+            ['Receipt Number', data.receipt_number],
             ['Tags', Array.isArray(data.tags) && data.tags.length ? data.tags.join(', ') : ''],
         ];
 
