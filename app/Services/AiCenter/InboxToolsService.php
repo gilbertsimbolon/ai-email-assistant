@@ -16,19 +16,11 @@ use App\Services\Ghl\GhlParserService;
 use App\Services\Ghl\GhlThreadLoader;
 use App\Services\Ghl\GoHighLevelApiService;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-/**
- * Backs the 5 manual Inbox toolbar actions (Summarize/Translate/Detect
- * Intent/Extract Info/Sentiment — claude.txt Task 3). Every call is
- * user-initiated (never automatic, same rule AiGenerationService follows
- * for draft generation) and cached for an hour per conversation+thread
- * content so re-opening a modal doesn't re-spend OpenAI tokens. The
- * exception is Extract Info (claude.txt: "Remove AI from Extract Info") —
- * it never touches aiClient at all, it reads straight from GHL.
- */
 class InboxToolsService
 {
     protected const CACHE_TTL_MINUTES = 60;
@@ -58,500 +50,1781 @@ class InboxToolsService
     ) {
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    public function summarize(Conversation $conversation, bool $forceRefresh = false): array
-    {
-        return $this->remember('summarize', $conversation, $forceRefresh, function (string $thread) use ($conversation) {
-            $result = $this->aiClient->json($this->promptFactory->summarize($thread));
-            $this->logCall($conversation, $thread, $result);
+    /*
+    |--------------------------------------------------------------------------
+    | SUMMARIZE
+    |--------------------------------------------------------------------------
+    */
 
-            return $result;
-        });
+    public function summarize(
+        Conversation $conversation,
+        bool $forceRefresh = false
+    ): array {
+        return $this->remember(
+            'summarize',
+            $conversation,
+            $forceRefresh,
+            function (string $thread) use ($conversation): array {
+                $result = $this->aiClient->json(
+                    $this->promptFactory->summarize($thread)
+                );
+
+                $this->logCall(
+                    $conversation,
+                    $thread,
+                    $result
+                );
+
+                return $result;
+            }
+        );
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    public function translate(Conversation $conversation, string $language, bool $forceRefresh = false): array
-    {
-        $languageLabel = self::LANGUAGES[$language] ?? $language;
+    /*
+    |--------------------------------------------------------------------------
+    | TRANSLATE
+    |--------------------------------------------------------------------------
+    */
 
-        return $this->remember("translate:{$language}", $conversation, $forceRefresh, function (string $thread) use ($conversation, $languageLabel) {
-            $result = $this->aiClient->json($this->promptFactory->translate($thread, $languageLabel));
-            $this->logCall($conversation, $thread, $result);
+    public function translate(
+        Conversation $conversation,
+        string $language,
+        bool $forceRefresh = false
+    ): array {
+        $language = strtolower(trim($language));
 
-            return $result;
-        });
+        $languageLabel = self::LANGUAGES[$language]
+            ?? $language;
+
+        return $this->remember(
+            "translate:{$language}",
+            $conversation,
+            $forceRefresh,
+            function (string $thread) use (
+                $conversation,
+                $languageLabel
+            ): array {
+                $result = $this->aiClient->json(
+                    $this->promptFactory->translate(
+                        $thread,
+                        $languageLabel
+                    )
+                );
+
+                $this->logCall(
+                    $conversation,
+                    $thread,
+                    $result
+                );
+
+                return $result;
+            }
+        );
     }
 
-    /**
-     * Reuses IntentDetectionEngine/SopMatchingEngine/KnowledgeResolver — the
-     * same matching stages AiCenterPipeline runs for Generate/Regenerate —
-     * so "Matched SOP"/"Matched Knowledge"/"Matched Template" reflect
-     * exactly what a real draft generation would pick up.
-     *
-     * @return array<string, mixed>
-     */
-    public function detectIntent(Conversation $conversation, bool $forceRefresh = false): array
-    {
-        return $this->remember('detect-intent', $conversation, $forceRefresh, function (string $thread) use ($conversation) {
-            $knownIntentNames = $this->intentDetectionEngine->shortlist($thread)->pluck('name')->all();
-            $classification = $this->aiClient->json($this->promptFactory->detectIntent($thread, $knownIntentNames));
+    /*
+    |--------------------------------------------------------------------------
+    | DETECT INTENT
+    |--------------------------------------------------------------------------
+    */
 
-            $intent = $this->intentDetectionEngine->resolve($thread, $classification);
-            $sopMatch = $this->sopMatchingEngine->match($conversation, $intent, $thread);
-            $sop = $sopMatch->sop;
-            $knowledgeBases = $this->knowledgeResolver->resolve($sop);
+    public function detectIntent(
+        Conversation $conversation,
+        bool $forceRefresh = false
+    ): array {
+        return $this->remember(
+            'detect-intent',
+            $conversation,
+            $forceRefresh,
+            function (string $thread) use ($conversation): array {
+                $knownIntentNames = $this
+                    ->intentDetectionEngine
+                    ->shortlist($thread)
+                    ->pluck('name')
+                    ->filter()
+                    ->values()
+                    ->all();
 
-            $result = [
-                'intent' => $classification['intent'] ?? $intent?->name,
-                'confidence_score' => $classification['confidence_score'] ?? null,
-                'reasoning' => $classification['reasoning'] ?? '',
-                'matched_sop' => $sop?->name,
-                'matched_knowledge' => $knowledgeBases->pluck('title')->values()->all(),
-                'matched_template' => $sop?->replyTemplate?->name,
-            ];
+                $classification = $this->aiClient->json(
+                    $this->promptFactory->detectIntent(
+                        $thread,
+                        $knownIntentNames
+                    )
+                );
 
-            $this->logCall($conversation, $thread, $result, intentId: $intent?->id, sopId: $sop?->id);
+                $intent = $this->intentDetectionEngine->resolve(
+                    $thread,
+                    $classification
+                );
 
-            return $result;
-        });
+                $sopMatch = $this->sopMatchingEngine->match(
+                    $conversation,
+                    $intent,
+                    $thread
+                );
+
+                $sop = $sopMatch->sop;
+
+                $knowledgeBases = $this->knowledgeResolver->resolve(
+                    $sop
+                );
+
+                $result = [
+                    'intent' => $classification['intent']
+                        ?? $intent?->name,
+
+                    'confidence_score' =>
+                        $classification['confidence_score']
+                        ?? null,
+
+                    'reasoning' =>
+                        $classification['reasoning']
+                        ?? '',
+
+                    'matched_sop' =>
+                        $sop?->name,
+
+                    'matched_knowledge' =>
+                        $knowledgeBases
+                            ->pluck('title')
+                            ->filter()
+                            ->values()
+                            ->all(),
+
+                    'matched_template' =>
+                        $sop?->replyTemplate?->name,
+                ];
+
+                $this->logCall(
+                    $conversation,
+                    $thread,
+                    $result,
+                    intentId: $intent?->id,
+                    sopId: $sop?->id
+                );
+
+                return $result;
+            }
+        );
     }
 
-    /**
-     * NOT an AI call (claude.txt Task 1: "Remove AI from Extract Info").
-     * Every field here comes straight from GHL's own contact/conversation
-     * data — the same source InboxController's Contact Details panel
-     * reads from — never inferred by a model. Cached briefly per
-     * conversation purely to avoid re-hitting GHL on every modal open;
-     * force_refresh bypasses that cache the same way the AI tools' own
-     * force-refresh does.
-     *
-     * @return array<string, mixed>
-     */
-    public function extractInformation(Conversation $conversation, bool $forceRefresh = false): array
-    {
-        $key = 'inbox-extract-info:'.$conversation->id;
+    /*
+    |--------------------------------------------------------------------------
+    | EXTRACT INFORMATION
+    |--------------------------------------------------------------------------
+    |
+    | IMPORTANT:
+    | This method DOES NOT use AI.
+    |
+    | Data comes directly from:
+    | 1. GHL Contact
+    | 2. GHL Orders
+    | 3. GHL Transactions
+    |
+    */
 
-        if (! $forceRefresh && Cache::has($key)) {
-            return Cache::get($key);
+    public function extractInformation(
+        Conversation $conversation,
+        bool $forceRefresh = false
+    ): array {
+        $cacheKey = 'inbox-extract-info:' . $conversation->id;
+
+        if (
+            ! $forceRefresh
+            && Cache::has($cacheKey)
+        ) {
+            return Cache::get($cacheKey);
         }
 
-        $contact = $this->fetchContact($conversation->contact_id);
-        $purchaseInfo = $this->extractPurchaseInfo($contact?->customFields ?? []);
-        $purchaseInfo = $this->fillPurchaseInfoFromOrders($conversation->contact_id, $purchaseInfo);
-        $purchaseInfo = $this->fillPurchaseInfoFromTransactions($conversation->contact_id, $purchaseInfo);
+        $contact = $this->fetchContact(
+            $conversation->contact_id
+        );
 
-        // claude.txt Step 3/10: never logs the actual values (names, prices,
-        // etc.), only which source — if any — ended up answering each of
-        // the 4 purchase fields. This is the evidence trail for "kenapa
-        // field selalu -": check this log line against GHL API request
-        // succeeded/failed lines for the same conversation_id.
-        Log::debug('Extract Info purchase field resolution', [
-            'conversation_id' => $conversation->id,
-            'contact_id' => $conversation->contact_id,
-            'product_found' => $purchaseInfo['product'] !== null,
-            'purchase_date_found' => $purchaseInfo['purchase_date'] !== null,
-            'purchase_price_found' => $purchaseInfo['purchase_price'] !== null,
-            'receipt_number_found' => $purchaseInfo['receipt_number'] !== null,
-        ]);
+        $purchaseInfo = $this->extractPurchaseInfo(
+            $contact?->customFields ?? []
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Get ALL PAYMENT DATA
+        |--------------------------------------------------------------------------
+        */
+
+        $payments = $this->getAllPaymentDetails(
+            $conversation->contact_id
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Backward-compatible single purchase summary
+        |--------------------------------------------------------------------------
+        |
+        | IMPORTANT:
+        | The original code called fillPurchaseInfoFromPayments(),
+        | but that method did not exist.
+        |
+        | The actual method implemented in this service is:
+        | fillLegacyPurchaseFields()
+        |
+        */
+
+        $purchaseInfo = $this->fillLegacyPurchaseFields(
+            $purchaseInfo,
+            $payments
+        );
 
         $result = [
-            'customer_name' => $contact?->fullName() ?: $conversation->contact_name,
-            'email' => $contact?->email ?: $conversation->contact_email,
-            'phone' => $contact?->phone ?: $conversation->contact_phone,
-            'contact_id' => $conversation->contact_id,
-            'conversation_id' => $conversation->ghl_conversation_id,
-            'channel' => $conversation->channel,
-            'company_name' => $contact?->companyName,
-            'product' => $purchaseInfo['product'],
-            'purchase_date' => $purchaseInfo['purchase_date'],
-            'purchase_price' => $purchaseInfo['purchase_price'],
-            'receipt_number' => $purchaseInfo['receipt_number'],
-            'tags' => $contact?->tags ?? [],
-            'custom_fields' => $purchaseInfo['remaining_custom_fields'],
+            'customer_name' =>
+                $contact?->fullName()
+                ?: $conversation->contact_name,
+
+            'email' =>
+                $contact?->email
+                ?: $conversation->contact_email,
+
+            'phone' =>
+                $contact?->phone
+                ?: $conversation->contact_phone,
+
+            'contact_id' =>
+                $conversation->contact_id,
+
+            'conversation_id' =>
+                $conversation->ghl_conversation_id,
+
+            'channel' =>
+                $conversation->channel,
+
+            'company_name' =>
+                $contact?->companyName,
+
+            /*
+            |--------------------------------------------------------------------------
+            | Backward-compatible single purchase summary
+            |--------------------------------------------------------------------------
+            */
+
+            'product' =>
+                $purchaseInfo['product'],
+
+            'purchase_date' =>
+                $purchaseInfo['purchase_date'],
+
+            'purchase_price' =>
+                $purchaseInfo['purchase_price'],
+
+            'receipt_number' =>
+                $purchaseInfo['receipt_number'],
+
+            /*
+            |--------------------------------------------------------------------------
+            | ALL PAYMENTS
+            |--------------------------------------------------------------------------
+            */
+
+            'payments' =>
+                $payments,
+
+            'payment_count' =>
+                count($payments),
+
+            'tags' =>
+                $contact?->tags ?? [],
+
+            'custom_fields' =>
+                $purchaseInfo['remaining_custom_fields'],
         ];
 
-        Cache::put($key, $result, now()->addMinutes(self::EXTRACT_INFO_CACHE_TTL_MINUTES));
+        Log::debug(
+            'Extract Info payment resolution',
+            [
+                'conversation_id' =>
+                    $conversation->id,
+
+                'contact_id' =>
+                    $conversation->contact_id,
+
+                'total_payments' =>
+                    count($payments),
+
+                'product_found' =>
+                    filled($purchaseInfo['product']),
+
+                'purchase_date_found' =>
+                    filled($purchaseInfo['purchase_date']),
+
+                'purchase_price_found' =>
+                    filled($purchaseInfo['purchase_price']),
+
+                'receipt_number_found' =>
+                    filled($purchaseInfo['receipt_number']),
+            ]
+        );
+
+        Cache::put(
+            $cacheKey,
+            $result,
+            now()->addMinutes(
+                self::EXTRACT_INFO_CACHE_TTL_MINUTES
+            )
+        );
 
         return $result;
     }
 
-    /**
-     * Picks the 4 purchase-related fields (claude.txt: Product/Purchase
-     * Date/Purchase Price/Receipt Number) out of GHL's free-form contact
-     * custom fields. GHL custom field *keys* are whatever an agency named
-     * them in their own location (e.g. "contact.product_purchased" vs just
-     * "product"), so this matches against a normalized key (lowercased,
-     * stripped of separators) against a handful of known aliases instead of
-     * one exact string. Never invents a value — a field GHL doesn't have
-     * stays null and the UI renders "-". Matched fields are removed from
-     * the generic custom-fields list so they aren't shown twice.
-     *
-     * @param  array<int, array{id: ?string, key: ?string, value: mixed}>  $customFields
-     * @return array{product: ?string, purchase_date: ?string, purchase_price: ?string, receipt_number: ?string, remaining_custom_fields: array}
-     */
-    protected function extractPurchaseInfo(array $customFields): array
-    {
+    /*
+    |--------------------------------------------------------------------------
+    | GET ALL PAYMENT DETAILS
+    |--------------------------------------------------------------------------
+    */
+
+    protected function getAllPaymentDetails(
+        ?string $contactId
+    ): array {
+        if (blank($contactId)) {
+            return [];
+        }
+
+        $payments = [];
+
+        /*
+        |--------------------------------------------------------------------------
+        | ORDERS
+        |--------------------------------------------------------------------------
+        */
+
+        try {
+            $response = $this->ghlApi->getOrders(
+                $contactId
+            );
+
+            $orders = $this->allRecords(
+                $response,
+                [
+                    'orders',
+                    'data',
+                ]
+            );
+
+            foreach ($orders as $order) {
+                $normalized = $this->normalizeOrder(
+                    $order,
+                    $contactId
+                );
+
+                if (
+                    $this->hasMeaningfulPaymentData(
+                        $normalized
+                    )
+                ) {
+                    $payments[] = $normalized;
+                }
+            }
+        } catch (Throwable $e) {
+            Log::warning(
+                'Failed to fetch GHL orders',
+                [
+                    'contact_id' =>
+                        $contactId,
+
+                    'error' =>
+                        $e->getMessage(),
+                ]
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | TRANSACTIONS
+        |--------------------------------------------------------------------------
+        */
+
+        try {
+            $response = $this->ghlApi->getTransactions(
+                $contactId
+            );
+
+            $transactions = $this->allRecords(
+                $response,
+                [
+                    'transactions',
+                    'data',
+                ]
+            );
+
+            foreach ($transactions as $transaction) {
+                $normalized = $this->normalizeTransaction(
+                    $transaction,
+                    $contactId
+                );
+
+                if (
+                    $this->hasMeaningfulPaymentData(
+                        $normalized
+                    )
+                ) {
+                    $payments[] = $normalized;
+                }
+            }
+        } catch (Throwable $e) {
+            Log::warning(
+                'Failed to fetch GHL transactions',
+                [
+                    'contact_id' =>
+                        $contactId,
+
+                    'error' =>
+                        $e->getMessage(),
+                ]
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | REMOVE DUPLICATES
+        |--------------------------------------------------------------------------
+        */
+
+        $payments = $this->removeDuplicatePayments(
+            $payments
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | NEWEST FIRST
+        |--------------------------------------------------------------------------
+        */
+
+        usort(
+            $payments,
+            function (array $a, array $b): int {
+                return strcmp(
+                    (string) ($b['created_at'] ?? ''),
+                    (string) ($a['created_at'] ?? '')
+                );
+            }
+        );
+
+        return array_values($payments);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NORMALIZE ORDER
+    |--------------------------------------------------------------------------
+    */
+
+    protected function normalizeOrder(
+        array $order,
+        string $contactId
+    ): array {
+        $items = $order['items'] ?? [];
+
+        if (! is_array($items)) {
+            $items = [];
+        }
+
+        $normalizedItems = [];
+
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $name =
+                $item['name']
+                ?? data_get($item, 'product.name')
+                ?? $item['displayText']
+                ?? null;
+
+            $quantity =
+                $item['qty']
+                ?? data_get($item, 'quantity.max')
+                ?? $item['quantity']
+                ?? 1;
+
+            $priceAmount =
+                data_get($item, 'price.amount')
+                ?? $item['price']
+                ?? null;
+
+            $priceCurrency =
+                data_get($item, 'price.currency')
+                ?? $item['currency']
+                ?? null;
+
+            $normalizedItems[] = [
+                'name' =>
+                    $name,
+
+                'quantity' =>
+                    $quantity,
+
+                'price' =>
+                    $priceAmount,
+
+                'formatted_price' =>
+                    $this->formatPrice(
+                        $priceAmount,
+                        $priceCurrency
+                    ),
+
+                'currency' =>
+                    $priceCurrency,
+
+                'product_id' =>
+                    data_get(
+                        $item,
+                        'product._id'
+                    )
+                    ?? data_get(
+                        $item,
+                        'product.id'
+                    ),
+
+                'price_id' =>
+                    data_get(
+                        $item,
+                        'price._id'
+                    )
+                    ?? data_get(
+                        $item,
+                        'price.id'
+                    ),
+            ];
+        }
+
+        $products = collect($normalizedItems)
+            ->pluck('name')
+            ->filter(
+                fn ($value) => filled($value)
+            )
+            ->unique()
+            ->values()
+            ->all();
+
+        $amount =
+            $order['amount']
+            ?? data_get(
+                $order,
+                'amountSummary.total'
+            )
+            ?? null;
+
+        $currency =
+            $order['currency']
+            ?? null;
+
+        return [
+            'type' =>
+                'order',
+
+            'order_id' =>
+                $order['_id']
+                ?? $order['id']
+                ?? null,
+
+            'contact_id' =>
+                $order['contactId']
+                ?? $contactId,
+
+            'contact_name' =>
+                $order['contactName']
+                ?? null,
+
+            'contact_email' =>
+                $order['contactEmail']
+                ?? null,
+
+            /*
+            |--------------------------------------------------------------------------
+            | PAYMENT
+            |--------------------------------------------------------------------------
+            */
+
+            'amount' =>
+                $amount,
+
+            'formatted_amount' =>
+                $this->formatPrice(
+                    $amount,
+                    $currency
+                ),
+
+            'currency' =>
+                $currency,
+
+            'subtotal' =>
+                data_get(
+                    $order,
+                    'amountSummary.subtotal'
+                )
+                ?? $order['subtotal']
+                ?? null,
+
+            'discount' =>
+                data_get(
+                    $order,
+                    'amountSummary.discount'
+                )
+                ?? $order['discount']
+                ?? null,
+
+            'tax' =>
+                data_get(
+                    $order,
+                    'amountSummary.tax'
+                )
+                ?? $order['tax']
+                ?? null,
+
+            'shipping' =>
+                data_get(
+                    $order,
+                    'amountSummary.shipping'
+                )
+                ?? $order['shipping']
+                ?? null,
+
+            /*
+            |--------------------------------------------------------------------------
+            | STATUS
+            |--------------------------------------------------------------------------
+            */
+
+            'status' =>
+                $order['status']
+                ?? null,
+
+            'payment_status' =>
+                $order['paymentStatus']
+                ?? null,
+
+            'fulfillment_status' =>
+                $order['fulfillmentStatus']
+                ?? null,
+
+            'live_mode' =>
+                $order['liveMode']
+                ?? null,
+
+            /*
+            |--------------------------------------------------------------------------
+            | PRODUCTS
+            |--------------------------------------------------------------------------
+            */
+
+            'product' =>
+                ! empty($products)
+                    ? implode(', ', $products)
+                    : null,
+
+            'products' =>
+                $products,
+
+            'items' =>
+                $normalizedItems,
+
+            /*
+            |--------------------------------------------------------------------------
+            | SOURCE
+            |--------------------------------------------------------------------------
+            */
+
+            'source' => [
+                'type' =>
+                    data_get(
+                        $order,
+                        'source.type'
+                    )
+                    ?? $order['sourceType']
+                    ?? null,
+
+                'sub_type' =>
+                    data_get(
+                        $order,
+                        'source.subType'
+                    )
+                    ?? $order['sourceSubType']
+                    ?? null,
+
+                'id' =>
+                    data_get(
+                        $order,
+                        'source.id'
+                    )
+                    ?? $order['sourceId']
+                    ?? null,
+
+                'name' =>
+                    data_get(
+                        $order,
+                        'source.name'
+                    )
+                    ?? $order['sourceName']
+                    ?? null,
+
+                'meta' =>
+                    data_get(
+                        $order,
+                        'source.meta'
+                    )
+                    ?? $order['sourceMeta']
+                    ?? [],
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | DATE
+            |--------------------------------------------------------------------------
+            */
+
+            'purchase_date' =>
+                $this->formatPurchaseDate(
+                    $order['createdAt']
+                    ?? $order['created_at']
+                    ?? null
+                ),
+
+            'created_at' =>
+                $order['createdAt']
+                ?? $order['created_at']
+                ?? null,
+
+            'updated_at' =>
+                $order['updatedAt']
+                ?? $order['updated_at']
+                ?? null,
+
+            /*
+            |--------------------------------------------------------------------------
+            | RECEIPT
+            |--------------------------------------------------------------------------
+            */
+
+            'receipt_number' =>
+                $this->formatReceiptNumber(
+                    $this->findReceiptNumber(
+                        $order
+                    )
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | RAW DATA
+            |--------------------------------------------------------------------------
+            */
+
+            'raw_order' =>
+                $order,
+        ];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NORMALIZE TRANSACTION
+    |--------------------------------------------------------------------------
+    */
+
+    protected function normalizeTransaction(
+        array $transaction,
+        string $contactId
+    ): array {
+        $chargeSnapshot =
+            is_array(
+                $transaction['chargeSnapshot'] ?? null
+            )
+                ? $transaction['chargeSnapshot']
+                : null;
+
+        $amount =
+            $transaction['amount']
+            ?? null;
+
+        $currency =
+            $transaction['currency']
+            ?? null;
+
+        $product =
+            $transaction['productName']
+            ?? $transaction['description']
+            ?? data_get(
+                $transaction,
+                'chargeSnapshot.description'
+            )
+            ?? data_get(
+                $transaction,
+                'chargeSnapshot.charges.data.0.description'
+            )
+            ?? null;
+
+        return [
+            'type' =>
+                'transaction',
+
+            'transaction_id' =>
+                $transaction['_id']
+                ?? $transaction['id']
+                ?? null,
+
+            'entity_type' =>
+                $transaction['entityType']
+                ?? null,
+
+            'entity_id' =>
+                $transaction['entityId']
+                ?? null,
+
+            'contact_id' =>
+                $transaction['contactId']
+                ?? $contactId,
+
+            'contact_name' =>
+                $transaction['contactName']
+                ?? null,
+
+            'contact_email' =>
+                $transaction['contactEmail']
+                ?? null,
+
+            /*
+            |--------------------------------------------------------------------------
+            | PAYMENT
+            |--------------------------------------------------------------------------
+            */
+
+            'amount' =>
+                $amount,
+
+            'formatted_amount' =>
+                $this->formatPrice(
+                    $amount,
+                    $currency
+                ),
+
+            'currency' =>
+                $currency,
+
+            'amount_refunded' =>
+                $transaction['amountRefunded']
+                ?? null,
+
+            /*
+            |--------------------------------------------------------------------------
+            | STATUS
+            |--------------------------------------------------------------------------
+            */
+
+            'status' =>
+                $transaction['status']
+                ?? null,
+
+            'payment_status' =>
+                $transaction['paymentStatus']
+                ?? null,
+
+            /*
+            |--------------------------------------------------------------------------
+            | PAYMENT METHOD
+            |--------------------------------------------------------------------------
+            */
+
+            'payment_provider_type' =>
+                $transaction['paymentProviderType']
+                ?? null,
+
+            'payment_method' =>
+                $transaction['paymentMethod']
+                ?? null,
+
+            /*
+            |--------------------------------------------------------------------------
+            | PRODUCT
+            |--------------------------------------------------------------------------
+            */
+
+            'product' =>
+                $product,
+
+            'products' =>
+                filled($product)
+                    ? [$product]
+                    : [],
+
+            'items' =>
+                [],
+
+            /*
+            |--------------------------------------------------------------------------
+            | SOURCE
+            |--------------------------------------------------------------------------
+            */
+
+            'source' => [
+                'type' =>
+                    $transaction['entitySourceType']
+                    ?? null,
+
+                'sub_type' =>
+                    $transaction['entitySourceSubType']
+                    ?? null,
+
+                'name' =>
+                    $transaction['entitySourceName']
+                    ?? null,
+
+                'id' =>
+                    $transaction['entitySourceId']
+                    ?? null,
+
+                'meta' =>
+                    $transaction['entitySourceMeta']
+                    ?? [],
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | DATE
+            |--------------------------------------------------------------------------
+            */
+
+            'purchase_date' =>
+                $this->formatPurchaseDate(
+                    $transaction['createdAt']
+                    ?? $transaction['created_at']
+                    ?? null
+                ),
+
+            'created_at' =>
+                $transaction['createdAt']
+                ?? $transaction['created_at']
+                ?? null,
+
+            'updated_at' =>
+                $transaction['updatedAt']
+                ?? $transaction['updated_at']
+                ?? null,
+
+            /*
+            |--------------------------------------------------------------------------
+            | RECEIPT
+            |--------------------------------------------------------------------------
+            */
+
+            'receipt_number' =>
+                $this->formatReceiptNumber(
+                    $this->findReceiptNumber(
+                        $transaction
+                    )
+                    ?? $this->findReceiptNumber(
+                        $chargeSnapshot ?? []
+                    )
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | GHL PAYMENT DATA
+            |--------------------------------------------------------------------------
+            */
+
+            'charge_snapshot' =>
+                $chargeSnapshot,
+
+            'payment_providers' =>
+                $transaction['paymentProviders']
+                ?? [],
+
+            /*
+            |--------------------------------------------------------------------------
+            | RAW DATA
+            |--------------------------------------------------------------------------
+            */
+
+            'raw_transaction' =>
+                $transaction,
+        ];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | REMOVE DUPLICATE PAYMENTS
+    |--------------------------------------------------------------------------
+    */
+
+    protected function removeDuplicatePayments(
+        array $payments
+    ): array {
+        $seen = [];
+
+        return array_values(
+            array_filter(
+                $payments,
+                function (array $payment) use (&$seen): bool {
+                    $id =
+                        $payment['order_id']
+                        ?? $payment['transaction_id']
+                        ?? null;
+
+                    /*
+                    | If there is no ID, don't accidentally remove
+                    | unrelated records.
+                    */
+
+                    if (blank($id)) {
+                        return true;
+                    }
+
+                    $key =
+                        ($payment['type'] ?? 'payment')
+                        . ':'
+                        . $id;
+
+                    if (isset($seen[$key])) {
+                        return false;
+                    }
+
+                    $seen[$key] = true;
+
+                    return true;
+                }
+            )
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | PAYMENT DATA CHECK
+    |--------------------------------------------------------------------------
+    */
+
+    protected function hasMeaningfulPaymentData(
+        array $payment
+    ): bool {
+        return filled(
+            $payment['order_id']
+            ?? $payment['transaction_id']
+            ?? $payment['entity_id']
+            ?? $payment['amount']
+            ?? $payment['product']
+            ?? $payment['created_at']
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | EXTRACT PURCHASE INFO FROM CUSTOM FIELDS
+    |--------------------------------------------------------------------------
+    */
+
+    protected function extractPurchaseInfo(
+        array $customFields
+    ): array {
         $aliasesByTarget = [
-            'product' => ['product', 'productname', 'productpurchased', 'itempurchased', 'item', 'productbought'],
-            'purchase_date' => ['purchasedate', 'dateofpurchase', 'orderdate', 'datepurchased', 'transactiondate'],
-            'purchase_price' => ['purchaseprice', 'price', 'amount', 'orderamount', 'ordertotal', 'transactionamount', 'total', 'paymentamount'],
-            'receipt_number' => ['receiptnumber', 'receiptno', 'receipt', 'invoicenumber', 'invoiceno', 'ordernumber', 'orderid', 'transactionid'],
+            'product' => [
+                'product',
+                'productname',
+                'productpurchased',
+                'itempurchased',
+                'item',
+                'productbought',
+            ],
+
+            'purchase_date' => [
+                'purchasedate',
+                'dateofpurchase',
+                'orderdate',
+                'datepurchased',
+                'transactiondate',
+            ],
+
+            'purchase_price' => [
+                'purchaseprice',
+                'price',
+                'amount',
+                'orderamount',
+                'ordertotal',
+                'transactionamount',
+                'total',
+                'paymentamount',
+            ],
+
+            'receipt_number' => [
+                'receiptnumber',
+                'receiptno',
+                'receipt',
+                'invoicenumber',
+                'invoiceno',
+                'ordernumber',
+                'orderid',
+                'transactionid',
+            ],
         ];
 
-        $values = ['product' => null, 'purchase_date' => null, 'purchase_price' => null, 'receipt_number' => null];
+        $values = [
+            'product' => null,
+            'purchase_date' => null,
+            'purchase_price' => null,
+            'receipt_number' => null,
+        ];
+
         $matchedFieldIds = [];
 
         foreach ($customFields as $field) {
-            $normalizedKey = preg_replace('/[^a-z0-9]/', '', strtolower((string) ($field['key'] ?? '')));
+            if (! is_array($field)) {
+                continue;
+            }
+
+            $normalizedKey = preg_replace(
+                '/[^a-z0-9]/',
+                '',
+                strtolower(
+                    (string) (
+                        $field['key']
+                        ?? $field['name']
+                        ?? ''
+                    )
+                )
+            );
 
             if ($normalizedKey === '') {
                 continue;
             }
 
-            foreach ($aliasesByTarget as $target => $aliases) {
-                if ($values[$target] !== null || ! in_array($normalizedKey, $aliases, true)) {
+            foreach (
+                $aliasesByTarget as $target => $aliases
+            ) {
+                if (
+                    $values[$target] !== null
+                    || ! in_array(
+                        $normalizedKey,
+                        $aliases,
+                        true
+                    )
+                ) {
                     continue;
                 }
 
-                $value = $field['value'];
-                $values[$target] = is_array($value) ? implode(', ', $value) : (string) $value;
-                $matchedFieldIds[] = $field['id'] ?? $field['key'];
+                $value =
+                    $field['value']
+                    ?? null;
+
+                if (is_array($value)) {
+                    $value = implode(
+                        ', ',
+                        array_map(
+                            static fn ($item) =>
+                                is_scalar($item)
+                                    ? (string) $item
+                                    : json_encode($item),
+                            $value
+                        )
+                    );
+                }
+
+                $values[$target] =
+                    filled($value)
+                        ? (string) $value
+                        : null;
+
+                $matchedFieldIds[] =
+                    $field['id']
+                    ?? $field['key']
+                    ?? $field['name']
+                    ?? null;
+
                 break;
             }
         }
 
         $remaining = collect($customFields)
-            ->reject(fn (array $field) => in_array($field['id'] ?? $field['key'], $matchedFieldIds, true))
+            ->reject(
+                function ($field) use ($matchedFieldIds): bool {
+                    if (! is_array($field)) {
+                        return true;
+                    }
+
+                    $identifier =
+                        $field['id']
+                        ?? $field['key']
+                        ?? $field['name']
+                        ?? null;
+
+                    return in_array(
+                        $identifier,
+                        $matchedFieldIds,
+                        true
+                    );
+                }
+            )
             ->values()
             ->all();
 
         return [
-            'product' => $values['product'],
-            'purchase_date' => $this->formatPurchaseDate($values['purchase_date']),
-            'purchase_price' => $values['purchase_price'],
-            'receipt_number' => $this->formatReceiptNumber($values['receipt_number']),
-            'remaining_custom_fields' => $remaining,
+            'product' =>
+                $values['product'],
+
+            'purchase_date' =>
+                $this->formatPurchaseDate(
+                    $values['purchase_date']
+                ),
+
+            'purchase_price' =>
+                $values['purchase_price'],
+
+            'receipt_number' =>
+                $this->formatReceiptNumber(
+                    $values['receipt_number']
+                ),
+
+            'remaining_custom_fields' =>
+                $remaining,
         ];
     }
 
-    /**
-     * Falls back to GHL's Payments Orders API (claude.txt Step 6: Contact ID
-     * -> Order -> Product/Purchase Info) for whichever purchase fields the
-     * contact's own custom fields didn't answer. Orders is the GHL resource
-     * that actually models "a completed purchase" — amount/currency,
-     * createdAt, and an items[] array carrying the product name — unlike
-     * the Contact resource, which only has whatever custom fields a
-     * location owner manually configured. Skips the API call entirely once
-     * every field is already filled, and never overwrites a value the
-     * custom fields already provided.
-     *
-     * Assumes the most recent order (first page, default sort) is the
-     * relevant one — GHL's Orders list doesn't let you target "the order
-     * this conversation is about", so with multiple historical purchases
-     * this picks the latest rather than guessing which one the customer is
-     * asking about.
-     *
-     * @param  array{product: ?string, purchase_date: ?string, purchase_price: ?string, receipt_number: ?string, remaining_custom_fields: array}  $purchaseInfo
-     * @return array{product: ?string, purchase_date: ?string, purchase_price: ?string, receipt_number: ?string, remaining_custom_fields: array}
-     */
-    protected function fillPurchaseInfoFromOrders(?string $contactId, array $purchaseInfo): array
-    {
-        if (blank($contactId) || $this->purchaseInfoComplete($purchaseInfo)) {
+    /*
+    |--------------------------------------------------------------------------
+    | FILL LEGACY PURCHASE FIELDS
+    |--------------------------------------------------------------------------
+    */
+
+    protected function fillLegacyPurchaseFields(
+        array $purchaseInfo,
+        array $payments
+    ): array {
+        if ($payments === []) {
             return $purchaseInfo;
         }
 
-        try {
-            $response = $this->ghlApi->getOrders($contactId);
-        } catch (Throwable $e) {
-            Log::warning('Failed to fetch GHL orders for Extract Info', [
-                'contact_id' => $contactId,
-                'error' => $e->getMessage(),
-            ]);
+        /*
+        |--------------------------------------------------------------------------
+        | Prefer successful / paid payment
+        |--------------------------------------------------------------------------
+        */
 
-            return $purchaseInfo;
+        $payment = collect($payments)
+            ->sortByDesc(
+                fn (array $payment) =>
+                    (string) (
+                        $payment['created_at']
+                        ?? ''
+                    )
+            )
+            ->first(
+                function (array $payment): bool {
+                    $status = strtolower(
+                        trim(
+                            (string) (
+                                $payment['payment_status']
+                                ?? $payment['status']
+                                ?? ''
+                            )
+                        )
+                    );
+
+                    return in_array(
+                        $status,
+                        [
+                            'paid',
+                            'completed',
+                            'succeeded',
+                            'success',
+                        ],
+                        true
+                    );
+                }
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Otherwise newest payment
+        |--------------------------------------------------------------------------
+        */
+
+        $payment ??= $payments[0];
+
+        /*
+        |--------------------------------------------------------------------------
+        | Product
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            blank($purchaseInfo['product'])
+            && filled($payment['product'] ?? null)
+        ) {
+            $purchaseInfo['product'] =
+                $payment['product'];
         }
 
-        $order = $this->firstRecord($response, ['orders', 'data']);
+        /*
+        |--------------------------------------------------------------------------
+        | Date
+        |--------------------------------------------------------------------------
+        */
 
-        if ($order === null) {
-            return $purchaseInfo;
+        if (
+            blank($purchaseInfo['purchase_date'])
+        ) {
+            $purchaseInfo['purchase_date'] =
+                $payment['purchase_date']
+                ?? null;
         }
 
-        $item = $this->firstRecord(['items' => $order['items'] ?? []], ['items']) ?? [];
+        /*
+        |--------------------------------------------------------------------------
+        | Price
+        |--------------------------------------------------------------------------
+        */
 
-        if ($purchaseInfo['product'] === null) {
-            $purchaseInfo['product'] = $item['product']['name'] ?? $item['name'] ?? null;
+        if (
+            blank($purchaseInfo['purchase_price'])
+        ) {
+            $purchaseInfo['purchase_price'] =
+                $payment['formatted_amount']
+                ?? null;
         }
 
-        if ($purchaseInfo['purchase_date'] === null) {
-            $purchaseInfo['purchase_date'] = $this->formatPurchaseDate($order['createdAt'] ?? null);
-        }
+        /*
+        |--------------------------------------------------------------------------
+        | Receipt
+        |--------------------------------------------------------------------------
+        */
 
-        if ($purchaseInfo['purchase_price'] === null) {
-            $purchaseInfo['purchase_price'] = $this->formatPrice($order['amount'] ?? null, $order['currency'] ?? null);
-        }
-
-        if ($purchaseInfo['receipt_number'] === null) {
-            $purchaseInfo['receipt_number'] = $this->formatReceiptNumber($this->findReceiptNumber($order));
+        if (
+            blank($purchaseInfo['receipt_number'])
+        ) {
+            $purchaseInfo['receipt_number'] =
+                $payment['receipt_number']
+                ?? null;
         }
 
         return $purchaseInfo;
     }
 
-    /**
-     * Secondary probe against GHL's Payments Transactions API (claude.txt
-     * Step 2: "jangan mengasumsikan salah satu endpoint") — only reached for
-     * whatever Orders still left null. Unlike Orders, GHL's public
-     * Transaction schema isn't documented to carry a receipt/invoice
-     * number, so this only claims a value when the response itself has a
-     * field explicitly named like one (see findReceiptNumber) — it never
-     * repurposes a payment/charge ID as a "receipt number", since that
-     * would misrepresent an internal identifier as a customer-facing one.
-     *
-     * @param  array{product: ?string, purchase_date: ?string, purchase_price: ?string, receipt_number: ?string, remaining_custom_fields: array}  $purchaseInfo
-     * @return array{product: ?string, purchase_date: ?string, purchase_price: ?string, receipt_number: ?string, remaining_custom_fields: array}
-     */
-    protected function fillPurchaseInfoFromTransactions(?string $contactId, array $purchaseInfo): array
-    {
-        if (blank($contactId) || $this->purchaseInfoComplete($purchaseInfo)) {
-            return $purchaseInfo;
-        }
+    /*
+    |--------------------------------------------------------------------------
+    | ALL RECORDS
+    |--------------------------------------------------------------------------
+    */
 
-        try {
-            $response = $this->ghlApi->getTransactions($contactId);
-        } catch (Throwable $e) {
-            Log::warning('Failed to fetch GHL transactions for Extract Info', [
-                'contact_id' => $contactId,
-                'error' => $e->getMessage(),
-            ]);
-
-            return $purchaseInfo;
-        }
-
-        $transaction = $this->firstRecord($response, ['transactions', 'data']);
-
-        if ($transaction === null) {
-            return $purchaseInfo;
-        }
-
-        if ($purchaseInfo['product'] === null) {
-            $purchaseInfo['product'] = $transaction['productName'] ?? $transaction['description'] ?? null;
-        }
-
-        if ($purchaseInfo['purchase_date'] === null) {
-            $purchaseInfo['purchase_date'] = $this->formatPurchaseDate($transaction['createdAt'] ?? null);
-        }
-
-        if ($purchaseInfo['purchase_price'] === null) {
-            $purchaseInfo['purchase_price'] = $this->formatPrice($transaction['amount'] ?? null, $transaction['currency'] ?? null);
-        }
-
-        if ($purchaseInfo['receipt_number'] === null) {
-            $purchaseInfo['receipt_number'] = $this->formatReceiptNumber($this->findReceiptNumber($transaction));
-        }
-
-        return $purchaseInfo;
-    }
-
-    protected function purchaseInfoComplete(array $purchaseInfo): bool
-    {
-        return $purchaseInfo['product'] !== null
-            && $purchaseInfo['purchase_date'] !== null
-            && $purchaseInfo['purchase_price'] !== null
-            && $purchaseInfo['receipt_number'] !== null;
-    }
-
-    /**
-     * GHL list endpoints aren't consistent about the wrapper key around
-     * their array of records (`orders`, `data`, or occasionally the bare
-     * list), so this tries each known wrapper before giving up — never
-     * assumes a shape it hasn't actually seen in the response.
-     *
-     * @param  array<int, string>  $listKeys
-     */
-    protected function firstRecord(array $response, array $listKeys): ?array
-    {
+    protected function allRecords(
+        array $response,
+        array $listKeys
+    ): array {
         foreach ($listKeys as $listKey) {
             $list = $response[$listKey] ?? null;
 
-            if (is_array($list) && $list !== [] && is_array($list[array_key_first($list)])) {
-                return $list[array_key_first($list)];
+            if (! is_array($list)) {
+                continue;
+            }
+
+            if (array_is_list($list)) {
+                return array_values(
+                    array_filter(
+                        $list,
+                        fn ($item) =>
+                            is_array($item)
+                    )
+                );
+            }
+
+            $records = [];
+
+            foreach ($list as $item) {
+                if (is_array($item)) {
+                    $records[] = $item;
+                }
+            }
+
+            if ($records !== []) {
+                return $records;
             }
         }
 
-        if (array_is_list($response) && isset($response[0]) && is_array($response[0])) {
-            return $response[0];
+        if (array_is_list($response)) {
+            return array_values(
+                array_filter(
+                    $response,
+                    fn ($item) =>
+                        is_array($item)
+                )
+            );
+        }
+
+        return [];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | RECEIPT NUMBER
+    |--------------------------------------------------------------------------
+    */
+
+    protected function findReceiptNumber(
+        array $source
+    ): ?string {
+        $keys = [
+            'receiptNumber',
+            'receipt_number',
+            'receiptNo',
+            'receipt_no',
+            'invoiceNumber',
+            'invoice_number',
+            'invoiceNo',
+            'invoice_no',
+            'orderNumber',
+            'order_number',
+        ];
+
+        foreach ($keys as $key) {
+            $value = $source[$key] ?? null;
+
+            if (filled($value)) {
+                return (string) $value;
+            }
         }
 
         return null;
     }
 
-    /**
-     * Only matches a field GHL itself named like a receipt/invoice number —
-     * never a generic identifier (order _id, chargeId) that happens to
-     * contain digits, since presenting an internal payment ID as "Receipt
-     * Number" would misrepresent real data rather than reflect it.
-     */
-    protected function findReceiptNumber(array $source): ?string
-    {
-        foreach (['receiptNumber', 'receipt_number', 'receiptNo', 'invoiceNumber', 'invoice_number', 'invoiceNo', 'orderNumber', 'order_number'] as $key) {
-            if (filled($source[$key] ?? null)) {
-                return (string) $source[$key];
-            }
-        }
+    /*
+    |--------------------------------------------------------------------------
+    | FORMAT PRICE
+    |--------------------------------------------------------------------------
+    */
 
-        return null;
-    }
-
-    /**
-     * Formats a GHL amount (a plain number, minor or major unit depending
-     * on the endpoint) alongside its currency code exactly as returned —
-     * no currency symbol guessing, since GHL locations can be configured
-     * in any currency.
-     */
-    protected function formatPrice(mixed $amount, ?string $currency): ?string
-    {
-        if (blank($amount) && $amount !== 0) {
+    protected function formatPrice(
+        mixed $amount,
+        mixed $currency = null
+    ): ?string {
+        if (
+            $amount === null
+            || $amount === ''
+        ) {
             return null;
         }
 
-        return $currency ? trim($currency).' '.$amount : (string) $amount;
+        if (is_array($amount)) {
+            $amount =
+                $amount['amount']
+                ?? $amount['value']
+                ?? null;
+        }
+
+        if (
+            $amount === null
+            || $amount === ''
+        ) {
+            return null;
+        }
+
+        $amountString = is_scalar($amount)
+            ? (string) $amount
+            : json_encode($amount);
+
+        $currencyString = is_scalar($currency)
+            ? trim((string) $currency)
+            : '';
+
+        return $currencyString !== ''
+            ? $currencyString . ' ' . $amountString
+            : $amountString;
     }
 
-    /**
-     * Renders whatever date format GHL stored the custom field in as
-     * "d M Y" (same day/month style as the rest of Inbox, e.g.
-     * conversation-item.blade.php's "M j"). Falls back to the raw string
-     * if GHL's value isn't a parseable date, rather than dropping it.
-     */
-    protected function formatPurchaseDate(?string $value): ?string
-    {
-        if (blank($value)) {
+    /*
+    |--------------------------------------------------------------------------
+    | FORMAT DATE
+    |--------------------------------------------------------------------------
+    */
+
+    protected function formatPurchaseDate(
+        mixed $value
+    ): ?string {
+        if (
+            $value === null
+            || $value === ''
+        ) {
+            return null;
+        }
+
+        if (is_array($value)) {
+            $value =
+                $value['date']
+                ?? $value['value']
+                ?? null;
+        }
+
+        if (
+            $value === null
+            || $value === ''
+        ) {
             return null;
         }
 
         try {
-            return Carbon::parse($value)->format('d M Y');
+            return Carbon::parse(
+                (string) $value
+            )->format('d M Y');
         } catch (Throwable) {
-            return $value;
+            return (string) $value;
         }
     }
 
-    /**
-     * Normalizes the receipt number to the "REC<digits>" format claude.txt
-     * requires (e.g. REC2141), pulling the digits out of whatever raw value
-     * GHL has for that field — never a made-up number, just a consistent
-     * shape around GHL's own value.
-     */
-    protected function formatReceiptNumber(?string $value): ?string
-    {
-        if (blank($value)) {
+    /*
+    |--------------------------------------------------------------------------
+    | FORMAT RECEIPT
+    |--------------------------------------------------------------------------
+    */
+
+    protected function formatReceiptNumber(
+        mixed $value
+    ): ?string {
+        if (
+            $value === null
+            || $value === ''
+        ) {
             return null;
         }
 
-        $digits = preg_replace('/\D/', '', $value);
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        /*
+        | Don't double-format an existing REC number.
+        */
+
+        if (
+            preg_match(
+                '/^REC/i',
+                $value
+            )
+        ) {
+            return strtoupper($value);
+        }
+
+        $digits = preg_replace(
+            '/\D/',
+            '',
+            $value
+        );
 
         if ($digits === '') {
             return $value;
         }
 
-        return 'REC'.$digits;
+        return 'REC' . $digits;
     }
 
-    /**
-     * Same on-demand, defensive-read GHL contact fetch InboxController uses
-     * for the Contact Details panel — a failed/missing fetch returns null
-     * rather than fabricating data, so Extract Info can fall back to
-     * whatever the local anchor already knows (contact_name/email/phone
-     * seeded from GHL when the anchor was created).
-     */
-    protected function fetchContact(?string $contactId): ?ParsedGhlContactData
-    {
+    /*
+    |--------------------------------------------------------------------------
+    | FETCH CONTACT
+    |--------------------------------------------------------------------------
+    */
+
+    protected function fetchContact(
+        ?string $contactId
+    ): ?ParsedGhlContactData {
         if (blank($contactId)) {
             return null;
         }
 
         try {
-            $response = $this->ghlApi->getContact($contactId);
+            $response = $this->ghlApi->getContact(
+                $contactId
+            );
 
-            return $this->ghlParser->contactFromApi($response['contact'] ?? $response);
+            $contactData =
+                $response['contact']
+                ?? $response;
+
+            if (! is_array($contactData)) {
+                return null;
+            }
+
+            return $this->ghlParser->contactFromApi(
+                $contactData
+            );
         } catch (Throwable $e) {
-            Log::warning('Failed to fetch GHL contact for Extract Info', [
-                'contact_id' => $contactId,
-                'error' => $e->getMessage(),
-            ]);
+            Log::warning(
+                'Failed to fetch GHL contact',
+                [
+                    'contact_id' =>
+                        $contactId,
+
+                    'error' =>
+                        $e->getMessage(),
+                ]
+            );
 
             return null;
         }
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    public function sentiment(Conversation $conversation, bool $forceRefresh = false): array
-    {
-        return $this->remember('sentiment', $conversation, $forceRefresh, function (string $thread) use ($conversation) {
-            $result = $this->aiClient->json($this->promptFactory->sentiment($thread));
-            $this->logCall($conversation, $thread, $result);
+    /*
+    |--------------------------------------------------------------------------
+    | SENTIMENT
+    |--------------------------------------------------------------------------
+    */
 
-            return $result;
-        });
+    public function sentiment(
+        Conversation $conversation,
+        bool $forceRefresh = false
+    ): array {
+        return $this->remember(
+            'sentiment',
+            $conversation,
+            $forceRefresh,
+            function (string $thread) use ($conversation): array {
+                $result = $this->aiClient->json(
+                    $this->promptFactory->sentiment(
+                        $thread
+                    )
+                );
+
+                $this->logCall(
+                    $conversation,
+                    $thread,
+                    $result
+                );
+
+                return $result;
+            }
+        );
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    protected function remember(string $tool, Conversation $conversation, bool $forceRefresh, \Closure $compute): array
-    {
-        $thread = $this->threadFormatter->format($this->messagesFor($conversation));
+    /*
+    |--------------------------------------------------------------------------
+    | CACHE AI TOOLS
+    |--------------------------------------------------------------------------
+    */
 
-        $key = 'inbox-tool:'.$tool.':'.$conversation->id.':'.md5($thread);
+    protected function remember(
+        string $tool,
+        Conversation $conversation,
+        bool $forceRefresh,
+        \Closure $compute
+    ): array {
+        $thread = $this->threadFormatter->format(
+            $this->messagesFor($conversation)
+        );
 
-        if (! $forceRefresh && Cache::has($key)) {
+        $key =
+            'inbox-tool:'
+            . $tool
+            . ':'
+            . $conversation->id
+            . ':'
+            . md5($thread);
+
+        if (
+            ! $forceRefresh
+            && Cache::has($key)
+        ) {
             return Cache::get($key);
         }
 
         $result = $compute($thread);
 
-        Cache::put($key, $result, now()->addMinutes(self::CACHE_TTL_MINUTES));
+        Cache::put(
+            $key,
+            $result,
+            now()->addMinutes(
+                self::CACHE_TTL_MINUTES
+            )
+        );
 
         return $result;
     }
 
-    /**
-     * GHL-sourced conversations are never mirrored into the messages table
-     * (claude.txt) — their thread is fetched live on every call. Gmail-
-     * sourced ones keep reading the real, persisted relation.
-     *
-     * @return \Illuminate\Support\Collection<int, \App\Models\Message>
-     */
-    protected function messagesFor(Conversation $conversation)
-    {
-        if (filled($conversation->ghl_conversation_id)) {
-            return $this->ghlThreadLoader->messages($conversation->ghl_conversation_id);
+    /*
+    |--------------------------------------------------------------------------
+    | MESSAGE SOURCE
+    |--------------------------------------------------------------------------
+    */
+
+    protected function messagesFor(
+        Conversation $conversation
+    ) {
+        if (
+            filled(
+                $conversation->ghl_conversation_id
+            )
+        ) {
+            return $this->ghlThreadLoader->messages(
+                $conversation->ghl_conversation_id
+            );
         }
 
-        return $conversation->messages()->orderBy('sent_at')->get();
+        return $conversation
+            ->messages()
+            ->orderBy('sent_at')
+            ->get();
     }
 
-    /**
-     * @param  array<string, mixed>  $result
-     */
-    protected function logCall(Conversation $conversation, string $thread, array $result, ?int $intentId = null, ?int $sopId = null): void
-    {
-        AiLog::create([
-            'source' => AiCenterLogSource::InboxTool,
-            'conversation_id' => $conversation->exists ? $conversation->id : null,
-            'intent_id' => $intentId,
-            'sop_id' => $sopId,
-            'triggered_by' => auth()->id(),
-            'prompt' => $thread,
-            'response' => json_encode($result),
-            'status' => AiCenterLogStatus::Success,
-        ]);
+    /*
+    |--------------------------------------------------------------------------
+    | AI LOG
+    |--------------------------------------------------------------------------
+    */
+
+    protected function logCall(
+        Conversation $conversation,
+        string $thread,
+        array $result,
+        ?int $intentId = null,
+        ?int $sopId = null
+    ): void {
+        try {
+            AiLog::create([
+                'source' =>
+                    AiCenterLogSource::InboxTool,
+
+                'conversation_id' =>
+                    $conversation->exists
+                        ? $conversation->id
+                        : null,
+
+                'intent_id' =>
+                    $intentId,
+
+                'sop_id' =>
+                    $sopId,
+
+                'triggered_by' =>
+                    auth()->id(),
+
+                'prompt' =>
+                    $thread,
+
+                'response' =>
+                    json_encode(
+                        $result,
+                        JSON_UNESCAPED_UNICODE
+                        | JSON_UNESCAPED_SLASHES
+                    ),
+
+                'status' =>
+                    AiCenterLogStatus::Success,
+            ]);
+        } catch (Throwable $e) {
+            /*
+            | AI result should not fail only because
+            | logging failed.
+            */
+
+            Log::warning(
+                'Failed to create AI log',
+                [
+                    'conversation_id' =>
+                        $conversation->id,
+
+                    'error' =>
+                        $e->getMessage(),
+                ]
+            );
+        }
     }
 }
