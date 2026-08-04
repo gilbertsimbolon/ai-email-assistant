@@ -1,245 +1,52 @@
-You are working on my Laravel 13 AI Email Assistant with GoHighLevel (GHL).
-
-IMPORTANT:
-- GHL must be treated as the SOURCE OF TRUTH for conversation/message data.
-- Do not invent or infer message data from Laravel's local state when GHL API can provide it.
-- Do not use AI for extracting basic contact/message information.
-- Do not modify unrelated inbox UI.
-- Keep the existing left conversation list and current 3-column layout intact.
-- Make the smallest necessary changes.
-
-TASK:
-
-1. REMOVE AI FROM "EXTRACT INFO"
-
-There is an "Extract Info" / contact information feature in the Inbox/Composer.
-
-Currently it may use AI to extract information.
-
-Change this behavior:
-
-- DO NOT use OpenAI/AI for basic information extraction.
-- Get the information directly from GHL API.
-- Use GHL contact/conversation/message data as the source.
-- Extract available fields directly from API response.
-
-Examples:
-- Name → GHL contact data
-- Email → GHL contact data
-- Phone → GHL contact data
-- Contact ID → GHL contact data
-- Conversation ID → GHL conversation data
-- Message metadata → GHL message data
-
-Only use AI where AI is actually necessary for AI features.
-Do not call OpenAI just to extract information that already exists in GHL.
-
-Before changing anything:
-- Inspect the existing Extract Info implementation.
-- Find where AI is currently being called.
-- Replace only that part with direct GHL API retrieval.
-
-2. FIX INCONSISTENT THREAD / MESSAGE DATA
-
-Current problem:
-
-Laravel already retrieves the latest thread/messages from GHL, but the result is inconsistent.
-
-Example:
-- GHL shows around 1.4K unread messages/conversations.
-- Laravel only shows around 4 items.
-
-This indicates Laravel is probably:
-- limiting the API response incorrectly,
-- only retrieving one page,
-- not handling GHL pagination/cursors correctly,
-- filtering unread messages incorrectly,
-- or only loading a small subset of the available data.
-
-Investigate the actual GHL API response and existing pagination logic.
-
-IMPORTANT:
-Do NOT simply increase a limit from 4 → 100/1000.
-
-Instead:
-- Inspect GHL pagination/cursor behavior.
-- Fetch all required pages from GHL.
-- Correctly process nextPage / cursor / pagination metadata returned by GHL.
-- Make sure unread counts are based on the complete GHL dataset.
-- Do not stop after the first API page.
-- Avoid duplicate conversations when combining pages.
-- Preserve correct ordering by latest activity.
-- Respect GHL API limits/rate limits.
-- If the API has a maximum page size, implement proper pagination rather than requesting an unrealistic number.
-
-The Laravel Inbox should accurately reflect the conversations available from GHL.
-
-3. DO NOT AUTO-MARK CONVERSATIONS AS READ
-
-This is VERY IMPORTANT.
-
-Current behavior:
-
-When I open a conversation in Laravel, it becomes read in Laravel.
-
-This is NOT desired.
-
-Opening/viewing a conversation in Laravel MUST NOT automatically mark it as read.
-
-The unread state must remain consistent with GHL.
-
-Rules:
-
-- Opening a conversation ≠ marking it as read.
-- Viewing messages ≠ marking them as read.
-- Loading/polling messages ≠ marking them as read.
-- Selecting a conversation ≠ marking it as read.
-- Laravel must not silently call any "mark as read" operation when opening a conversation.
-- Do not modify GHL unread status just because the user viewed the conversation in Laravel.
-
-GHL should remain the source of truth.
-
-If a conversation is unread in GHL:
-→ Laravel should show it as unread.
-
-If a conversation is read in GHL:
-→ Laravel should show it as read.
-
-If the existing Laravel code has automatic read logic triggered by:
-- opening conversation
-- selecting conversation
-- loading thread
-- polling
-- page refresh
-
-remove/disable that automatic behavior.
-
-If there is already an explicit "Mark as Read" action/button, it can remain, but it must ONLY execute when the user intentionally triggers it.
-
-4. UNREAD COUNT MUST MATCH GHL
-
-Investigate how the unread count is currently calculated.
-
-Do NOT calculate unread count only from the currently loaded Laravel page.
-
-The unread count should reflect the actual GHL data.
-
-For example:
-
-GHL:
-Unread = 1,400
-
-Laravel:
-Unread should not become 4 simply because only 4 conversations were loaded on the first API page.
-
-Fix the underlying pagination/data retrieval first, then calculate the count correctly.
-
-5. IMPORTANT ARCHITECTURE RULE
-
-Use this priority:
-
-GHL API
-    ↓
-Laravel GHL Service
-    ↓
-Controller / Service
-    ↓
-Blade / JS
-
-Do not:
-
-GHL API
-    ↓
-AI
-    ↓
-Laravel
-
-for basic data extraction.
-
-AI should only be used for actual AI functionality.
-
-6. DEBUGGING REQUIREMENT
-
-Before implementing the fix, inspect:
-
-- GHL API service
-- Conversation fetching
-- Message/thread fetching
-- Pagination/cursor handling
-- Unread filtering
-- Unread count calculation
-- Conversation opening logic
-- Read/unread endpoint
-- Polling logic
-- Extract Info implementation
-- Any JavaScript that triggers mark-as-read
-
-Find the ROOT CAUSE rather than patching the UI.
-
-Do not assume the problem is only frontend.
-
-7. DO NOT BREAK EXISTING FEATURES
-
-Preserve:
-- existing Inbox UI
-- left conversation list
-- current 3-column layout
-- message composer
-- reply-to-message functionality
-- polling/realtime behavior
-- GHL integration
-- existing AI features that genuinely require AI
-
-Do not rewrite unrelated components.
-
-Use Bootstrap utilities where UI changes are required.
-Avoid unnecessary custom CSS.
-
-8. TEST THESE CASES
-
-After implementation verify:
-
-A. Extract Info
-- Open conversation
-- Extract Info does NOT call OpenAI
-- Data comes directly from GHL API
-
-B. Pagination
-- GHL has more conversations than one API page
-- Laravel retrieves all required pages
-- No duplicate conversations
-- Latest conversations are correctly ordered
-- Unread count is not artificially limited to the first page
-
-C. Read state
-- GHL conversation is unread
-- Open it in Laravel
-- It MUST remain unread
-
-D. Refresh
-- Refresh Laravel
-- Unread state still matches GHL
-
-E. Polling
-- Polling must NOT mark messages/conversations as read
-- New messages should appear correctly
-- Existing unread state should remain intact
-
-F. Explicit action
-- If user intentionally clicks "Mark as Read", then and only then should the read action execute.
-
-At the end, provide:
-
-1. Root cause of the pagination/unread problem.
-2. Root cause of the automatic read problem.
-3. Files changed.
-4. What was changed in the GHL API/service layer.
-5. Confirmation that Extract Info no longer uses AI.
-6. Confirmation that opening a conversation no longer marks it as read.
-7. Any remaining GHL API limitations or edge cases.
-
-IMPORTANT:
-DO NOT rewrite the entire Inbox.
-DO NOT redesign the UI.
-DO NOT touch working components unnecessarily.
-Focus on data correctness, GHL synchronization, pagination, and read/unread state.
+Perbaiki arsitektur Inbox agar tidak lagi bergantung pada Laravel Scheduler (schedule:work) maupun Queue Worker (queue:work).
+
+TARGET
+Aplikasi harus selalu realtime langsung dari GoHighLevel (GHL). User tidak perlu menjalankan scheduler ataupun queue untuk melihat perubahan.
+
+REQUIREMENTS
+
+1. Hapus dependency terhadap:
+- schedule:work
+- queue:work
+- queued jobs untuk sinkronisasi inbox
+- polling yang bergantung pada database lokal
+
+2. Semua data Inbox harus berasal langsung dari GoHighLevel API.
+Saat halaman dibuka:
+- ambil conversation list langsung dari GHL
+- ambil message thread langsung dari GHL
+- ambil contact detail langsung dari GHL
+
+3. Setelah halaman terbuka, perubahan harus realtime tanpa refresh halaman.
+Gunakan pendekatan yang paling sederhana dan ringan, misalnya:
+- short polling ke GHL setiap beberapa detik
+atau
+- mekanisme realtime lain yang tidak membutuhkan Laravel Scheduler maupun Queue Worker.
+
+4. Jangan membuat cache database untuk conversation maupun message.
+Database hanya digunakan untuk:
+- konfigurasi aplikasi
+- AI Settings
+- Prompt
+- SOP
+- Template
+- data internal aplikasi
+
+Conversation dan message tidak boleh menjadi source of truth.
+
+5. Pertahankan seluruh tampilan UI yang sudah ada.
+Jangan mengubah layout Inbox maupun desain.
+
+6. Pastikan:
+- conversation baru langsung muncul
+- pesan baru langsung muncul
+- unread count selalu mengikuti GHL
+- perubahan status mengikuti GHL
+- tidak perlu reload browser
+
+7. Prioritaskan implementasi yang sederhana, maintainable, dan hemat resource. Hindari over-engineering.
+
+Sebelum mengubah kode:
+- analisis seluruh alur Inbox saat ini
+- identifikasi bagian yang masih bergantung pada Scheduler, Queue, atau database
+- refactor menjadi arsitektur realtime langsung dari GHL.
