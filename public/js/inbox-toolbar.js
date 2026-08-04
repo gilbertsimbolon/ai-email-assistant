@@ -123,19 +123,30 @@
         ]);
     }
 
+    // Extract Info is not AI (claude.txt Task 1) — every field below comes
+    // straight from the GHL contact/conversation data the backend fetched,
+    // never a model's guess. Custom Fields is whatever GHL itself has on
+    // the contact record (e.g. order/invoice numbers an agency configured
+    // there), rendered as-is instead of a fixed, speculative field list.
     function renderExtractInfo(container, data) {
-        renderFields(container, [
+        var fields = [
             ['Customer Name', data.customer_name],
             ['Email', data.email],
-            ['Order Number', data.order_number],
-            ['Invoice Number', data.invoice_number],
-            ['Subscription', data.subscription],
-            ['Product', data.product],
-            ['Platform', data.platform],
-            ['Purchase Date', data.purchase_date],
-            ['Refund Eligibility', data.refund_eligibility],
-            ['Important Dates', data.important_dates],
-        ]);
+            ['Phone', data.phone],
+            ['Contact ID', data.contact_id],
+            ['Conversation ID', data.conversation_id],
+            ['Channel', data.channel],
+            ['Company', data.company_name],
+            ['Tags', Array.isArray(data.tags) && data.tags.length ? data.tags.join(', ') : ''],
+        ];
+
+        (data.custom_fields || []).forEach(function (field) {
+            var label = field.key || field.id || 'Custom Field';
+            var value = field.value;
+            fields.push([label, Array.isArray(value) ? value.join(', ') : value]);
+        });
+
+        renderFields(container, fields);
     }
 
     function renderSentiment(container, data) {

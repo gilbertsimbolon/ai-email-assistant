@@ -60,11 +60,6 @@
 
         activeLi.classList.remove('bg-white');
         activeLi.classList.add('bg-label-primary');
-
-        // Membuka percakapan otomatis menandainya sudah dibaca di server
-        // (InboxController::resolveActiveConversation) — cerminkan itu di
-        // list tanpa perlu refetch seluruh list.
-        setListItemReadState(conversationId, true);
     }
 
     function loadConversation(url, options) {
@@ -98,6 +93,11 @@
 
                 if (data.conversation_id) {
                     markActiveInList(data.conversation_id);
+                    // Opening a conversation must NOT mark it read
+                    // (claude.txt Task 3) — reflect whatever is_read the
+                    // server actually reports, never assume true just
+                    // because it was opened.
+                    setListItemReadState(data.conversation_id, !!data.is_read);
                 }
 
                 if (window.initComposer) {
@@ -199,6 +199,79 @@
     });
 
     initTooltips(document);
+
+    /**
+     * Load More (claude.txt Task 2): pages forward through GHL's own
+     * /conversations/search cursor (startAfterDate/startAfter) one click at
+     * a time — appends the next page's rows after whatever is already
+     * loaded, never replaces the list, never asks GHL for an unrealistic
+     * limit in one shot. Reuses the same JSON list endpoint inbox-polling.js
+     * polls, so there's only one server-side pagination code path.
+     */
+    const loadMoreWrap = document.getElementById('conversationListLoadMore');
+    const loadMoreBtn = document.getElementById('btnLoadMoreConversations');
+
+    function cssEscape(value) {
+        return window.CSS && window.CSS.escape ? window.CSS.escape(String(value)) : String(value);
+    }
+
+    if (loadMoreBtn && loadMoreWrap && conversationList && inboxApp && inboxApp.dataset.listPollUrl) {
+        loadMoreBtn.addEventListener('click', function () {
+            const startAfterDate = loadMoreWrap.dataset.startAfterDate;
+            const startAfter = loadMoreWrap.dataset.startAfter;
+
+            if (!startAfterDate || !startAfter) {
+                loadMoreWrap.classList.add('d-none');
+                return;
+            }
+
+            const url = new URL(inboxApp.dataset.listPollUrl, window.location.origin);
+            url.searchParams.set('startAfterDate', startAfterDate);
+            url.searchParams.set('startAfter', startAfter);
+
+            loadMoreBtn.disabled = true;
+            const originalLabel = loadMoreBtn.textContent;
+            loadMoreBtn.textContent = 'Loading...';
+
+            fetch(url.toString(), {
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin',
+            })
+                .then(function (response) { return response.ok ? response.json() : null; })
+                .then(function (data) {
+                    if (!data || !Array.isArray(data.items)) {
+                        return;
+                    }
+
+                    // Append at the bottom, in the order GHL returned them,
+                    // so latest-activity ordering from the first page carries
+                    // straight through — and skip anything already in the
+                    // DOM instead of duplicating it.
+                    data.items.forEach(function (item) {
+                        const existing = conversationList.querySelector(
+                            '.conversation-item[data-conversation-id="' + cssEscape(item.id) + '"]'
+                        );
+                        if (!existing) {
+                            conversationList.insertAdjacentHTML('beforeend', item.html);
+                        }
+                    });
+
+                    if (data.nextCursor && data.nextCursor.startAfterDate && data.nextCursor.startAfter) {
+                        loadMoreWrap.dataset.startAfterDate = data.nextCursor.startAfterDate;
+                        loadMoreWrap.dataset.startAfter = data.nextCursor.startAfter;
+                    } else {
+                        loadMoreWrap.classList.add('d-none');
+                    }
+                })
+                .catch(function () {
+                    // Silent: agent can just click Load More again.
+                })
+                .finally(function () {
+                    loadMoreBtn.disabled = false;
+                    loadMoreBtn.textContent = originalLabel;
+                });
+        });
+    }
 
     /**
      * Toggle bintang (starred) — dipakai dari list maupun toolbar thread.

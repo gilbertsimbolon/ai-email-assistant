@@ -34,11 +34,30 @@ class InboxController extends Controller
     use AuthorizesConversationAccess;
 
     /**
-     * How many conversations to request per GHL page. "Load more" cursors
+     * How many conversations to request per GHL page. The "Load More"
+     * button (conversation-list.blade.php + inbox-navigation.js) cursors
      * forward through GHL's own /conversations/search pagination
-     * (startAfterDate/startAfter) — never fetched all at once.
+     * (startAfterDate/startAfter) one page at a time — never fetched all at
+     * once, and never just a bigger single limit (claude.txt Task 2).
      */
     protected const PAGE_SIZE = 20;
+
+    /**
+     * Page size used only while walking every unread page for
+     * resolveUnreadCount() — a practical upper bound for GHL's search
+     * endpoint, not an "unrealistic number" (claude.txt Task 2): still real
+     * cursor pagination underneath, just fewer round trips per page.
+     */
+    protected const UNREAD_COUNT_PAGE_SIZE = 100;
+
+    /**
+     * Safety valve so a runaway/misbehaving cursor can never turn this into
+     * an unbounded loop — caps at 50 pages (~5,000 conversations). Hitting
+     * it logs a warning; the badge becomes a floor rather than wrong.
+     */
+    protected const UNREAD_COUNT_MAX_PAGES = 50;
+
+    protected const UNREAD_COUNT_CACHE_SECONDS = 30;
 
     /**
      * Local-only concepts (starred/workflow status/AI draft presence) that
@@ -76,11 +95,10 @@ class InboxController extends Controller
 
         $ghlConfigured = filled(config('ghl.api_key')) && filled(config('ghl.location_id'));
 
-        // GHL's /conversations/search has no cheap "total unread across
-        // every conversation" aggregate, so the badge next to the Unread
-        // filter icon only reflects the conversations already loaded on
-        // this page — not a location-wide total.
-        $unreadCount = $list['items']->sum(fn (GhlConversationListItem $item) => $item->isRead ? 0 : $item->unreadCount);
+        // Badge next to the Unread filter icon (claude.txt Task 4): must
+        // reflect GHL's real unread total, not just whatever page happens
+        // to be loaded — see resolveUnreadCount().
+        $unreadCount = $ghlConfigured ? $this->resolveUnreadCount() : 0;
 
         // Polling list (no ?conversation=): each row is pre-rendered server
         // side (same partial the initial page load uses) so the browser
@@ -98,6 +116,11 @@ class InboxController extends Controller
                         'isActive' => false,
                     ])->render(),
                 ])->values(),
+                // Same GHL cursor conversationsFromGhl() computes for the
+                // full page load — lets inbox-navigation.js's "Load More"
+                // button page forward through this same JSON endpoint
+                // instead of a second, separate pagination code path.
+                'nextCursor' => $list['nextCursor'],
             ]);
         }
 
@@ -206,9 +229,10 @@ class InboxController extends Controller
     }
 
     /**
-     * Toggle status baca — dipakai tombol "Mark Read" di toolbar untuk
-     * menandai balik sebagai belum dibaca (membuka percakapan otomatis
-     * menandai terbaca lewat resolveActiveConversation()).
+     * Toggle status baca — SATU-SATUNYA jalur yang boleh mengubah is_read.
+     * Selalu manual (klik tombol "Mark Read"/"Tandai belum dibaca" di
+     * toolbar) — membuka/melihat/polling percakapan tidak pernah memanggil
+     * ini secara otomatis (claude.txt Task 3).
      */
     public function toggleRead(Request $request, Conversation $conversation)
     {
@@ -244,6 +268,16 @@ class InboxController extends Controller
             $params['query'] = $search;
         }
 
+        // Delegate the Unread tab's filtering to GHL itself rather than
+        // fetching one generic page and throwing away whatever on it isn't
+        // unread — that's the root cause behind "GHL has 1.4K unread but
+        // Laravel only shows ~4" (claude.txt Task 2): with a plain page,
+        // most of the 20 latest conversations by activity aren't unread at
+        // all, so only a handful survived the old client-side filter.
+        if ($filter === 'unread') {
+            $params['status'] = 'unread';
+        }
+
         if ($request->filled('startAfterDate') && $request->filled('startAfter')) {
             $params['startAfterDate'] = $request->get('startAfterDate');
             $params['startAfter'] = $request->get('startAfter');
@@ -261,6 +295,10 @@ class InboxController extends Controller
 
         $parsed = collect($raw)->map(fn (array $r) => $this->ghlParser->conversationFromSearchApi($r));
 
+        // Safety net, not the primary filter: keeps the tab correct even if
+        // GHL's `status=unread` isn't honored for some reason. Real
+        // pagination through the *unread* set happens via the cursor below,
+        // which walks GHL's own filtered pages — never a single page.
         if ($filter === 'unread') {
             $parsed = $parsed->filter(fn (ParsedGhlConversationData $p) => $p->isUnread())->values();
         }
@@ -287,6 +325,96 @@ class InboxController extends Controller
         }
 
         return ['items' => $items, 'nextCursor' => $nextCursor, 'localPaginator' => null];
+    }
+
+    /**
+     * The real, location-wide unread total (claude.txt Task 4) — walks
+     * every page GHL has for status=unread, not just the first one, so the
+     * badge can't be capped at whatever a single page happened to load.
+     * Cached briefly since the list-poll hits index() every few seconds
+     * (inbox-polling.js) and this would otherwise re-page through GHL on
+     * every single tick.
+     */
+    protected function resolveUnreadCount(): int
+    {
+        return Cache::remember('ghl_unread_conversations_total', self::UNREAD_COUNT_CACHE_SECONDS, function () {
+            return $this->countAllUnreadConversations();
+        });
+    }
+
+    /**
+     * Pages through GHL's /conversations/search filtered server-side to
+     * status=unread, summing each conversation's unreadCount, until GHL
+     * returns a short page (no more data) or the safety cap is hit.
+     * Conversations are deduped by id in case a page ever overlaps the
+     * previous one.
+     */
+    protected function countAllUnreadConversations(): int
+    {
+        $total = 0;
+        $seen = [];
+        $cursor = [];
+
+        for ($page = 0; $page < self::UNREAD_COUNT_MAX_PAGES; $page++) {
+            $params = array_merge([
+                'limit' => self::UNREAD_COUNT_PAGE_SIZE,
+                'status' => 'unread',
+            ], $cursor);
+
+            try {
+                $result = $this->ghlApi->getConversations($params);
+            } catch (Throwable $e) {
+                Log::error('Failed to page through GHL unread conversations for the unread count', [
+                    'error' => $e->getMessage(),
+                    'page' => $page,
+                ]);
+
+                break;
+            }
+
+            $raw = $result['conversations'] ?? [];
+
+            if ($raw === []) {
+                break;
+            }
+
+            foreach ($raw as $r) {
+                $id = $r['id'] ?? null;
+
+                if ($id === null || isset($seen[$id])) {
+                    continue;
+                }
+
+                $seen[$id] = true;
+                $total += (int) ($r['unreadCount'] ?? 0);
+            }
+
+            // Short page: this was the last one.
+            if (count($raw) < self::UNREAD_COUNT_PAGE_SIZE) {
+                break;
+            }
+
+            $last = end($raw);
+            $cursor = [
+                'startAfterDate' => $last['dateUpdated'] ?? null,
+                'startAfter' => $last['id'] ?? null,
+            ];
+
+            // GHL didn't give us anything to cursor forward with — treat as
+            // the last page rather than risk re-requesting the same one.
+            if (blank($cursor['startAfterDate']) || blank($cursor['startAfter'])) {
+                break;
+            }
+
+            if ($page === self::UNREAD_COUNT_MAX_PAGES - 1) {
+                Log::warning('Hit the safety cap while counting GHL unread conversations; badge is a floor, not exact', [
+                    'pages_fetched' => $page + 1,
+                    'conversations_seen' => count($seen),
+                ]);
+            }
+        }
+
+        return $total;
     }
 
     /**
@@ -331,7 +459,15 @@ class InboxController extends Controller
             channelLabel: $live?->channelLabel() ?? 'Conversation',
             preview: $live?->subject,
             lastActivityAt: $live?->lastActivityAt,
-            isRead: $anchor ? $anchor->is_read : ! ($live?->isUnread() ?? false),
+            // GHL is the source of truth for read/unread (claude.txt Task
+            // 3-4): whenever a live GHL summary was fetched, its unread
+            // state always wins over the local anchor's is_read — the local
+            // flag can only reflect state as of whenever it was last
+            // written and would otherwise silently drift from GHL (e.g. a
+            // conversation the agent already opened getting a new unread
+            // message later). Only fall back to the anchor when GHL
+            // couldn't be reached at all.
+            isRead: $live !== null ? ! $live->isUnread() : ($anchor?->is_read ?? true),
             isStarred: $anchor?->is_starred ?? false,
             status: $anchor?->status ?? ConversationStatus::PendingReview,
             hasDraft: (bool) ($anchor?->has_draft ?? false),
@@ -386,11 +522,12 @@ class InboxController extends Controller
         $raw['id'] = $raw['id'] ?? $ghlConversationId;
 
         $parsed = $this->ghlParser->conversationFromSearchApi($raw);
+        // Opening/viewing a conversation must NEVER mark it read (claude.txt
+        // Task 3) — the anchor's is_read only ever changes from the
+        // explicit "Mark Read" toggle (toggleRead()) or when it's first
+        // seeded from GHL's own unread state in findOrCreate(). No update()
+        // call here on purpose.
         $anchor = $this->anchors->findOrCreate($parsed);
-
-        if (! $anchor->is_read) {
-            $anchor->update(['is_read' => true]);
-        }
 
         $anchor->setRelation('messages', $this->threadLoader->messages($ghlConversationId));
         $anchor->load('drafts');

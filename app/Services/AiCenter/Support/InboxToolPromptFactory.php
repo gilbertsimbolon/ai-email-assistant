@@ -3,10 +3,12 @@
 namespace App\Services\AiCenter\Support;
 
 /**
- * Builds the fixed JSON-extraction prompts for the 5 manual Inbox toolbar
- * actions (Summarize/Translate/Detect Intent/Extract Info/Sentiment), same
- * "system establishes the task and JSON shape, user supplies the thread"
- * pattern as AnalysisPromptFactory.
+ * Builds the fixed JSON-extraction prompts for the manual Inbox toolbar
+ * actions that are genuinely AI (Summarize/Translate/Detect Intent/
+ * Sentiment), same "system establishes the task and JSON shape, user
+ * supplies the thread" pattern as AnalysisPromptFactory. Extract Info is
+ * NOT here — claude.txt Task 1 moved it to a direct GHL read
+ * (InboxToolsService::extractInformation), no prompt needed.
  */
 class InboxToolPromptFactory
 {
@@ -75,34 +77,6 @@ Return ONLY valid JSON with this exact shape:
     "intent": "...",
     "confidence_score": 0.0,
     "reasoning": "..."
-}
-
-Do not return markdown. Do not wrap the JSON inside code blocks.
-PROMPT, $thread);
-    }
-
-    /**
-     * @return array<int, array{role: string, content: string}>
-     */
-    public function extractInformation(string $thread): array
-    {
-        return $this->build(<<<PROMPT
-You are a data extraction assistant. Read the ENTIRE email thread below and extract any customer/order information mentioned.
-Use an empty string for any field that is not mentioned anywhere in the thread — never guess.
-
-Return ONLY valid JSON with this exact shape:
-
-{
-    "customer_name": "...",
-    "email": "...",
-    "order_number": "...",
-    "invoice_number": "...",
-    "subscription": "...",
-    "product": "...",
-    "platform": "...",
-    "purchase_date": "...",
-    "refund_eligibility": "...",
-    "important_dates": "..."
 }
 
 Do not return markdown. Do not wrap the JSON inside code blocks.

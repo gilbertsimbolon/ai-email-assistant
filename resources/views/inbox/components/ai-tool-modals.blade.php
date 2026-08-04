@@ -23,7 +23,7 @@
                 <div class="modal-body">
                     <div class="ai-tool-loading text-center py-5">
                         <div class="spinner-border text-primary" role="status"></div>
-                        <p class="text-muted small mt-2 mb-0">AI is thinking<span class="ai-tool-loading-dots"></span></p>
+                        <p class="text-muted small mt-2 mb-0">{{ $key === 'extract-info' ? 'Fetching from GHL' : 'AI is thinking' }}<span class="ai-tool-loading-dots"></span></p>
                     </div>
                     <div class="ai-tool-error alert alert-danger d-none"></div>
                     <div class="ai-tool-result d-none"></div>

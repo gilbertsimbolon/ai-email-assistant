@@ -185,6 +185,21 @@
 
         </ul>
 
+        {{-- Load More: pages forward through GHL's real cursor
+             (startAfterDate/startAfter) instead of ever asking for a bigger
+             single limit (claude.txt Task 2). Hidden whenever GHL didn't
+             report a next page. --}}
+        <div id="conversationListLoadMore"
+            class="text-center py-3 {{ $nextCursor ? '' : 'd-none' }}"
+            data-start-after-date="{{ $nextCursor['startAfterDate'] ?? '' }}"
+            data-start-after="{{ $nextCursor['startAfter'] ?? '' }}">
+
+            <button type="button" id="btnLoadMoreConversations" class="btn btn-sm btn-outline-secondary">
+                Load More
+            </button>
+
+        </div>
+
     </div>
 
 </div>

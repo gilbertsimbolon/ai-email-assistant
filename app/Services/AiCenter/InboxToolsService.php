@@ -2,6 +2,7 @@
 
 namespace App\Services\AiCenter;
 
+use App\DataTransferObjects\ParsedGhlContactData;
 use App\Enums\AiCenter\AiCenterLogSource;
 use App\Enums\AiCenter\AiCenterLogStatus;
 use App\Models\AiCenter\AiLog;
@@ -11,19 +12,27 @@ use App\Services\AiCenter\Engines\IntentDetectionEngine;
 use App\Services\AiCenter\Engines\SopMatchingEngine;
 use App\Services\AiCenter\Support\ConversationThreadFormatter;
 use App\Services\AiCenter\Support\InboxToolPromptFactory;
+use App\Services\Ghl\GhlParserService;
 use App\Services\Ghl\GhlThreadLoader;
+use App\Services\Ghl\GoHighLevelApiService;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Backs the 5 manual Inbox toolbar actions (Summarize/Translate/Detect
  * Intent/Extract Info/Sentiment — claude.txt Task 3). Every call is
  * user-initiated (never automatic, same rule AiGenerationService follows
  * for draft generation) and cached for an hour per conversation+thread
- * content so re-opening a modal doesn't re-spend OpenAI tokens.
+ * content so re-opening a modal doesn't re-spend OpenAI tokens. The
+ * exception is Extract Info (claude.txt: "Remove AI from Extract Info") —
+ * it never touches aiClient at all, it reads straight from GHL.
  */
 class InboxToolsService
 {
     protected const CACHE_TTL_MINUTES = 60;
+
+    protected const EXTRACT_INFO_CACHE_TTL_MINUTES = 5;
 
     protected const LANGUAGES = [
         'en' => 'English',
@@ -43,6 +52,8 @@ class InboxToolsService
         protected SopMatchingEngine $sopMatchingEngine,
         protected KnowledgeResolver $knowledgeResolver,
         protected GhlThreadLoader $ghlThreadLoader,
+        protected GoHighLevelApiService $ghlApi,
+        protected GhlParserService $ghlParser,
     ) {
     }
 
@@ -109,16 +120,68 @@ class InboxToolsService
     }
 
     /**
+     * NOT an AI call (claude.txt Task 1: "Remove AI from Extract Info").
+     * Every field here comes straight from GHL's own contact/conversation
+     * data — the same source InboxController's Contact Details panel
+     * reads from — never inferred by a model. Cached briefly per
+     * conversation purely to avoid re-hitting GHL on every modal open;
+     * force_refresh bypasses that cache the same way the AI tools' own
+     * force-refresh does.
+     *
      * @return array<string, mixed>
      */
     public function extractInformation(Conversation $conversation, bool $forceRefresh = false): array
     {
-        return $this->remember('extract-info', $conversation, $forceRefresh, function (string $thread) use ($conversation) {
-            $result = $this->aiClient->json($this->promptFactory->extractInformation($thread));
-            $this->logCall($conversation, $thread, $result);
+        $key = 'inbox-extract-info:'.$conversation->id;
 
-            return $result;
-        });
+        if (! $forceRefresh && Cache::has($key)) {
+            return Cache::get($key);
+        }
+
+        $contact = $this->fetchContact($conversation->contact_id);
+
+        $result = [
+            'customer_name' => $contact?->fullName() ?: $conversation->contact_name,
+            'email' => $contact?->email ?: $conversation->contact_email,
+            'phone' => $contact?->phone ?: $conversation->contact_phone,
+            'contact_id' => $conversation->contact_id,
+            'conversation_id' => $conversation->ghl_conversation_id,
+            'channel' => $conversation->channel,
+            'company_name' => $contact?->companyName,
+            'tags' => $contact?->tags ?? [],
+            'custom_fields' => $contact?->customFields ?? [],
+        ];
+
+        Cache::put($key, $result, now()->addMinutes(self::EXTRACT_INFO_CACHE_TTL_MINUTES));
+
+        return $result;
+    }
+
+    /**
+     * Same on-demand, defensive-read GHL contact fetch InboxController uses
+     * for the Contact Details panel — a failed/missing fetch returns null
+     * rather than fabricating data, so Extract Info can fall back to
+     * whatever the local anchor already knows (contact_name/email/phone
+     * seeded from GHL when the anchor was created).
+     */
+    protected function fetchContact(?string $contactId): ?ParsedGhlContactData
+    {
+        if (blank($contactId)) {
+            return null;
+        }
+
+        try {
+            $response = $this->ghlApi->getContact($contactId);
+
+            return $this->ghlParser->contactFromApi($response['contact'] ?? $response);
+        } catch (Throwable $e) {
+            Log::warning('Failed to fetch GHL contact for Extract Info', [
+                'contact_id' => $contactId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     /**
