@@ -6,17 +6,15 @@
     */
     $isAgent = $message->sender_type !== \App\Enums\SenderType::Customer;
 
-    $contactName = $contactDetails?->fullName()
-        ?: $activeConversation->contact_name
-        ?: $activeConversation->contact_email
-        ?: 'Pelanggan';
+    $contactName =
+        $contactDetails?->fullName() ?:
+        $activeConversation->contact_name ?:
+        $activeConversation->contact_email ?:
+        'Pelanggan';
 
-    $contactEmail = $contactDetails?->email
-        ?: $activeConversation->contact_email
-        ?: 'okaywhatsnext@gmail.com';
+    $contactEmail = $contactDetails?->email ?: $activeConversation->contact_email ?: 'okaywhatsnext@gmail.com';
 
-    $contactPhone = $contactDetails?->phone
-        ?: $activeConversation->contact_phone;
+    $contactPhone = $contactDetails?->phone ?: $activeConversation->contact_phone;
 
     /*
     |--------------------------------------------------------------------------
@@ -25,22 +23,21 @@
     */
     $senderName = $isAgent ? 'Dom Ricci' : $contactName;
 
-    $senderInitials = strtoupper(
-        substr(trim($senderName), 0, 2)
-    );
+    $senderInitials = strtoupper(substr(trim($senderName), 0, 2));
 
     /*
     |--------------------------------------------------------------------------
     | Recipient & Subject Header
     |--------------------------------------------------------------------------
     */
-    $recipient = $isAgent
-        ? ($contactEmail ?: $contactPhone)
-        : 'Anda';
+    $recipient = $isAgent ? ($contactEmail ?: $contactPhone) : 'Anda';
 
-    $subject = $message->subject
-        ?? $message->meta['subject']
-        ?? ($message->body ? \Illuminate\Support\Str::limit(strip_tags((string) $message->body), 40) : 'Tanpa Subjek');
+    $subject =
+        $message->subject ??
+        ($message->meta['subject'] ??
+            ($message->body
+                ? \Illuminate\Support\Str::limit(strip_tags((string) $message->body), 40)
+                : 'Tanpa Subjek'));
 
     /*
     |--------------------------------------------------------------------------
@@ -49,12 +46,10 @@
     */
     $replySnippet = \Illuminate\Support\Str::limit(
         str_replace(["\r\n", "\n", "\r"], ' ', strip_tags((string) $message->body)),
-        160
+        160,
     );
 
-    $messageId = $message->ghl_message_id
-        ?? $message->gmail_message_id
-        ?? $message->id;
+    $messageId = $message->ghl_message_id ?? ($message->gmail_message_id ?? $message->id);
 
     // Otomatis expand hanya pada pesan paling terakhir di dalam loop
     $isExpanded = isset($loop) ? $loop->last : true;
@@ -132,13 +127,13 @@
 {{-- =========================================================
      CARD CONTAINER
 ========================================================== --}}
-<div class="card border rounded-3 mb-3 shadow-sm ghl-email-card" id="message-card-{{ $messageId }}" data-message-id="{{ $messageId }}">
+<div class="card border rounded-3 mb-3 shadow-sm ghl-email-card" id="message-card-{{ $messageId }}"
+    data-message-id="{{ $messageId }}">
 
     {{-- Header Card (Subject + Expand/Collapse Button) --}}
     <div class="card-header bg-light d-flex justify-content-between align-items-center py-2 px-3 border-bottom-0 cursor-pointer toggle-email-btn"
-         data-bs-toggle="collapse"
-         data-bs-target="#email-body-{{ $messageId }}"
-         aria-expanded="{{ $isExpanded ? 'true' : 'false' }}">
+        data-bs-toggle="collapse" data-bs-target="#email-body-{{ $messageId }}"
+        aria-expanded="{{ $isExpanded ? 'true' : 'false' }}">
 
         <span class="fw-semibold text-dark fs-6">{{ $subject }}</span>
 
@@ -159,10 +154,12 @@
 
                 {{-- Avatar Circle --}}
                 <div class="position-relative">
-                    <div class="avatar-circle {{ $isAgent ? 'bg-primary bg-opacity-10 text-primary' : 'bg-secondary bg-opacity-10 text-dark' }} fw-bold d-flex align-items-center justify-content-center rounded-circle" style="width: 40px; height: 40px; font-size: 14px;">
+                    <div class="avatar-circle {{ $isAgent ? 'bg-primary bg-opacity-10 text-primary' : 'bg-secondary bg-opacity-10 text-dark' }} fw-bold d-flex align-items-center justify-content-center rounded-circle"
+                        style="width: 40px; height: 40px; font-size: 14px;">
                         {{ $senderInitials }}
                     </div>
-                    <span class="position-absolute bottom-0 end-0 bg-white rounded-circle p-1 d-flex shadow-sm" style="transform: translate(20%, 20%);">
+                    <span class="position-absolute bottom-0 end-0 bg-white rounded-circle p-1 d-flex shadow-sm"
+                        style="transform: translate(20%, 20%);">
                         <i class="bx bx-envelope text-primary" style="font-size: 11px;"></i>
                     </span>
                 </div>
@@ -174,7 +171,8 @@
                     {{-- Detail 'To:' muncul saat Card Expanded --}}
                     <div class="collapse {{ $isExpanded ? 'show' : '' }}" id="email-meta-to-{{ $messageId }}">
                         <div class="dropdown small text-muted">
-                            To: <span class="text-secondary dropdown-toggle cursor-pointer" data-bs-toggle="dropdown">{{ $recipient }}</span>
+                            To: <span class="text-secondary dropdown-toggle cursor-pointer"
+                                data-bs-toggle="dropdown">{{ $recipient }}</span>
                             <ul class="dropdown-menu p-2 fs-7 shadow-sm">
                                 <li><strong>From:</strong> {{ $senderName }}</li>
                                 <li><strong>To:</strong> {{ $recipient }}</li>
@@ -192,23 +190,23 @@
                 @endif
 
                 {{-- Reply Button --}}
-                <button
-                    type="button"
-                    class="btn btn-sm btn-icon text-muted p-0 border-0 js-msg-reply"
-                    data-sender="{{ $senderName }}"
-                    data-snippet="{{ $replySnippet }}"
-                    title="Reply pesan ini">
+                <button type="button" class="btn btn-sm btn-icon text-muted p-0 border-0 js-msg-reply"
+                    data-sender="{{ $senderName }}" data-snippet="{{ $replySnippet }}" title="Reply pesan ini">
                     <i class="bx bx-undo fs-5"></i>
                 </button>
 
                 {{-- More Options Dropdown --}}
                 <div class="dropdown d-inline-block">
-                    <button class="btn btn-sm btn-icon text-muted p-0 border-0" type="button" data-bs-toggle="dropdown" title="Opsi lainnya">
+                    <button class="btn btn-sm btn-icon text-muted p-0 border-0" type="button" data-bs-toggle="dropdown"
+                        title="Opsi lainnya">
                         <i class="bx bx-dots-vertical-rounded fs-5"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm fs-7">
-                        <li><a class="dropdown-item js-msg-reply" href="javascript:void(0);" data-sender="{{ $senderName }}" data-snippet="{{ $replySnippet }}"><i class="bx bx-undo me-2"></i>Balas</a></li>
-                        <li><a class="dropdown-item" href="javascript:void(0);"><i class="bx bx-copy me-2"></i>Salin Teks</a></li>
+                        <li><a class="dropdown-item js-msg-reply" href="javascript:void(0);"
+                                data-sender="{{ $senderName }}" data-snippet="{{ $replySnippet }}"><i
+                                    class="bx bx-undo me-2"></i>Balas</a></li>
+                        <li><a class="dropdown-item" href="javascript:void(0);"><i class="bx bx-copy me-2"></i>Salin
+                                Teks</a></li>
                     </ul>
                 </div>
             </div>
@@ -222,12 +220,25 @@
         </div>
 
         {{-- Expanded Email Body Content --}}
-        <div class="collapse {{ $isExpanded ? 'show' : '' }} email-body-content mt-3" id="email-body-{{ $messageId }}">
+        <div class="collapse {{ $isExpanded ? 'show' : '' }} email-body-content mt-3"
+            id="email-body-{{ $messageId }}">
 
-            {{-- Message Body Payload --}}
-            <div class="text-dark email-html-payload px-1" style="font-size: 14.5px; line-height: 1.6; overflow-wrap: anywhere;">
-                {!! $message->body !!}
-            </div>
+            @if (preg_match('/<[a-z][\s\S]*>/i', $message->body))
+                {{-- Render Email HTML utuh menggunakan iframe isolated --}}
+                <div class="email-iframe-wrapper rounded border overflow-hidden bg-white">
+                    <iframe srcdoc="{{ e($message->body) }}" class="w-100 border-0 email-html-iframe"
+                        onload="this.style.height=(this.contentWindow.document.body.scrollHeight+20)+'px';"
+                        style="min-height: 250px; width: 100%; display: block;"
+                        sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin">
+                    </iframe>
+                </div>
+            @else
+                {{-- Plain Text (SMS/LiveChat) --}}
+                <div class="text-dark px-1"
+                    style="font-size: 14.5px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere;">
+                    {{ $message->body }}
+                </div>
+            @endif
 
             {{-- Attachments Section --}}
             @if (!empty($message->attachments))
@@ -243,11 +254,9 @@
 
             {{-- Footer Reply Button --}}
             <div class="mt-4 pt-2">
-                <button
-                    type="button"
+                <button type="button"
                     class="btn btn-primary btn-sm px-3 d-inline-flex align-items-center gap-1 shadow-sm js-msg-reply"
-                    data-sender="{{ $senderName }}"
-                    data-snippet="{{ $replySnippet }}">
+                    data-sender="{{ $senderName }}" data-snippet="{{ $replySnippet }}">
                     <i class="bx bx-undo fs-5"></i> Reply
                 </button>
             </div>
@@ -264,8 +273,8 @@
     if (typeof ghlCardToggleInit === 'undefined') {
         var ghlCardToggleInit = true;
 
-        document.addEventListener('DOMContentLoaded', function () {
-            document.addEventListener('click', function (e) {
+        document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('click', function(e) {
                 const header = e.target.closest('.toggle-email-btn');
                 if (!header) return;
 
@@ -275,12 +284,18 @@
                 const isExpanded = header.getAttribute('aria-expanded') === 'true';
 
                 if (snippetEl) {
-                    const bsSnippet = bootstrap.Collapse.getInstance(snippetEl) || new bootstrap.Collapse(snippetEl, { toggle: false });
+                    const bsSnippet = bootstrap.Collapse.getInstance(snippetEl) || new bootstrap
+                        .Collapse(snippetEl, {
+                            toggle: false
+                        });
                     isExpanded ? bsSnippet.show() : bsSnippet.hide();
                 }
 
                 if (metaToEl) {
-                    const bsMetaTo = bootstrap.Collapse.getInstance(metaToEl) || new bootstrap.Collapse(metaToEl, { toggle: false });
+                    const bsMetaTo = bootstrap.Collapse.getInstance(metaToEl) || new bootstrap.Collapse(
+                        metaToEl, {
+                            toggle: false
+                        });
                     isExpanded ? bsMetaTo.hide() : bsMetaTo.show();
                 }
             });

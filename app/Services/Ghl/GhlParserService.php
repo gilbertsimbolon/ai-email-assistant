@@ -33,18 +33,40 @@ class GhlParserService
         );
     }
 
+    // GhlParserService.php
+
     public function messageFromSearchApi(array $raw): ?ParsedGhlMessageData
     {
-        if (!isset($raw['id'])) {
+        $ghlMessageId = $raw['id'] ?? null;
+        if (! $ghlMessageId) {
             return null;
         }
 
+        // Ambil isi HTML utuh (prioritas field: html -> body -> message)
+        $body = $raw['html']
+            ?? $raw['body']
+            ?? $raw['message']
+            ?? '';
+
+        $attachments = $raw['attachments'] ?? [];
+
+        // Filter pesan jika benar-benar hampa
+        if (blank(trim(strip_tags($body))) && empty($attachments)) {
+            return null;
+        }
+
+        $direction = strtolower($raw['direction'] ?? 'inbound');
+
+        $rawDate = $raw['dateAdded'] ?? $raw['createdAt'] ?? $raw['date'] ?? null;
+        $sentAt = $rawDate ? Carbon::parse($rawDate) : now();
+
+        // Instantiate DTO ParsedGhlMessageData sesuai constructor di gambar Anda
         return new ParsedGhlMessageData(
-            ghlMessageId: (string) $raw['id'],
-            direction: $raw['direction'] ?? 'inbound',
-            body: $raw['body'] ?? '',
-            sentAt: $this->parseDate($raw['dateAdded'] ?? null) ?? now(),
-            attachments: $this->parseAttachments($raw['attachments'] ?? []),
+            ghlMessageId: $ghlMessageId,
+            direction: $direction,
+            body: $body,
+            sentAt: $sentAt,
+            attachments: $attachments
         );
     }
 
@@ -131,7 +153,7 @@ class GhlParserService
     protected function parseTags(array $rawTags): array
     {
         return collect($rawTags)
-            ->filter(fn ($tag) => is_string($tag) && $tag !== '')
+            ->filter(fn($tag) => is_string($tag) && $tag !== '')
             ->values()
             ->all();
     }
@@ -143,13 +165,13 @@ class GhlParserService
     protected function parseCustomFields(array $rawFields): array
     {
         return collect($rawFields)
-            ->filter(fn ($field) => is_array($field))
-            ->map(fn (array $field) => [
+            ->filter(fn($field) => is_array($field))
+            ->map(fn(array $field) => [
                 'id' => $field['id'] ?? null,
                 'key' => $field['key'] ?? ($field['name'] ?? null),
                 'value' => $field['value'] ?? ($field['field_value'] ?? null),
             ])
-            ->filter(fn (array $field) => filled($field['value']))
+            ->filter(fn(array $field) => filled($field['value']))
             ->values()
             ->all();
     }
@@ -165,8 +187,8 @@ class GhlParserService
     protected function parseAttachments(array $rawAttachments): array
     {
         return collect($rawAttachments)
-            ->filter(fn ($url) => is_string($url) && $url !== '')
-            ->map(fn (string $url) => ['url' => $url])
+            ->filter(fn($url) => is_string($url) && $url !== '')
+            ->map(fn(string $url) => ['url' => $url])
             ->values()
             ->all();
     }
