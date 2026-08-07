@@ -54,10 +54,6 @@ class DraftController extends Controller
         try {
             $this->dispatchSend($draft, $gmailSendService, $ghlSendService);
         } catch (Throwable $e) {
-            Log::error('Failed to send draft', [
-                'draft_id' => $draft->id,
-                'error' => $e->getMessage(),
-            ]);
 
             if ($request->wantsJson()) {
                 return response()->json(['message' => 'Gagal mengirim balasan: '.$e->getMessage()], 422);
@@ -100,11 +96,6 @@ class DraftController extends Controller
         } catch (AiNotConfiguredException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         } catch (Throwable $e) {
-            Log::error('AI draft generation failed', [
-                'conversation_id' => $conversation->id,
-                'error' => $e->getMessage(),
-            ]);
-
             return response()->json(['message' => 'Gagal membuat draf AI. Silakan coba lagi.'], 500);
         }
 
@@ -184,11 +175,6 @@ class DraftController extends Controller
         try {
             $this->dispatchSend($draft, $gmailSendService, $ghlSendService);
         } catch (Throwable $e) {
-            Log::error('Failed to send draft', [
-                'draft_id' => $draft->id,
-                'error' => $e->getMessage(),
-            ]);
-
             return response()->json(['message' => 'Gagal mengirim balasan: '.$e->getMessage()], 422);
         }
 

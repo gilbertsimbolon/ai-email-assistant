@@ -61,8 +61,6 @@ class GmailOAuthController extends Controller
         try {
             $this->gmailAuth->connectAccount($request->user(), $request->query('code'));
         } catch (Throwable $e) {
-            Log::error('Gmail OAuth callback failed', ['error' => $e->getMessage()]);
-
             return redirect()->route('settings.index')
                 ->withErrors(['gmail' => 'Gagal menghubungkan akun Gmail: '.$e->getMessage()]);
         }

@@ -7,12 +7,6 @@ use App\DataTransferObjects\ParsedGhlConversationData;
 use App\DataTransferObjects\ParsedGhlMessageData;
 use Carbon\Carbon;
 
-/**
- * Normalizes the raw shape returned by GHL's /conversations/search,
- * /conversations/{id} and /conversations/{id}/messages endpoints into DTOs,
- * so downstream code (InboxController, GhlThreadLoader, GhlSendService)
- * doesn't need to know GHL's field names directly.
- */
 class GhlParserService
 {
     public function conversationFromSearchApi(array $raw): ParsedGhlConversationData
@@ -42,6 +36,7 @@ class GhlParserService
             return null;
         }
 
+<<<<<<< HEAD
         // Ambil isi HTML utuh (prioritas field: html -> body -> message)
         $body = $raw['html']
             ?? $raw['body']
@@ -67,16 +62,75 @@ class GhlParserService
             body: $body,
             sentAt: $sentAt,
             attachments: $attachments
+=======
+        // Ekstrak isi pesan (termasuk penanganan jika body di root kosong/null)
+        $body = $this->extractMessageBody($raw);
+
+        // Tentukan arah pesan (Inbound/Outbound)
+        $direction = $this->determineDirection($raw);
+
+        $rawDate = $raw['dateAdded']
+            ?? $raw['dateUpdated']
+            ?? $raw['date']
+            ?? $raw['createdAt']
+            ?? null;
+
+        return new ParsedGhlMessageData(
+            ghlMessageId: (string) $raw['id'],
+            direction: $direction,
+            body: $body,
+            sentAt: $this->parseDate($rawDate) ?? now(),
+            attachments: $this->parseAttachments($raw['attachments'] ?? []),
+>>>>>>> acb3fd5 (note: untuk diperbaiki menggunakan claude)
         );
     }
 
     /**
-     * Parses GHL's /contacts/{id} response for the Conversations Column 3
-     * "Contact Details" panel. Every field is read defensively (`?? null`)
-     * — a field missing from GHL's response stays null/empty here, never
-     * faked, so the view can render "not available" instead of a made-up
-     * value.
+     * Mengambil isi pesan agar pesan customer tidak pernah dianggap kosong.
      */
+    protected function extractMessageBody(array $raw): string
+    {
+        if (filled($raw['body'] ?? null)) {
+            return (string) $raw['body'];
+        }
+
+        if (filled($raw['html'] ?? null)) {
+            return (string) $raw['html'];
+        }
+
+        if (filled($raw['text'] ?? null)) {
+            return (string) $raw['text'];
+        }
+
+        // Ambil subject dari meta.email jika body root kosong
+        $subject = data_get($raw, 'meta.email.subject');
+        if (filled($subject)) {
+            return "<strong>Subject: " . e($subject) . "</strong><br><span class='text-muted'>(Pesan masuk tanpa konten body teks)</span>";
+        }
+
+        return "<span class='text-muted'>(Tidak ada isi pesan)</span>";
+    }
+
+    /**
+     * Memastikan pesan dari customer tetap masuk sebagai 'inbound'.
+     */
+    protected function determineDirection(array $raw): string
+    {
+        $direction = strtolower((string) ($raw['direction'] ?? ''));
+        $source = strtolower((string) ($raw['source'] ?? ''));
+
+        // Jika dikirim via workflow/sistem, anggap outbound
+        if (in_array($source, ['workflow', 'app', 'system', 'api'], true) && $direction === 'inbound') {
+            return 'outbound';
+        }
+
+        if (in_array($direction, ['inbound', 'in', 'incoming'], true)) {
+            return 'inbound';
+        }
+
+        return 'outbound';
+    }
+
     public function contactFromApi(array $raw): ParsedGhlContactData
     {
         return new ParsedGhlContactData(
@@ -104,17 +158,12 @@ class GhlParserService
         );
     }
 
-    /**
-     * Safely parses GHL date values whether they come as a string, integer timestamp,
-     * or a nested array (e.g. ['date' => '...']).
-     */
     protected function parseDate(mixed $dateValue): ?Carbon
     {
         if (empty($dateValue)) {
             return null;
         }
 
-        // Handle case when GHL returns date as an array
         if (is_array($dateValue)) {
             $dateValue = $dateValue['date']
                 ?? $dateValue['value']
@@ -127,7 +176,6 @@ class GhlParserService
         }
 
         try {
-            // Handle unix timestamp (in milliseconds or seconds)
             if (is_numeric($dateValue)) {
                 $timestamp = strlen((string) $dateValue) === 13
                     ? (int) ($dateValue / 1000)
@@ -146,10 +194,6 @@ class GhlParserService
         return null;
     }
 
-    /**
-     * @param  array<int, mixed>  $rawTags
-     * @return array<int, string>
-     */
     protected function parseTags(array $rawTags): array
     {
         return collect($rawTags)
@@ -158,10 +202,6 @@ class GhlParserService
             ->all();
     }
 
-    /**
-     * @param  array<int, array<string, mixed>>  $rawFields
-     * @return array<int, array{id: ?string, key: ?string, value: mixed}>
-     */
     protected function parseCustomFields(array $rawFields): array
     {
         return collect($rawFields)
@@ -176,14 +216,6 @@ class GhlParserService
             ->all();
     }
 
-    /**
-     * GHL returns message attachments as a flat array of URLs (unlike
-     * Gmail's blob-by-id model), so there's nothing to fetch on-demand —
-     * just link to them directly (see inbox.components.attachment).
-     *
-     * @param  array<int, string>  $rawAttachments
-     * @return array<int, array{url: string}>
-     */
     protected function parseAttachments(array $rawAttachments): array
     {
         return collect($rawAttachments)

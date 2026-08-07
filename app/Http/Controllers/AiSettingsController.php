@@ -89,11 +89,6 @@ class AiSettingsController extends Controller
             enabled: true,
         );
 
-        Log::info('Test AI Connection', [
-            'provider' => $provider->value,
-            'model' => $settings->model,
-        ]);
-
         $result = $this->aiClient->testConnection($settings);
 
         return response()->json($result->toArray(), $result->isSuccess() ? 200 : 422);

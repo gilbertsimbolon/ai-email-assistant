@@ -20,52 +20,14 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-/**
- * The Inbox is 100% GHL now (claude.txt) — conversations/messages/contacts
- * are always fetched live from GoHighLevelApiService, never read from
- * MySQL. The only local writes are the anchor Conversation row (lazily
- * created — see GhlConversationAnchorService) and the workflow-only
- * is_read/is_starred/status columns on it. Legacy Gmail conversations live
- * at GmailInboxController/gmail-inbox.* instead (see claude.txt: this
- * migration only covers GHL).
- */
 class InboxController extends Controller
 {
     use AuthorizesConversationAccess;
 
-    /**
-     * How many conversations to request per GHL page. The "Load More"
-     * button (conversation-list.blade.php + inbox-navigation.js) cursors
-     * forward through GHL's own /conversations/search pagination
-     * (startAfterDate/startAfter) one page at a time — never fetched all at
-     * once, and never just a bigger single limit (claude.txt Task 2).
-     */
     protected const PAGE_SIZE = 20;
-
-    /**
-     * Page size used only while walking every unread page for
-     * resolveUnreadCount() — a practical upper bound for GHL's search
-     * endpoint, not an "unrealistic number" (claude.txt Task 2): still real
-     * cursor pagination underneath, just fewer round trips per page.
-     */
     protected const UNREAD_COUNT_PAGE_SIZE = 100;
-
-    /**
-     * Safety valve so a runaway/misbehaving cursor can never turn this into
-     * an unbounded loop — caps at 50 pages (~5,000 conversations). Hitting
-     * it logs a warning; the badge becomes a floor rather than wrong.
-     */
     protected const UNREAD_COUNT_MAX_PAGES = 50;
-
     protected const UNREAD_COUNT_CACHE_SECONDS = 30;
-
-    /**
-     * Local-only concepts (starred/workflow status/AI draft presence) that
-     * GHL has no server-side filter for. These filters can only surface
-     * conversations an agent has already opened at least once (i.e. that
-     * have a local anchor row) — there's no local mirror of every GHL
-     * conversation to search through instead.
-     */
     protected const LOCAL_ONLY_FILTERS = ['recent', 'starred', 'waiting_agent', 'waiting_customer', 'ai_draft', 'closed'];
 
     public function __construct(
@@ -75,12 +37,6 @@ class InboxController extends Controller
         protected GhlThreadLoader $threadLoader,
     ) {}
 
-    /**
-     * Menampilkan halaman Inbox GHL (3 kolom: list, thread, contact
-     * details). Klik conversation di list & polling realtime dilakukan
-     * lewat AJAX (lihat inbox-navigation.js & inbox-polling.js) — hanya
-     * navigasi filter/search/"load more" yang full page load.
-     */
     public function index(Request $request)
     {
         $filter = $request->get('filter', 'all');
@@ -94,15 +50,8 @@ class InboxController extends Controller
 
         $ghlConfigured = filled(config('ghl.api_key')) && filled(config('ghl.location_id'));
 
-        // Badge next to the Unread filter icon (claude.txt Task 4): must
-        // reflect GHL's real unread total, not just whatever page happens
-        // to be loaded — see resolveUnreadCount().
         $unreadCount = $ghlConfigured ? $this->resolveUnreadCount() : 0;
 
-        // Polling list (no ?conversation=): each row is pre-rendered server
-        // side (same partial the initial page load uses) so the browser
-        // only needs to patch/append <li> elements it doesn't already have
-        // — never a full page reload (claude.txt section 11-12).
         if ($request->wantsJson() && ! $request->filled('conversation')) {
             return response()->json([
                 'items' => $list['items']->map(fn(GhlConversationListItem $item) => [
@@ -115,10 +64,6 @@ class InboxController extends Controller
                         'isActive' => false,
                     ])->render(),
                 ])->values(),
-                // Same GHL cursor conversationsFromGhl() computes for the
-                // full page load — lets inbox-navigation.js's "Load More"
-                // button page forward through this same JSON endpoint
-                // instead of a second, separate pagination code path.
                 'nextCursor' => $list['nextCursor'],
             ]);
         }
@@ -156,12 +101,6 @@ class InboxController extends Controller
         ]);
     }
 
-    /**
-     * Permalink lama ke detail percakapan. `/inbox/{id}` sekarang cukup
-     * jadi passthrough ke panel kanan halaman index — kecuali id tersebut
-     * ternyata conversation Gmail lama (bookmark dari sebelum migrasi),
-     * yang diarahkan ke gmail-inbox.
-     */
     public function show(Request $request, string $conversation)
     {
         if (ctype_digit($conversation)) {
@@ -177,12 +116,6 @@ class InboxController extends Controller
         return redirect()->route('inbox.index', ['conversation' => $conversation]);
     }
 
-    /**
-     * Polling thread aktif (claude.txt section 13-14): mengembalikan bubble
-     * HTML setiap message saat ini dari GHL beserta id-nya, biar JS bisa
-     * append hanya yang belum ada di DOM (dedup by data-message-id) —
-     * bukan render ulang seluruh thread.
-     */
     public function messages(string $conversation)
     {
         try {
@@ -193,28 +126,36 @@ class InboxController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return response()->json(['success' => false, 'message' => 'Unable to load messages from GHL.'], 502);
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to load messages from GHL.',
+            ], 502);
         }
 
         $activeConversation = $this->anchors->find($conversation) ?? new Conversation();
 
+        $contactDetails = $this->loadContactDetails($activeConversation);
+
         return response()->json([
             'success' => true,
-            'messages' => $messages->map(fn(Message $message) => [
-                'id' => $message->ghl_message_id,
-                'html' => view('inbox.components.message-bubble', [
-                    'message' => $message,
-                    'activeConversation' => $activeConversation,
-                ])->render(),
-            ])->values(),
+
+            'messages' => $messages->map(function (Message $message) use (
+                $activeConversation,
+                $contactDetails
+            ) {
+                return [
+                    'id' => $message->ghl_message_id,
+
+                    'html' => view('inbox.components.message-bubble', [
+                        'message' => $message,
+                        'activeConversation' => $activeConversation,
+                        'contactDetails' => $contactDetails,
+                    ])->render(),
+                ];
+            })->values(),
         ]);
     }
 
-    /**
-     * Mengubah status percakapan (pending_review / replied / closed) dari
-     * dropdown pada halaman detail. Selalu terhadap anchor lokal — anchor
-     * dijamin sudah ada karena hanya bisa diakses lewat thread yang terbuka.
-     */
     public function updateStatus(UpdateConversationStatusRequest $request, Conversation $conversation)
     {
         $this->authorizeConversation($request, $conversation);
@@ -224,9 +165,6 @@ class InboxController extends Controller
         return back()->with('success', 'Status percakapan berhasil diperbarui.');
     }
 
-    /**
-     * Toggle bintang (starred) — lokal saja, GHL tidak punya konsep ini.
-     */
     public function toggleStar(Request $request, Conversation $conversation)
     {
         $this->authorizeConversation($request, $conversation);
@@ -236,12 +174,6 @@ class InboxController extends Controller
         return response()->json(['is_starred' => $conversation->is_starred]);
     }
 
-    /**
-     * Toggle status baca — SATU-SATUNYA jalur yang boleh mengubah is_read.
-     * Selalu manual (klik tombol "Mark Read"/"Tandai belum dibaca" di
-     * toolbar) — membuka/melihat/polling percakapan tidak pernah memanggil
-     * ini secara otomatis (claude.txt Task 3).
-     */
     public function toggleRead(Request $request, Conversation $conversation)
     {
         $this->authorizeConversation($request, $conversation);
@@ -251,9 +183,6 @@ class InboxController extends Controller
         return response()->json(['is_read' => $conversation->is_read]);
     }
 
-    /**
-     * @return array{items: \Illuminate\Support\Collection<int, GhlConversationListItem>, nextCursor: ?array, localPaginator: ?\Illuminate\Pagination\LengthAwarePaginator, error?: bool}
-     */
     protected function conversationsByFilter(Request $request, string $filter, string $search): array
     {
         if (in_array($filter, self::LOCAL_ONLY_FILTERS, true)) {
@@ -263,11 +192,6 @@ class InboxController extends Controller
         return $this->conversationsFromGhl($request, $filter, $search);
     }
 
-    /**
-     * The default/fast path: "all", "unread" and search all go straight to
-     * GHL's /conversations/search — no local database involved at all
-     * (claude.txt section 7, 32).
-     */
     protected function conversationsFromGhl(Request $request, string $filter, string $search): array
     {
         $params = ['limit' => self::PAGE_SIZE];
@@ -276,12 +200,6 @@ class InboxController extends Controller
             $params['query'] = $search;
         }
 
-        // Delegate the Unread tab's filtering to GHL itself rather than
-        // fetching one generic page and throwing away whatever on it isn't
-        // unread — that's the root cause behind "GHL has 1.4K unread but
-        // Laravel only shows ~4" (claude.txt Task 2): with a plain page,
-        // most of the 20 latest conversations by activity aren't unread at
-        // all, so only a handful survived the old client-side filter.
         if ($filter === 'unread') {
             $params['status'] = 'unread';
         }
@@ -303,10 +221,6 @@ class InboxController extends Controller
 
         $parsed = collect($raw)->map(fn(array $r) => $this->ghlParser->conversationFromSearchApi($r));
 
-        // Safety net, not the primary filter: keeps the tab correct even if
-        // GHL's `status=unread` isn't honored for some reason. Real
-        // pagination through the *unread* set happens via the cursor below,
-        // which walks GHL's own filtered pages — never a single page.
         if ($filter === 'unread') {
             $parsed = $parsed->filter(fn(ParsedGhlConversationData $p) => $p->isUnread())->values();
         }
@@ -335,14 +249,6 @@ class InboxController extends Controller
         return ['items' => $items, 'nextCursor' => $nextCursor, 'localPaginator' => null];
     }
 
-    /**
-     * The real, location-wide unread total (claude.txt Task 4) — walks
-     * every page GHL has for status=unread, not just the first one, so the
-     * badge can't be capped at whatever a single page happened to load.
-     * Cached briefly since the list-poll hits index() every few seconds
-     * (inbox-polling.js) and this would otherwise re-page through GHL on
-     * every single tick.
-     */
     protected function resolveUnreadCount(): int
     {
         return Cache::remember('ghl_unread_conversations_total', self::UNREAD_COUNT_CACHE_SECONDS, function () {
@@ -350,13 +256,6 @@ class InboxController extends Controller
         });
     }
 
-    /**
-     * Pages through GHL's /conversations/search filtered server-side to
-     * status=unread, summing each conversation's unreadCount, until GHL
-     * returns a short page (no more data) or the safety cap is hit.
-     * Conversations are deduped by id in case a page ever overlaps the
-     * previous one.
-     */
     protected function countAllUnreadConversations(): int
     {
         $total = 0;
@@ -397,7 +296,6 @@ class InboxController extends Controller
                 $total += (int) ($r['unreadCount'] ?? 0);
             }
 
-            // Short page: this was the last one.
             if (count($raw) < self::UNREAD_COUNT_PAGE_SIZE) {
                 break;
             }
@@ -408,8 +306,6 @@ class InboxController extends Controller
                 'startAfter' => $last['id'] ?? null,
             ];
 
-            // GHL didn't give us anything to cursor forward with — treat as
-            // the last page rather than risk re-requesting the same one.
             if (blank($cursor['startAfterDate']) || blank($cursor['startAfter'])) {
                 break;
             }
@@ -425,12 +321,6 @@ class InboxController extends Controller
         return $total;
     }
 
-    /**
-     * Local-only filters (starred/workflow status/AI draft/recent) only
-     * make sense for conversations an agent already opened — paginate the
-     * local anchor table for candidates, then live-refresh each one's
-     * display data from GHL so nothing shown is stale (claude.txt section 9).
-     */
     protected function conversationsFromLocalAnchors(string $filter): array
     {
         $query = Conversation::whereNotNull('ghl_conversation_id')
@@ -467,14 +357,6 @@ class InboxController extends Controller
             channelLabel: $live?->channelLabel() ?? 'Conversation',
             preview: $live?->subject,
             lastActivityAt: $live?->lastActivityAt,
-            // GHL is the source of truth for read/unread (claude.txt Task
-            // 3-4): whenever a live GHL summary was fetched, its unread
-            // state always wins over the local anchor's is_read — the local
-            // flag can only reflect state as of whenever it was last
-            // written and would otherwise silently drift from GHL (e.g. a
-            // conversation the agent already opened getting a new unread
-            // message later). Only fall back to the anchor when GHL
-            // couldn't be reached at all.
             isRead: $live !== null ? ! $live->isUnread() : ($anchor?->is_read ?? true),
             isStarred: $anchor?->is_starred ?? false,
             status: $anchor?->status ?? ConversationStatus::PendingReview,
@@ -501,12 +383,6 @@ class InboxController extends Controller
         }
     }
 
-    /**
-     * Muat percakapan yang sedang dipilih (?conversation=<ghlConversationId>)
-     * untuk panel tengah/kanan — selalu dari GHL, tidak pernah dari mirror
-     * lokal. Anchor lokal baru dibuat di sini (agent benar-benar membuka
-     * percakapan ini), bukan proaktif untuk seluruh list.
-     */
     protected function resolveActiveConversation(Request $request): array
     {
         if (! $request->filled('conversation')) {
@@ -530,11 +406,6 @@ class InboxController extends Controller
         $raw['id'] = $raw['id'] ?? $ghlConversationId;
 
         $parsed = $this->ghlParser->conversationFromSearchApi($raw);
-        // Opening/viewing a conversation must NEVER mark it read (claude.txt
-        // Task 3) — the anchor's is_read only ever changes from the
-        // explicit "Mark Read" toggle (toggleRead()) or when it's first
-        // seeded from GHL's own unread state in findOrCreate(). No update()
-        // call here on purpose.
         $anchor = $this->anchors->findOrCreate($parsed);
 
         $anchor->setRelation('messages', $this->threadLoader->messages($ghlConversationId));
@@ -545,13 +416,6 @@ class InboxController extends Controller
         return [$anchor, $activeDraft];
     }
 
-    /**
-     * Ambil detail contact (tags, custom fields, DND, dll) langsung dari GHL
-     * untuk panel Contact Details — bukan disimpan lokal, di-cache singkat
-     * per contact supaya tidak memanggil GHL berulang kali saat agent
-     * bolak-balik membuka percakapan yang sama. Gagal fetch (mis. GHL down,
-     * contact_id kosong) tidak boleh menjatuhkan halaman.
-     */
     protected function loadContactDetails(?Conversation $conversation): ?ParsedGhlContactData
     {
         if (! $conversation || blank($conversation->contact_id)) {

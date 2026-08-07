@@ -210,11 +210,6 @@ class GmailInboxController extends Controller
                 }
             );
         } catch (Throwable $e) {
-            Log::warning('Failed to fetch GHL contact details', [
-                'contact_id' => $conversation->contact_id,
-                'error' => $e->getMessage(),
-            ]);
-
             return null;
         }
     }

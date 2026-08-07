@@ -12,7 +12,13 @@
         $activeConversation->contact_email ?:
         'Pelanggan';
 
+<<<<<<< HEAD
     $contactEmail = $contactDetails?->email ?: $activeConversation->contact_email ?: 'okaywhatsnext@gmail.com';
+=======
+    $contactEmail = $contactDetails?->email
+        ?: $activeConversation->contact_email
+        ?: '';
+>>>>>>> acb3fd5 (note: untuk diperbaiki menggunakan claude)
 
     $contactPhone = $contactDetails?->phone ?: $activeConversation->contact_phone;
 
@@ -30,7 +36,13 @@
     | Recipient & Subject Header
     |--------------------------------------------------------------------------
     */
+<<<<<<< HEAD
     $recipient = $isAgent ? ($contactEmail ?: $contactPhone) : 'Anda';
+=======
+    $recipient = $isAgent
+        ? ($contactEmail ?: $contactPhone ?: 'Pelanggan')
+        : 'Anda';
+>>>>>>> acb3fd5 (note: untuk diperbaiki menggunakan claude)
 
     $subject =
         $message->subject ??
@@ -51,13 +63,9 @@
 
     $messageId = $message->ghl_message_id ?? ($message->gmail_message_id ?? $message->id);
 
-    // Otomatis expand hanya pada pesan paling terakhir di dalam loop
     $isExpanded = isset($loop) ? $loop->last : true;
 @endphp
 
-{{-- =========================================================
-     CUSTOM CSS SPECIFIC FOR GHL EMAIL CARD
-========================================================== --}}
 <style>
     .ghl-email-card {
         border-color: #e2e8f0 !important;
@@ -82,7 +90,6 @@
         cursor: pointer;
     }
 
-    /* Rotate Icon Chevron saat Card Di-expand / Collapse */
     .toggle-email-btn[aria-expanded="true"] .accordion-icon {
         transform: rotate(180deg);
     }
@@ -91,7 +98,6 @@
         transition: transform 0.2s ease-in-out;
     }
 
-    /* Formatting Isi Email (HTML Payload) */
     .email-html-payload {
         color: #1e293b;
     }
@@ -106,31 +112,22 @@
         word-break: break-all;
     }
 
-    .email-html-payload ul,
-    .email-html-payload ol {
-        padding-left: 1.25rem;
-        margin-bottom: 0.85rem;
-    }
-
-    .email-html-payload blockquote {
-        border-left: 3px solid #cbd5e1;
-        padding-left: 0.75rem;
-        color: #64748b;
-        margin: 0.85rem 0;
-    }
-
     .fs-7 {
         font-size: 0.8125rem !important;
     }
 </style>
 
+<<<<<<< HEAD
 {{-- =========================================================
      CARD CONTAINER
 ========================================================== --}}
 <div class="card border rounded-3 mb-3 shadow-sm ghl-email-card" id="message-card-{{ $messageId }}"
     data-message-id="{{ $messageId }}">
+=======
+<div class="card border rounded-3 mb-3 shadow-sm ghl-email-card" id="message-card-{{ $messageId }}" data-message-id="{{ $messageId }}">
+>>>>>>> acb3fd5 (note: untuk diperbaiki menggunakan claude)
 
-    {{-- Header Card (Subject + Expand/Collapse Button) --}}
+    {{-- Header Card --}}
     <div class="card-header bg-light d-flex justify-content-between align-items-center py-2 px-3 border-bottom-0 cursor-pointer toggle-email-btn"
         data-bs-toggle="collapse" data-bs-target="#email-body-{{ $messageId }}"
         aria-expanded="{{ $isExpanded ? 'true' : 'false' }}">
@@ -145,10 +142,10 @@
         </div>
     </div>
 
-    {{-- Card Body (Metadata, Snippet & Full Content) --}}
+    {{-- Card Body --}}
     <div class="card-body p-3">
 
-        {{-- Metadata Row: Avatar, Sender Name, Recipient & Time --}}
+        {{-- Metadata Row --}}
         <div class="d-flex align-items-start justify-content-between mb-2">
             <div class="d-flex align-items-center gap-3">
 
@@ -164,11 +161,10 @@
                     </span>
                 </div>
 
-                {{-- Sender Name & Detail Recipient --}}
+                {{-- Sender Name --}}
                 <div>
                     <div class="fw-bold text-dark fs-6 lh-sm">{{ $senderName }}</div>
 
-                    {{-- Detail 'To:' muncul saat Card Expanded --}}
                     <div class="collapse {{ $isExpanded ? 'show' : '' }}" id="email-meta-to-{{ $messageId }}">
                         <div class="dropdown small text-muted">
                             To: <span class="text-secondary dropdown-toggle cursor-pointer"
@@ -189,13 +185,21 @@
                     <span class="small fw-semibold text-secondary me-1">{{ $message->sent_at->format('h:i A') }}</span>
                 @endif
 
+<<<<<<< HEAD
                 {{-- Reply Button --}}
                 <button type="button" class="btn btn-sm btn-icon text-muted p-0 border-0 js-msg-reply"
                     data-sender="{{ $senderName }}" data-snippet="{{ $replySnippet }}" title="Reply pesan ini">
+=======
+                <button
+                    type="button"
+                    class="btn btn-sm btn-icon text-muted p-0 border-0 js-msg-reply"
+                    data-sender="{{ $senderName }}"
+                    data-snippet="{{ $replySnippet }}"
+                    title="Reply pesan ini">
+>>>>>>> acb3fd5 (note: untuk diperbaiki menggunakan claude)
                     <i class="bx bx-undo fs-5"></i>
                 </button>
 
-                {{-- More Options Dropdown --}}
                 <div class="dropdown d-inline-block">
                     <button class="btn btn-sm btn-icon text-muted p-0 border-0" type="button" data-bs-toggle="dropdown"
                         title="Opsi lainnya">
@@ -212,13 +216,14 @@
             </div>
         </div>
 
-        {{-- Collapsed Snippet Preview (Muncul HANYA saat Card Tertutup) --}}
+        {{-- Collapsed Snippet --}}
         <div class="collapse {{ !$isExpanded ? 'show' : '' }} snippet-wrapper" id="email-snippet-{{ $messageId }}">
             <p class="text-muted small mb-0 text-truncate ms-5 ps-2" style="max-width: 85%;">
                 {{ $replySnippet }}
             </p>
         </div>
 
+<<<<<<< HEAD
         {{-- Expanded Email Body Content --}}
         <div class="collapse {{ $isExpanded ? 'show' : '' }} email-body-content mt-3"
             id="email-body-{{ $messageId }}">
@@ -239,8 +244,15 @@
                     {{ $message->body }}
                 </div>
             @endif
+=======
+        {{-- Expanded Body Content --}}
+        <div class="collapse {{ $isExpanded ? 'show' : '' }} email-body-content mt-3" id="email-body-{{ $messageId }}">
 
-            {{-- Attachments Section --}}
+            <div class="text-dark email-html-payload px-1" style="font-size: 14.5px; line-height: 1.6; overflow-wrap: anywhere;">
+                {!! $message->body !!}
+            </div>
+>>>>>>> acb3fd5 (note: untuk diperbaiki menggunakan claude)
+
             @if (!empty($message->attachments))
                 <div class="mt-3 pt-2 border-top d-flex flex-wrap gap-2">
                     @foreach ($message->attachments as $attachment)
@@ -252,7 +264,6 @@
                 </div>
             @endif
 
-            {{-- Footer Reply Button --}}
             <div class="mt-4 pt-2">
                 <button type="button"
                     class="btn btn-primary btn-sm px-3 d-inline-flex align-items-center gap-1 shadow-sm js-msg-reply"
@@ -266,9 +277,6 @@
     </div>
 </div>
 
-{{-- =========================================================
-     JAVASCRIPT TOGGLE SYNC FOR SNIPPET & META
-========================================================== --}}
 <script>
     if (typeof ghlCardToggleInit === 'undefined') {
         var ghlCardToggleInit = true;

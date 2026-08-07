@@ -64,12 +64,6 @@ class GmailSettingsController extends Controller
             ], 422);
         }
 
-        Log::info('Test Gmail Connection', [
-            'client_id' => $validated['client_id'],
-            'client_secret_length' => strlen($clientSecret),
-            'redirect_uri' => $validated['redirect_uri'],
-        ]);
-
         $result = $this->gmailApi->testCredentials(
             $validated['client_id'],
             $clientSecret,
